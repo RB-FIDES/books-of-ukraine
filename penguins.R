@@ -408,10 +408,6 @@ ggplot(penguins, aes(x = species)) +
 ggplot(diamonds, aes(x = carat)) +
   geom_bar(bins = 20, fill = "red")
 # ❓ Чому Ignoring unknown parameters: `binwidth`and `bins`?
-ggplot(diamonds, aes(x = carat)) +
-  geom_bar(width = 20, fill = "red")
-# ✅  Якщо ти мала на увазі ширину стовпця, то треба використати "width" замість "binwidth"
-# Ця помилка виникає, коли використовуєш параметр якого не існує в даному geom_.
 ds1 <- diamonds
 # ---- inspect-data-0 ----------------------------------------------------------
 ds1
@@ -463,10 +459,12 @@ ggplot(penguins, aes(x = flipper_length_mm, y = body_mass_g)) +
 # ✅  "cty" (city miles per gallon), "hwy" (highway miles per gallon),
 
 # 2. Створіть графік розсіювання for highway mpg.
-
-
-
-
+# geom's без y:
+ggplot(data = mpg) + 
+  geom_bar(mapping = aes(x = hwy))
+# ✅  Розсіювання!!!
+ggplot(data = mpg, mapping = aes(x = model, y = hwy)) + 
+  geom_point()
 
 
 
