@@ -408,6 +408,10 @@ ggplot(penguins, aes(x = species)) +
 ggplot(diamonds, aes(x = carat)) +
   geom_bar(bins = 20, fill = "red")
 # ❓ Чому Ignoring unknown parameters: `binwidth`and `bins`?
+ggplot(diamonds, aes(x = carat)) +
+  geom_bar(width = 20, fill = "red")
+# Якщо необхідно зібльшити ширину стовпця в geom_bar то використовуй "width" замість "binwidth"
+# Подібна помилка буде виникати якщо ти використовуєш параметр який не підтримує або просто неіснує в даному geom_
 ds1 <- diamonds
 # ---- inspect-data-0 ----------------------------------------------------------
 ds1
