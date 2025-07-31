@@ -6,5 +6,18 @@ In a human–AI creative symbiosis, the human serves not merely as an operator, 
 
 ### Epistemic Aim
 
+Investigate and understand publishing trends in Ukraine since 2005. 
+
+Understand and describe regional difference (difference based on geography).
+
+Detect interesting patterns and relationships between the use of russian language in published book and the larger cultural, political, and economic context of Ukraine.
+
 ### Technical Aims
+
+A collection of related tables (perhaps in SQL database) that can be used to answer questions about the publishing trends in Ukraine and accompanying documentation of meta data, optimized for subsequent data analysis and vidualization. 
+
+A collection of reproducible scripted reports (e.g. .R, .qmd) that explore, analyze, and visualize the data, with clear documentation of methods and findings.
+
+A convenient and efficient way to update the data and reports as new data becomes available, with clear version control and change logs.
+
 
