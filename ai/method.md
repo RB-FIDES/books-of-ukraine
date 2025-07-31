@@ -1,3 +1,2 @@
 # Methods
 
-## Problem Definition
