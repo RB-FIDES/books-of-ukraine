@@ -342,8 +342,18 @@ check_context_size <- function() {
   message("  📄 Size: ", round(file_size / 1024, 1), " KB")
   message("  📝 Lines: ", line_count)
   
-  if (file_size > 50000) { # ~50KB threshold
-    message("⚠️ Context file is getting large - consider using focused contexts")
+  # Multi-tier warnings for better guidance
+  if (file_size > 100000) { # ~100KB - Critical
+    message("🚨 CRITICAL: Context file is very large (>100KB) - high risk of truncation")
+    message("    Recommend: remove_all_dynamic_instructions() and use focused contexts")
+  } else if (file_size > 50000) { # ~50KB - Warning
+    message("⚠️ WARNING: Context file is getting large (>50KB) - may impact performance")
+    message("    Recommend: consider using focused contexts for better efficiency")
+  } else if (file_size > 25000) { # ~25KB - Caution
+    message("💡 NOTICE: Context file approaching optimal size (>25KB)")
+    message("    Consider: focused contexts for complex analysis tasks")
+  } else {
+    message("✅ Context file size is optimal for AI focus")
   }
 }
 
