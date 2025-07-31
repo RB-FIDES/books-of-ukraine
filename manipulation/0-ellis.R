@@ -561,7 +561,6 @@ ds_area_cir <- terir_naklad_long %>%
 
   ds_geography <- bind_rows(ds_area_num, ds_area_cir) %>%
   arrange(yr, measure)
-## ------- rm() cleaning -------
 ## -------- RDS saving  --------
 saveRDS(ds_geography, "data-private/derived/manipulation/ds_geography.rds")
 ## ------- SQLite saving -------
