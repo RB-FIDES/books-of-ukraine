@@ -77,7 +77,8 @@ library(janitor)
 library(openxlsx)
 library(DBI)      # For database connection and operations
 library(RSQLite)
-library(ggrepel)  # for text labels in ggplot2
+library(ggrepel)
+library(googlesheets4)
 ## --- Creating folders for data manipulation ----
 data_private_derived <- "./data-private/derived/manipulation/"
 if (!fs::dir_exists(data_private_derived)) {fs::dir_create(data_private_derived)} # nolint
