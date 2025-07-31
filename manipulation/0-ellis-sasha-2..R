@@ -6,7 +6,7 @@
 # If you run this scipts first, you can rub chunks below in order you want
 ## ------- Preparation -------
 rm(list = ls(all.names = TRUE)) # Clear the memory of variables from previous run. This is not called by knitr, because it's above the first chunk.
-cat("\014") # Clear the console
+cat("\014") # Clear the console 
 # verify root location
 cat("Working directory: ", getwd()) # Must be set to Project Directory
 # Project Directory should be the root by default unless overwritten
@@ -140,6 +140,11 @@ dbWriteTable(books_of_ukraine, "ds_year", ds_year, overwrite = TRUE)
 
 ## ------ CSV saving ------
 write.csv(ds_year, "data-private/derived/manipulation/csv/ds_year.csv", row.names = FALSE)
+## ------- Sheet Saving -------
+sheet_url <- "https://docs.google.com/spreadsheets/d/1OOKeZnMFEAzHyr_M51zaOe76uv1yuqNmveHXSKpeqpo/edit?gid=2036395854#gid=2036395854"
+sheet_write(ds_year, ss = sheet_url, sheet = "ds_year")
+
+
 # ------------------------------- DS_LANGUAGE ----------------------------------------------------------------------------------------------------------------------
 ## ------ Data import ------
 ds <- import_selected_sheets(
@@ -192,6 +197,10 @@ saveRDS(ds_language, "data-private/derived/manipulation/ds_language.rds")
 dbWriteTable(books_of_ukraine, "ds_language", ds_language, overwrite = TRUE)
 ## ------ CSV saving ------
 write.csv(ds_language, "data-private/derived/manipulation/csv/ds_language.csv", row.names = FALSE)
+## ------- Sheet Saving -------
+sheet_url <- "https://docs.google.com/spreadsheets/d/1OOKeZnMFEAzHyr_M51zaOe76uv1yuqNmveHXSKpeqpo/edit?gid=2036395854#gid=2036395854"
+sheet_write(ds_language, ss = sheet_url, sheet = "ds_language")
+
 # ------------------------------- DS_GENRE---------------------------------------------------------------------------------------------------------------------
 ## ------ Data import_naclad------
 df3 <- import_selected_sheets(
@@ -404,6 +413,10 @@ saveRDS(ds_genre, "data-private/derived/manipulation/ds_genre.rds")
 dbWriteTable(books_of_ukraine, "ds_genre", ds_genre, overwrite = TRUE)
 ## ------ CSV saving ------
 write.csv(ds_genre, "data-private/derived/manipulation/csv/ds_genre.csv", row.names = FALSE)
+## ------- Sheet Saving -------
+sheet_url <- "https://docs.google.com/spreadsheets/d/1OOKeZnMFEAzHyr_M51zaOe76uv1yuqNmveHXSKpeqpo/edit?gid=2036395854#gid=2036395854"
+sheet_write(ds_genre, ss = sheet_url, sheet = "ds_genre")
+
 # ------------------------------- DS_PUBTYPE -------------------------------------------------------------------------------------------------------------
 ## ------ Data import ------
 df <- import_selected_sheets(
@@ -480,6 +493,10 @@ saveRDS(ds_pubtype, "data-private/derived/manipulation/ds_pubtype.rds")
 dbWriteTable(books_of_ukraine, "ds_pubtype", ds_pubtype, overwrite = TRUE)
 ## ------ CSV saving ------
 write.csv(ds_pubtype, "data-private/derived/manipulation/csv/ds_pubtype.csv", row.names = FALSE)
+## ------- Sheet Saving -------
+sheet_url <- "https://docs.google.com/spreadsheets/d/1OOKeZnMFEAzHyr_M51zaOe76uv1yuqNmveHXSKpeqpo/edit?gid=2036395854#gid=2036395854"
+sheet_write(ds_pubtype, ss = sheet_url, sheet = "ds_pubtype")
+
 # ------------------------------- DS_AREA --------------------------------
 ## ------ Data import ------
 ds <- import_selected_sheets(
@@ -552,6 +569,10 @@ saveRDS(ds_geography, "data-private/derived/manipulation/ds_geography.rds")
 dbWriteTable(books_of_ukraine, "ds_geography", ds_geography, overwrite = TRUE)
 ## ------ CSV saving ------
 write.csv(ds_geography, "data-private/derived/manipulation/csv/ds_geography.csv", row.names = FALSE)
+  ## ------- Sheet Saving -------
+  sheet_url <- "https://docs.google.com/spreadsheets/d/1OOKeZnMFEAzHyr_M51zaOe76uv1yuqNmveHXSKpeqpo/edit?gid=2036395854#gid=2036395854"
+  sheet_write(ds_area, ss = sheet_url, sheet = "ds_area")
+  
 # ------------------------------- DS_UKR_RUS --------------------------------
 ## ------ Data import ------
 df <- import_selected_sheets(
@@ -647,5 +668,89 @@ saveRDS(ds_ukr_rus, "data-private/derived/manipulation/ds_ukr_rus.rds")
 dbWriteTable(books_of_ukraine, "ds_ukr_rus", ds_ukr_rus, overwrite = TRUE)
 ## ------ CSV saving ------
 write.csv(ds_ukr_rus, "data-private/derived/manipulation/csv/ds_ukr_rus.csv", row.names = FALSE)
+## ------- Sheet Saving -------
+sheet_url <- "https://docs.google.com/spreadsheets/d/1OOKeZnMFEAzHyr_M51zaOe76uv1yuqNmveHXSKpeqpo/edit?gid=2036395854#gid=2036395854"
+sheet_write(ds_ukr_rus, ss = sheet_url, sheet = "ds_ukr_rus")
+
+# ------------------------------- DS_GEOGRAPHY_LOOKER --------------------------------
+
+## ------ Data import ------
+ds <- import_selected_sheets(
+  sheet_url = "https://docs.google.com/spreadsheets/d/1FOrg2bg3o-YrnnvGkRdax9sF5xOL-r08839ARJMAE9w/edit?gid=613842371#gid=613842371",
+  sheets_to_import = "території"
+)
+
+## ------ Data cleaning ------
+df <- ds %>%
+  slice(-1)
+
+year_cols <- grep("^x\\d{4}$", names(df), value = TRUE)
+
+df <- df %>%
+  mutate(across(x2007:x2010, ~as.numeric(gsub("\\s+", "", as.character(.))))) %>% 
+  slice(-27:-37) 
+
+df_long <- df %>%
+  pivot_longer(
+    cols = -x,           # pivot all columns except 'x'
+    names_to = "yr",
+    names_prefix = "x",
+    values_to = "value"
+  ) %>%
+  mutate(
+    yr = as.integer(yr),
+    measure = "title_count"
+  )
+
+ds_area_num <- df_long %>%
+  select(yr, measure, geography = x, value) %>%
+  arrange(yr) %>%
+  relocate(measure, .after = yr)
+
+terir_naklad <- import_selected_sheets(
+  sheet_url = "https://docs.google.com/spreadsheets/d/1FOrg2bg3o-YrnnvGkRdax9sF5xOL-r08839ARJMAE9w/edit?gid=613842371#gid=613842371",
+  sheets_to_import = "Терир. наклад"
+) %>%
+  select(-x2025:-x2027)
+
+terir_naklad_long <- terir_naklad %>%
+  pivot_longer(
+    cols = -x,              # all columns except "x" (area)
+    names_to = "yr",
+    names_prefix = "x",
+    values_to = "value"
+  ) %>%
+  mutate(yr = as.integer(yr))
+
+ds_area_cir <- terir_naklad_long %>%
+  select(yr, geography = x, value) %>%
+  arrange(yr) %>%
+  mutate(measure = "copy_count") %>%
+  relocate(measure, .after = yr)
+
+ds_geography_looker <- bind_rows(ds_area_num, ds_area_cir) %>%
+  arrange(yr, measure) %>%
+  select(yr, measure, geography, value) %>%
+  rename(values = value)
+
+## ------- rm() cleaning -------
+rm(ds_area_cir, terir_naklad_long, ds_area_num, df_long, df, year_cols, ds, terir_naklad)
+
+## -------- RDS saving  --------
+saveRDS(ds_geography_looker, "data-private/derived/manipulation/ds_geography_looker.rds")
+## ------- SQLite saving -------
+books_of_ukraine <- dbConnect(RSQLite::SQLite(), "data-private/derived/manipulation/SQLite/books-of-ukraine.sqlite")
+dbWriteTable(books_of_ukraine, "ds_geography_looker", ds_geography_looker, overwrite = TRUE)
+dbDisconnect(books_of_ukraine)
+## ------ CSV saving ------
+write.csv(ds_geography_looker, "data-private/derived/manipulation/csv/ds_geography_looker.csv", row.names = FALSE)
+## ------ SHEETS Saving ----- 
+sheet_url <- "https://docs.google.com/spreadsheets/d/1OOKeZnMFEAzHyr_M51zaOe76uv1yuqNmveHXSKpeqpo/edit?gid=2036395854#gid=2036395854"
+
+# Remove everything after the /edit in the URL:
+sheet_url <- "https://docs.google.com/spreadsheets/d/1OOKeZnMFEAzHyr_M51zaOe76uv1yuqNmveHXSKpeqpo/edit?gid=2036395854#gid=2036395854"
+
+# Add or replace the sheet ('ds_geography_looker'):
+sheet_write(ds_geography_looker, ss = sheet_url, sheet = "ds_geography_looker")
 # ---------------------------------------------------------------------- End of Script -------------------
 dbDisconnect(books_of_ukraine)
