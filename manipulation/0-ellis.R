@@ -561,8 +561,6 @@ ds_area_cir <- terir_naklad_long %>%
 
   ds_geography <- bind_rows(ds_area_num, ds_area_cir) %>%
   arrange(yr, measure)
-## ------- rm() cleaning -------
-rm(ds_area_cir, terir_naklad_long, ds_area_num, df_long, df, year_cols, ds_area_num,ds, terir_naklad)
 ## -------- RDS saving  --------
 saveRDS(ds_geography, "data-private/derived/manipulation/ds_geography.rds")
 ## ------- SQLite saving -------
@@ -571,7 +569,7 @@ dbWriteTable(books_of_ukraine, "ds_geography", ds_geography, overwrite = TRUE)
 write.csv(ds_geography, "data-private/derived/manipulation/csv/ds_geography.csv", row.names = FALSE)
   ## ------- Sheet Saving -------
   sheet_url <- "https://docs.google.com/spreadsheets/d/1OOKeZnMFEAzHyr_M51zaOe76uv1yuqNmveHXSKpeqpo/edit?gid=2036395854#gid=2036395854"
-  sheet_write(ds_area, ss = sheet_url, sheet = "ds_area")
+  sheet_write(ds_geography, ss = sheet_url, sheet = "ds_geography")
   
 # ------------------------------- DS_UKR_RUS --------------------------------
 ## ------ Data import ------
