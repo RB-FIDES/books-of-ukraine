@@ -143,3 +143,7 @@ analysis/analysis-templatization/README_files/libs/quarto-html/tippy.umd.min.js
 .Rhistory
 .Rhistory
 .Rhistory
+
+# ---- Google Sheets Authentication ----
+.secrets/
+.httr-oauth
