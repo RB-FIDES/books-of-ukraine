@@ -294,7 +294,9 @@ sample_language_trends <- function() {
     theme_minimal() +
     scale_color_manual(values = c("Українська" = "#005BBB", 
                                   "Російська" = "#DC143C",
-                                  "Англійська" = "#228B22"))
+                                  "Англійська" = "#228B22")) +
+    scale_x_continuous(breaks = seq(2005, 2023, 2)) +
+    scale_y_continuous(labels = scales::comma)
 }
 
 # Example 2: Regional analysis using enhanced geography data
@@ -315,10 +317,16 @@ sample_cross_analysis <- function() {
   # This would require joining datasets - demonstrating long format flexibility
   ds_ukr_rus_long %>%
     filter(measure == "title_count") %>%
-    ggplot(aes(x = yr, y = value, color = language)) +
-    geom_line(size = 1.2) +
-    geom_point(size = 2) +
+    ggplot(aes(x = yr, y = ukr + rus, fill = "Total")) +
+    geom_col(alpha = 0.7) +
+    geom_line(aes(y = ukr, color = "Ukrainian"), size = 1.2) +
+    geom_line(aes(y = rus, color = "Russian"), size = 1.2) +
     labs(title = "Ukrainian vs Russian Publications Over Time",
-         x = "Year", y = "Number of Titles", color = "Language") +
-    theme_minimal()
+         x = "Year", y = "Number of Titles", 
+         color = "Language", fill = "Total") +
+    theme_minimal() +
+    scale_color_manual(values = c("Ukrainian" = "#005BBB", "Russian" = "#DC143C")) +
+    scale_fill_manual(values = c("Total" = "gray80")) +
+    scale_x_continuous(breaks = seq(2005, 2023, 2)) +
+    scale_y_continuous(labels = scales::comma)
 }

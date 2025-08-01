@@ -194,7 +194,7 @@ saveRDS(ds_year_long, "data-private/derived/manipulation/ds_year_long.rds")
 dbWriteTable(books_of_ukraine, "ds_year_long", ds_year_long, overwrite = TRUE)
 
 ## ------ CSV saving ------
-write.csv(ds_year_long, "data-private/derived/manipulation/csv/ds_year_long.csv", row.names = FALSE)
+write.csv(ds_year_long, "data-private/derived/manipulation/CSV/ds_year_long.csv", row.names = FALSE)
 
 ## ------- Sheet Saving -------
 sheet_url <- "https://docs.google.com/spreadsheets/d/1OOKeZnMFEAzHyr_M51zaOe76uv1yuqNmveHXSKpeqpo/edit?gid=2036395854#gid=2036395854"
@@ -253,7 +253,7 @@ saveRDS(ds_language_long, "data-private/derived/manipulation/ds_language_long.rd
 dbWriteTable(books_of_ukraine, "ds_language_long", ds_language_long, overwrite = TRUE)
 
 ## ------ CSV saving ------
-write.csv(ds_language_long, "data-private/derived/manipulation/csv/ds_language_long.csv", row.names = FALSE)
+write.csv(ds_language_long, "data-private/derived/manipulation/CSV/ds_language_long.csv", row.names = FALSE)
 
 ## ------- Sheet Saving -------
 sheet_url <- "https://docs.google.com/spreadsheets/d/1OOKeZnMFEAzHyr_M51zaOe76uv1yuqNmveHXSKpeqpo/edit?gid=2036395854#gid=2036395854"
@@ -403,7 +403,7 @@ saveRDS(ds_genre_long, "data-private/derived/manipulation/ds_genre_long.rds")
 dbWriteTable(books_of_ukraine, "ds_genre_long", ds_genre_long, overwrite = TRUE)
 
 ## ------ CSV saving ------
-write.csv(ds_genre_long, "data-private/derived/manipulation/csv/ds_genre_long.csv", row.names = FALSE)
+write.csv(ds_genre_long, "data-private/derived/manipulation/CSV/ds_genre_long.csv", row.names = FALSE)
 
 ## ------- Sheet Saving -------
 sheet_url <- "https://docs.google.com/spreadsheets/d/1OOKeZnMFEAzHyr_M51zaOe76uv1yuqNmveHXSKpeqpo/edit?gid=2036395854#gid=2036395854"
@@ -490,7 +490,7 @@ saveRDS(ds_pubtype_long, "data-private/derived/manipulation/ds_pubtype_long.rds"
 dbWriteTable(books_of_ukraine, "ds_pubtype_long", ds_pubtype_long, overwrite = TRUE)
 
 ## ------ CSV saving ------
-write.csv(ds_pubtype_long, "data-private/derived/manipulation/csv/ds_pubtype_long.csv", row.names = FALSE)
+write.csv(ds_pubtype_long, "data-private/derived/manipulation/CSV/ds_pubtype_long.csv", row.names = FALSE)
 
 ## ------- Sheet Saving -------
 sheet_url <- "https://docs.google.com/spreadsheets/d/1OOKeZnMFEAzHyr_M51zaOe76uv1yuqNmveHXSKpeqpo/edit?gid=2036395854#gid=2036395854"
@@ -563,7 +563,7 @@ saveRDS(ds_geography_long, "data-private/derived/manipulation/ds_geography_long.
 dbWriteTable(books_of_ukraine, "ds_geography_long", ds_geography_long, overwrite = TRUE)
 
 ## ------ CSV saving ------
-write.csv(ds_geography_long, "data-private/derived/manipulation/csv/ds_geography_long.csv", row.names = FALSE)
+write.csv(ds_geography_long, "data-private/derived/manipulation/CSV/ds_geography_long.csv", row.names = FALSE)
 
 ## ------- Sheet Saving -------
 sheet_url <- "https://docs.google.com/spreadsheets/d/1OOKeZnMFEAzHyr_M51zaOe76uv1yuqNmveHXSKpeqpo/edit?gid=2036395854#gid=2036395854"
@@ -634,7 +634,7 @@ saveRDS(ds_ukr_rus_long, "data-private/derived/manipulation/ds_ukr_rus_long.rds"
 dbWriteTable(books_of_ukraine, "ds_ukr_rus_long", ds_ukr_rus_long, overwrite = TRUE)
 
 ## ------ CSV saving ------
-write.csv(ds_ukr_rus_long, "data-private/derived/manipulation/csv/ds_ukr_rus_long.csv", row.names = FALSE)
+write.csv(ds_ukr_rus_long, "data-private/derived/manipulation/CSV/ds_ukr_rus_long.csv", row.names = FALSE)
 
 ## ------- Sheet Saving -------
 sheet_url <- "https://docs.google.com/spreadsheets/d/1OOKeZnMFEAzHyr_M51zaOe76uv1yuqNmveHXSKpeqpo/edit?gid=2036395854#gid=2036395854"

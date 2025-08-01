@@ -144,20 +144,20 @@ ds_rail  <- tibble::tribble(
   
   # Core analysis scripts that depend on the manipulated data
   "run_r"     , "analysis/eda-1/eda-1.R",              # Main exploratory data analysis script
-  "run_r"     , "analysis/Data-visualization/Data-visual.R",  # Data visualization script
-  "run_r"     , "analysis/report-example-2/1-scribe.R", # Scribe script for analysis-ready data
+  # "run_r"     , "analysis/Data-visualization/Data-visual.R",  # Data visualization script
+  # "run_r"     , "analysis/report-example-2/1-scribe.R", # Scribe script for analysis-ready data
   
   # ===============================
   # PHASE 3: REPORTS & DOCUMENTATION
   # ===============================
   
   # Primary analysis reports (Quarto format)
-  "run_qmd"   , "analysis/eda-1/eda-1.qmd",            # Main exploratory data analysis report
-  "run_qmd"   , "analysis/Data-visualization/Data-visual.qmd", # Data visualization report
-  "run_qmd"   , "analysis/report-example-2/eda-1.qmd", # Analysis report example
+  "run_qmd"   , "analysis/eda-1/eda-1.qmd"            # Main exploratory data analysis report
+  # "run_qmd"   , "analysis/Data-visualization/Data-visual.qmd", # Data visualization report
+  # "run_qmd"   , "analysis/report-example-2/eda-1.qmd", # Analysis report example
   
   # Documentation and template examples
-  "run_qmd"   , "analysis/analysis-templatization/README.qmd" # Analysis documentation template
+  # "run_qmd"   , "analysis/analysis-templatization/README.qmd" # Analysis documentation template
   
   # ===============================
   # PHASE 4: ADVANCED REPORTS (OPTIONAL)
