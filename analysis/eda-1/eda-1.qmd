@@ -1,7 +1,7 @@
 ---
-title: "Exploratory Data Analysis 1"
-subtitle: "EDA 1"
-author: "TBD"
+title: "Exploratory Data Analysis: Books of Ukraine"
+subtitle: "Publishing Trends and Language Dynamics 2005-2023"
+author: "Research & Open Data"
 format:
   html:
     page-layout: full
@@ -10,7 +10,7 @@ format:
     code-fold: show
     theme: yeti
     highlight-style: breeze
-    colde-line-numbers: true
+    code-line-numbers: true
     self-contained: true
     embed-resources: true
 editor: visual
@@ -20,9 +20,25 @@ editor_options:
 
 # Mission
 
-This document introduces the reader to 
+This document explores publishing trends in Ukraine from 2005 to 2023, with particular attention to:
+
+-   **Temporal patterns** in book publishing volume and circulation
+-   **Language dynamics** between Ukrainian and Russian publications
+-   **Geographic distribution** of publishing activities across Ukrainian regions
+-   **Genre and publication type** patterns over time
+
+The analysis focuses on understanding regional differences and detecting interesting patterns and relationships between Russian language use in published books and the larger cultural, political, and economic context of Ukraine.
 
 # **Definition of Terms**
+
+Following the project ontology, this analysis works with several key measurement dimensions:
+
+-   **Publication Count** (`titles_count`) - Number of unique book titles published
+-   **Copy Count** (`copy_count`) - Total print run/circulation of publications
+-   **Geographic Regions** - Ukrainian oblasts grouped into macro-regions (North, South, East, West, Center)
+-   **Language Categories** - Ukrainian, Russian, English, and other languages
+-   **Genre Structure** - 13 thematic categories from political literature to children's books
+-   **Publication Types** - 14 categories from scientific to religious publications
 
 ```{r}
 #| code-summary: Reconciles working directory between execution modes
@@ -52,8 +68,8 @@ opts_chunk$set(
   tidy         = FALSE,
   # dpi        = 400, # dots per inch,
   out.width  = "960px", # pixels, this affects only the markdown, not the underlying png file.  The height will be scaled appropriately.
-  fig.width    = 6, # inches
-  fig.height   = 4, # inches
+  fig.width    = 10, # inches
+  fig.height   = 6, # inches
   fig.path     = 'figure-png-iso/' # where figures are stored
   
 )
@@ -118,74 +134,128 @@ read_chunk("./analysis/eda-1/eda-1.R") #This allows knitr to call
 
 This report operates with the following data objects:
 
+-   **`ds_year`** - Annual summary data for total publications and copies
+-   **`ds_language`** - Publication counts by language (Ukrainian, Russian, English, etc.)\
+-   **`ds_genre`** - Distribution across 13 genre categories
+-   **`ds_pubtype`** - Distribution across 14 publication types
+-   **`ds_geography`** - Regional distribution across Ukrainian oblasts
+-   **`ds_ukr_rus`** - Focused comparison between Ukrainian and Russian publications
 
 
 ```{r }
 #| label: load-data
-#| code-summary: Load data objects 
+#| code-summary: Load data objects from manipulation pipeline
 #| warning: false
 #| code-fold: true
 #| cache: true
-# set your root to Project Directory when developing chunks live in .qmd
-
 ```
 
-## Tweak 0
-
-```{r}
-#| label: tweak-data-0
-#| code-summary: Organize data into `ds0` form. Cleaning up names, optimize some data types.
-#| code-fold: true
-#| cache: true
-#| results: hide
-
-```
-
-## Inspect starting files
+## Data Availability Check
 
 ```{r}
 #| label: inspect-data-0
-#| code-summary: Inspect contents of the available data tables
+#| code-summary: Verify all required datasets are available
 #| code-fold: false
 #| eval: true
 #| cache: true
-ds_support %>% glimpse()
+
+# Display basic information about loaded datasets
+cat("Dataset dimensions:\n")
+cat("ds_year:", dim(ds_year)[1], "rows x", dim(ds_year)[2], "columns\n")
+cat("ds_language:", dim(ds_language)[1], "rows x", dim(ds_language)[2], "columns\n") 
+cat("ds_genre:", dim(ds_genre)[1], "rows x", dim(ds_genre)[2], "columns\n")
+cat("ds_pubtype:", dim(ds_pubtype)[1], "rows x", dim(ds_pubtype)[2], "columns\n")
+cat("ds_geography:", dim(ds_geography)[1], "rows x", dim(ds_geography)[2], "columns\n")
+cat("ds_ukr_rus:", dim(ds_ukr_rus)[1], "rows x", dim(ds_ukr_rus)[2], "columns\n")
+
+# Show year range
+cat("\nYear range in data:", min(ds_year$yr), "-", max(ds_year$yr), "\n")
+
+# Show measure types
+cat("\nMeasure types available:", paste(unique(ds_year$measure), collapse = ", "), "\n")
 ```
 
-```{r}
-#| label: inspect-data-1
-#| code-summary: Inspect contents of the available data tables
-#| code-fold: false
-#| eval: true
-#| cache: true
-```
+## Data Structure Overview
 
 ```{r}
-#| label: inspect-data-2
-#| code-summary: Inspect contents of the available data tables
-#| code-fold: false
-#| eval: true
-#| cache: true
-cat("QMD file has won")
-```
-
-## Tweak 1
-
-```{r}
-#| label: tweak-data-1
-#| code-summary: Organize data into `ds0` form. Cleaning up names, optimize some data types.
+#| label: tweak-data-0
+#| code-summary: Prepare enhanced datasets for analysis
 #| code-fold: true
 #| cache: true
 #| results: hide
-#| eval: false
 ```
 
-# Fundamentals
+### Annual Totals Structure
 
 ```{r}
-#| code-summary: Basic accounting 
-#| code-fold: true
-#| eval: true
-#| cache: true
-
+#| code-summary: Overview of annual summary data
+#| code-fold: false
+ds_year %>% 
+  head(10) %>%
+  knitr::kable(caption = "Sample of Annual Summary Data")
 ```
+
+### Language Data Structure
+
+```{r}
+#| code-summary: Overview of language distribution data
+#| code-fold: false
+ds_language %>% 
+  select(1:6) %>% # Show first few columns
+  head(6) %>%
+  knitr::kable(caption = "Sample of Language Distribution Data")
+```
+
+### Ukrainian-Russian Focus Data
+
+```{r}
+#| code-summary: Overview of Ukrainian-Russian comparison data
+#| code-fold: false  
+ds_ukr_rus %>%
+  head(8) %>%
+  knitr::kable(caption = "Ukrainian vs Russian Publications Data")
+```
+
+# Ready for Analysis
+
+The data is now loaded and prepared for human analysts to:
+
+1.  **Create temporal visualizations** showing publishing trends over time
+2.  **Analyze language dynamics** between Ukrainian and Russian publications\
+3.  **Explore geographic patterns** across Ukrainian regions
+4.  **Investigate genre and publication type trends**
+5.  **Correlate patterns** with historical events and policy changes
+
+## Available Helper Functions
+
+-   `create_time_series()` - Generate time series plots for any numeric variable
+-   `create_language_comparison()` - Compare Ukrainian vs Russian publication patterns
+-   `connect_to_db()` - Access SQLite database for custom queries
+
+## Next Steps for Human Analysts
+
+```{r}
+#| code-summary: Template for creating your first visualization
+#| eval: false
+#| code-fold: false
+
+# Example 1: Overall publishing trends
+ds_year %>%
+  filter(measure == "title_count") %>%
+  create_time_series("value", 
+                    title = "Total Book Publications in Ukraine",
+                    subtitle = "Annual count of new titles published",
+                    y_label = "Number of Titles")
+
+# Example 2: Language comparison over time  
+create_language_comparison(ds_language, "title_count")
+
+# Example 3: Custom analysis
+# Add your own code here for specific research questions
+```
+
+------------------------------------------------------------------------
+
+**Report generated:** `r Sys.time()`\
+**Analysis period:** `r target_window_opens` to `r target_window_closes`\
+**Data source:** Ukrainian publishing statistics via manipulation/0-ellis.R pipeline
