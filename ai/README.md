@@ -8,17 +8,33 @@ This folder provides a minimal, rigorous, and extensible framework for **human�
 
 | File | Function |
 |------|----------|
-| `teleology-mission-why.md` | Declares purpose and impact goals |
-| `ontology-glossary-what.md` | Defines key terms and constructs |
-| `epistemology-method-how.md` | Articulates valid methods and inference rules |
-| `axiology-values-should.md` | Surfaces ethical commitments and consequences |
-| `praxeology-action-who.md` | Clarifies actor roles and responsibilities |
-| `semiology-expression-which.md` | Maps how meaning is expressed across dialects |
-| `metaphysics-context-where.md` | Situates analysis in time, place, and institution |
-| `onboarding_ai.md` | Guides how AI should behave and support the human |
-| `validation-tests.md` | Specifies checks and epistemic safeguards |
+| `mission.md` | Declares purpose and impact goals |
+| `glossary.md` | Defines key terms and constructs |
+| `method.md` | Articulates valid methods and inference rules |
+| `semiology.md` | Maps how meaning is expressed across dialects |
+| `onboarding-ai.md` | Guides how AI should behave and support the human |
 | `logbook.md` | Captures all major analytic decisions over time |
-| `quick_start_template.qmd` | Launchpad for doing analytic work within FIDES (optional) |
+| `FIDES.md` | Validation tests and epistemic safeguards |
+| **🆕 `CACHE-manifest.md`** | **Automatically maintained documentation of all processed datasets** |
+| `CACHE-manifest-example.md` | Template for CACHE manifest structure |
+
+## 🆕 Automated Documentation System
+
+The **CACHE manifest** is now automatically maintained by the project management system:
+
+- **Purpose**: Comprehensive documentation of all datasets created by the data processing pipeline
+- **Automatic Updates**: The system detects when datasets change and updates documentation accordingly  
+- **Smart Integration**: Manifest updates are automatically logged in `logbook.md`
+- **AI Context**: Updated manifests immediately improve AI assistance quality
+
+### Managing the CACHE Manifest:
+```r
+# Check manifest status and update if needed
+check_cache_manifest()
+
+# Force update manifest documentation  
+update_cache_manifest()
+```
 
 ## 🔗 Project Pipeline
 
