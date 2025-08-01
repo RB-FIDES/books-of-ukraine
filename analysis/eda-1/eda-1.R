@@ -330,3 +330,129 @@ sample_cross_analysis <- function() {
     scale_x_continuous(breaks = seq(2005, 2023, 2)) +
     scale_y_continuous(labels = scales::comma)
 }
+
+
+# ----- q1 ---------------------------------------------------------
+# How me how many books was publised every year since 2005?
+
+g1 <- 
+  ds_year_long %>%
+  filter(measure == "title_count") %>%
+  group_by(yr) %>%
+  summarise(total_titles = sum(value, na.rm = TRUE), .groups = "drop") %>%
+  ggplot(aes(x = yr, y = total_titles)) +
+  geom_line(size = 1.2, color = "steelblue") +
+  geom_point(size = 2, color = "steelblue") +
+  labs(title = "Total Book Publications in Ukraine",
+       x = "Year", y = "Number of Titles") +
+  theme_minimal() +
+  scale_x_continuous(breaks = seq(2005, 2023, 2)) +
+  scale_y_continuous(labels = scales::comma)
+g1
+# now save the plot
+ggsave(
+  filename = paste0(prints_folder, "total_book_publications.png")
+  , plot = g1, width = 10, height = 6, dpi = 300
+)
+
+# number of books can mean different things: number of unique titles and total copies published.
+# Note: copy_count is in thousands, so we multiply by 1000 to get actual copies
+g2 <- 
+  ds_year_long %>%
+  filter(measure %in% c("title_count", "copy_count")) %>%
+  mutate(
+    # Convert copy_count from thousands to actual numbers
+    actual_value = case_when(
+      measure == "copy_count" ~ value * 1000,  # Convert from thousands to actual copies
+      TRUE ~ value
+    )
+  ) %>%
+  ggplot(aes(x = yr)) +
+  geom_line(data = . %>% filter(measure == "title_count"), 
+            aes(y = actual_value), color = "#005BBB", size = 1.2) +
+  geom_point(data = . %>% filter(measure == "title_count"), 
+             aes(y = actual_value), color = "#005BBB", size = 2) +
+  geom_line(data = . %>% filter(measure == "copy_count"), 
+            aes(y = actual_value / max(actual_value, na.rm = TRUE) * max(ds_year_long$value[ds_year_long$measure == "title_count"], na.rm = TRUE)), 
+            color = "#DC143C", size = 1.2) +
+  geom_point(data = . %>% filter(measure == "copy_count"), 
+             aes(y = actual_value / max(actual_value, na.rm = TRUE) * max(ds_year_long$value[ds_year_long$measure == "title_count"], na.rm = TRUE)), 
+             color = "#DC143C", size = 2) +
+  scale_y_continuous(
+    name = "Number of Titles",
+    labels = scales::comma,
+    sec.axis = sec_axis(~ . / max(ds_year_long$value[ds_year_long$measure == "title_count"], na.rm = TRUE) * 
+                        max(ds_year_long$value[ds_year_long$measure == "copy_count"] * 1000, na.rm = TRUE),
+                        name = "Number of Copies", 
+                        labels = scales::comma)
+  ) +
+  labs(title = "Book Publications in Ukraine: Titles vs Copies",
+       subtitle = "Note: Copy counts (red) are scaled on right axis, stored as thousands in data",
+       x = "Year") +
+  theme_minimal() +
+  scale_x_continuous(breaks = seq(2005, 2023, 2)) +
+  theme(
+    axis.title.y.left = element_text(color = "#005BBB"),
+    axis.title.y.right = element_text(color = "#DC143C")
+  )
+g2
+# save the plot
+ggsave(
+  filename = paste0(prints_folder, "book_publications_titles_vs_copies.png"),
+  plot = g2, width = 10, height = 6, dpi = 300
+)
+
+# now let's facet this plot (g2) by a large unit of geography (not oblast, but larger)
+# Create g2 faceted by regional groups (Північ, Південь, Схід, Захід, Центр)
+g2_regional <- 
+  ds_geography_enhanced %>%
+  filter(measure %in% c("title_count", "copy_count")) %>%
+  group_by(yr, measure, region_group) %>%
+  summarise(value = sum(value, na.rm = TRUE), .groups = "drop") %>%
+  mutate(
+    # Convert copy_count from thousands to actual numbers
+    actual_value = case_when(
+      measure == "copy_count" ~ value * 1000,  # Convert from thousands to actual copies
+      TRUE ~ value
+    )
+  ) %>%
+  # Calculate scaling factors for each region separately
+  group_by(region_group) %>%
+  mutate(
+    title_max = max(actual_value[measure == "title_count"], na.rm = TRUE),
+    copy_max = max(actual_value[measure == "copy_count"], na.rm = TRUE),
+    # Scale copy values to fit with title scale for dual axis
+    scaled_copy = case_when(
+      measure == "copy_count" ~ actual_value / copy_max * title_max,
+      TRUE ~ actual_value
+    )
+  ) %>%
+  ungroup() %>%
+  ggplot(aes(x = yr)) +
+  geom_line(data = . %>% filter(measure == "title_count"), 
+            aes(y = scaled_copy), color = "#005BBB", size = 1.0) +
+  geom_point(data = . %>% filter(measure == "title_count"), 
+             aes(y = scaled_copy), color = "#005BBB", size = 1.5) +
+  geom_line(data = . %>% filter(measure == "copy_count"), 
+            aes(y = scaled_copy), color = "#DC143C", size = 1.0) +
+  geom_point(data = . %>% filter(measure == "copy_count"), 
+             aes(y = scaled_copy), color = "#DC143C", size = 1.5) +
+  facet_wrap(~ region_group, scales = "free_y", ncol = 3) +
+  labs(title = "Book Publications by Region: Titles vs Copies",
+       subtitle = "Blue = Number of Titles, Red = Number of Copies (scaled independently per region)\nNote: Copy counts stored as thousands in data",
+       x = "Year",
+       y = "Scaled Values") +
+  theme_minimal() +
+  scale_x_continuous(breaks = seq(2005, 2023, 4)) +
+  theme(
+    strip.text = element_text(face = "bold"),
+    axis.text.x = element_text(angle = 45, hjust = 1)
+  )
+g2_regional
+
+# save the plot
+ggsave(
+  filename = paste0(prints_folder, "book_publications_by_region_faceted.png"),
+  plot = g2_regional, width = 12, height = 8, dpi = 300
+)
+
