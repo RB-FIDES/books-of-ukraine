@@ -1,0 +1,123 @@
+---
+title: "Book Publishing Trends in Ukraine"
+subtitle: "Exploratory Data Analysis"
+author: "Books of Ukraine Research"
+format: 
+  revealjs:
+    theme: simple
+    slide-number: true
+    chalkboard: true
+    preview-links: auto
+    logo: "../../libs/images/ukraine-flag.png"
+    footer: "Ukrainian Book Publishing Trends | 2005-2023"
+editor: visual
+---
+
+```{r}
+#| label: setup
+#| include: false
+
+# Load required libraries
+library(magrittr)
+library(ggplot2)
+library(dplyr)
+library(scales)
+library(knitr)
+
+# Set chunk options
+knitr::opts_chunk$set(
+  echo = FALSE,
+  warning = FALSE,
+  message = FALSE,
+  fig.width = 10,
+  fig.height = 6,
+  fig.align = "center",
+  dpi = 300
+)
+
+# Set working directory to project root
+setwd("../..")
+
+# Source the analysis script to load data and create plots
+source("analysis/eda-1/eda-1.R")
+```
+
+## Introduction {background-color="#005BBB"}
+
+::: {.incremental}
+- **Research Focus**: Ukrainian book publishing trends from 2005-2023
+- **Geographic Scope**: Ukraine and its regions
+- **Key Questions**: 
+  - How has book production changed over time?
+  - What are the patterns in titles vs. copies published?
+  - How do regional trends differ?
+:::
+
+::: {.notes}
+This presentation explores Ukrainian book publishing data spanning nearly two decades, from 2005 to 2023. We examine both the number of unique titles published and the total copies produced, providing insights into the publishing industry's evolution during this period.
+:::
+
+---
+
+## Data Overview {background-color="#FFD700"}
+
+::: {.columns}
+::: {.column width="50%"}
+**Dataset Characteristics:**
+
+- **Time Period**: 2005-2023
+- **Geographic Coverage**: All Ukrainian regions
+- **Languages**: Ukrainian, Russian, English, others
+- **Measures**: Title count & Copy count
+:::
+
+::: {.column width="50%"}
+**Key Variables:**
+
+- Publication year
+- Geographic region
+- Language of publication
+- Genre categories
+- Publication type
+- Copies produced (in thousands)
+:::
+:::
+
+::: {.notes}
+Our analysis is based on comprehensive data covering Ukrainian book publishing across multiple dimensions. The data includes information on publication counts, circulation numbers, geographic distribution, and linguistic characteristics of published works.
+:::
+
+---
+
+## Basic Counts: Titles vs Copies Over Time {background-color="#87CEEB"}
+
+```{r}
+#| label: basic-counts
+#| fig-cap: "Book Publications in Ukraine: Number of Titles vs Total Copies (2005-2023)"
+
+# Display the g2 plot from eda-1.R
+print(g2)
+```
+
+::: {.notes}
+This chart shows the dual trends in Ukrainian book publishing. The blue line represents the number of unique titles published each year, while the red line shows the total number of copies produced. Note that copy counts are stored in thousands in our data and are scaled on the right axis for comparison purposes.
+:::
+
+---
+
+## Key Insights {background-color="#98FB98"}
+
+::: {.incremental}
+- **Title Production**: Generally stable with some fluctuations
+- **Copy Production**: Shows more variation, indicating changes in print runs
+- **Market Dynamics**: The relationship between titles and copies reveals publishing strategies
+- **Temporal Patterns**: Notable changes around major political and economic events
+:::
+
+::: {.fragment}
+**Next Steps**: Regional analysis and language-specific trends
+:::
+
+::: {.notes}
+The data reveals interesting patterns in Ukrainian publishing. While the number of unique titles has remained relatively stable, the total copy production shows more dramatic variations, suggesting changes in market demand, economic conditions, or publishing strategies over this period.
+:::
