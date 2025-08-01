@@ -56,12 +56,12 @@ target_window <- c(target_window_opens, target_window_closes)
 # Custom function to check if data files exist
 check_data_availability <- function() {
   files_to_check <- c(
-    paste0(data_manipulation_path, "ds_year.rds"),
-    paste0(data_manipulation_path, "ds_language.rds"),
-    paste0(data_manipulation_path, "ds_genre.rds"),
-    paste0(data_manipulation_path, "ds_pubtype.rds"),
-    paste0(data_manipulation_path, "ds_geography.rds"),
-    paste0(data_manipulation_path, "ds_ukr_rus.rds")
+    paste0(data_manipulation_path, "ds_year_long.rds"),
+    paste0(data_manipulation_path, "ds_language_long.rds"),
+    paste0(data_manipulation_path, "ds_genre_long.rds"),
+    paste0(data_manipulation_path, "ds_pubtype_long.rds"),
+    paste0(data_manipulation_path, "ds_geography_long.rds"),
+    paste0(data_manipulation_path, "ds_ukr_rus_long.rds")
   )
   
   missing_files <- files_to_check[!file.exists(files_to_check)]
@@ -84,12 +84,12 @@ load_books_data <- function() {
   }
   
   list(
-    ds_year = readRDS(paste0(data_manipulation_path, "ds_year.rds")),
-    ds_language = readRDS(paste0(data_manipulation_path, "ds_language.rds")),
-    ds_genre = readRDS(paste0(data_manipulation_path, "ds_genre.rds")),
-    ds_pubtype = readRDS(paste0(data_manipulation_path, "ds_pubtype.rds")),
-    ds_geography = readRDS(paste0(data_manipulation_path, "ds_geography.rds")),
-    ds_ukr_rus = readRDS(paste0(data_manipulation_path, "ds_ukr_rus.rds"))
+    ds_year_long = readRDS(paste0(data_manipulation_path, "ds_year_long.rds")),
+    ds_language_long = readRDS(paste0(data_manipulation_path, "ds_language_long.rds")),
+    ds_genre_long = readRDS(paste0(data_manipulation_path, "ds_genre_long.rds")),
+    ds_pubtype_long = readRDS(paste0(data_manipulation_path, "ds_pubtype_long.rds")),
+    ds_geography_long = readRDS(paste0(data_manipulation_path, "ds_geography_long.rds")),
+    ds_ukr_rus_long = readRDS(paste0(data_manipulation_path, "ds_ukr_rus_long.rds"))
   )
 }
 
@@ -108,56 +108,77 @@ connect_to_db <- function() {
 books_data <- load_books_data()
 
 # Extract individual datasets for easier access
-ds_year <- books_data$ds_year
-ds_language <- books_data$ds_language
-ds_genre <- books_data$ds_genre
-ds_pubtype <- books_data$ds_pubtype
-ds_geography <- books_data$ds_geography
-ds_ukr_rus <- books_data$ds_ukr_rus
+ds_year_long <- books_data$ds_year_long
+ds_language_long <- books_data$ds_language_long
+ds_genre_long <- books_data$ds_genre_long
+ds_pubtype_long <- books_data$ds_pubtype_long
+ds_geography_long <- books_data$ds_geography_long
+ds_ukr_rus_long <- books_data$ds_ukr_rus_long
 
 # Optional: Connect to SQLite database for SQL queries
 # books_db <- connect_to_db()
 
 # ---- inspect-data-0 -----------------------------------------------------------
 # Basic inspection of all datasets
+cat("Dataset dimensions (long format):\n")
+cat("ds_year_long:", dim(ds_year_long)[1], "rows x", dim(ds_year_long)[2], "columns\n")
+cat("ds_language_long:", dim(ds_language_long)[1], "rows x", dim(ds_language_long)[2], "columns\n") 
+cat("ds_genre_long:", dim(ds_genre_long)[1], "rows x", dim(ds_genre_long)[2], "columns\n")
+cat("ds_pubtype_long:", dim(ds_pubtype_long)[1], "rows x", dim(ds_pubtype_long)[2], "columns\n")
+cat("ds_geography_long:", dim(ds_geography_long)[1], "rows x", dim(ds_geography_long)[2], "columns\n")
+cat("ds_ukr_rus_long:", dim(ds_ukr_rus_long)[1], "rows x", dim(ds_ukr_rus_long)[2], "columns\n")
+
+# Show year range from long format data
+cat("\nYear range in data:", min(ds_year_long$yr), "-", max(ds_year_long$yr), "\n")
+
+# Show measure types available in long format
+cat("\nMeasure types available:", paste(unique(ds_year_long$measure), collapse = ", "), "\n")
+
+# Show structure of long format datasets
+cat("\nStructure of long format datasets:\n")
+str(ds_year_long)
+cat("\nSample of ds_language_long:\n")
+head(ds_language_long, 10)
 
 # ---- tweak-data-0 ------------------------------------------------------------
 # Prepare data for analysis - add regional groupings for geography
-ds_geography_enhanced <- ds_geography %>%
+# Note: Geography data is now in long format, so we need to work with it differently
+ds_geography_enhanced <- ds_geography_long %>%
   mutate(
     region_group = case_when(
       # Північ (North)
-      "м. Київ" > 0 | "Київська область" > 0 | "Чернігівська область" > 0 | 
-      "Сумська область" > 0 | "Житомирська область" > 0 ~ "Північ",
+      geography %in% c("м. Київ", "Київська область", "Чернігівська область", 
+                      "Сумська область", "Житомирська область") ~ "Північ",
       
       # Південь (South) 
-      "Одеська область" > 0 | "Миколаївська область" > 0 | "Херсонська область" > 0 |
-      "Запорізька область" > 0 | "Автономна Республіка Крим" > 0 | "м. Севастополь" > 0 ~ "Південь",
+      geography %in% c("Одеська область", "Миколаївська область", "Херсонська область",
+                      "Запорізька область", "Автономна Республіка Крим", "м. Севастополь") ~ "Південь",
       
       # Схід (East)
-      "Харківська область" > 0 | "Донецька область" > 0 | "Луганська область" > 0 |
-      "Дніпропетровська область" > 0 ~ "Схід",
+      geography %in% c("Харківська область", "Донецька область", "Луганська область",
+                      "Дніпропетровська область") ~ "Схід",
       
       # Захід (West)
-      "Львівська область" > 0 | "Івано-Франківська область" > 0 | "Тернопільська область" > 0 |
-      "Закарпатська область" > 0 | "Волинська область" > 0 | "Рівненська область" > 0 |
-      "Хмельницька область" > 0 | "Чернівецька область" > 0 ~ "Захід",
+      geography %in% c("Львівська область", "Івано-Франківська область", "Тернопільська область",
+                      "Закарпатська область", "Волинська область", "Рівненська область",
+                      "Хмельницька область", "Чернівецька область") ~ "Захід",
       
       # Центр (Center)
-      "Вінницька область" > 0 | "Полтавська область" > 0 | "Кіровоградська область" > 0 |
-      "Черкаська область" > 0 ~ "Центр",
+      geography %in% c("Вінницька область", "Полтавська область", "Кіровоградська область",
+                      "Черкаська область") ~ "Центр",
       
       TRUE ~ "Інше"
     )
   )
 
 # Create summary tables for easier graphing
-ds_year_summary <- ds_year %>%
+ds_year_summary <- ds_year_long %>%
   arrange(yr, measure)
 
-ds_language_summary <- ds_language %>%
-  select(yr, measure, Українська, Російська, Англійська, `Інші мови`) %>%
-  arrange(yr, measure)
+ds_language_summary <- ds_language_long %>%
+  # Filter for main languages of interest
+  filter(language %in% c("Українська", "Російська", "Англійська")) %>%
+  arrange(yr, measure, language)
 
 # ---- analysis-functions ------------------------------------------------------
 # Function to create time series plot
@@ -186,10 +207,8 @@ create_time_series <- function(data, value_col, title, subtitle = NULL, y_label 
 # Function to create language comparison plot
 create_language_comparison <- function(data, measure_type = "title_count") {
   data %>%
-    filter(measure == measure_type) %>%
-    select(yr, Українська, Російська) %>%
-    pivot_longer(cols = c(Українська, Російська), names_to = "Language", values_to = "Count") %>%
-    ggplot(aes(x = yr, y = Count, color = Language)) +
+    filter(measure == measure_type, language %in% c("Українська", "Російська")) %>%
+    ggplot(aes(x = yr, y = value, color = language)) +
     geom_line(size = 1.2) +
     geom_point(size = 2) +
     labs(
@@ -204,6 +223,102 @@ create_language_comparison <- function(data, measure_type = "title_count") {
     scale_y_continuous(labels = scales::comma)
 }
 
+# Function to create regional comparison plot (designed for long format)
+create_regional_comparison <- function(data, measure_type = "title_count") {
+  data %>%
+    filter(measure == measure_type) %>%
+    group_by(yr, region_group) %>%
+    summarise(total = sum(value, na.rm = TRUE), .groups = "drop") %>%
+    ggplot(aes(x = yr, y = total, color = region_group)) +
+    geom_line(size = 1.2) +
+    geom_point(size = 2) +
+    labs(
+      title = if(measure_type == "title_count") "Регіональні тенденції публікацій" else "Регіональні тенденції накладу",
+      x = "Рік",
+      y = if(measure_type == "title_count") "Кількість видань" else "Кількість копій",
+      color = "Регіон"
+    ) +
+    theme_minimal() +
+    scale_x_continuous(breaks = seq(2005, 2023, 2)) +
+    scale_y_continuous(labels = scales::comma) +
+    theme(legend.position = "bottom")
+}
+
+# Function to analyze long format data by any categorical variable
+analyze_category_trends <- function(data, category_col, measure_type = "title_count", top_n = 5) {
+  data %>%
+    filter(measure == measure_type) %>%
+    group_by(yr, !!sym(category_col)) %>%
+    summarise(total = sum(value, na.rm = TRUE), .groups = "drop") %>%
+    group_by(!!sym(category_col)) %>%
+    summarise(overall_total = sum(total, na.rm = TRUE), .groups = "drop") %>%
+    slice_max(overall_total, n = top_n) %>%
+    pull(!!sym(category_col)) -> top_categories
+  
+  data %>%
+    filter(measure == measure_type, !!sym(category_col) %in% top_categories) %>%
+    group_by(yr, !!sym(category_col)) %>%
+    summarise(total = sum(value, na.rm = TRUE), .groups = "drop") %>%
+    ggplot(aes(x = yr, y = total, color = !!sym(category_col))) +
+    geom_line(size = 1.2) +
+    geom_point(size = 2) +
+    labs(
+      title = paste("Top", top_n, str_to_title(category_col), "Trends"),
+      x = "Рік",
+      y = if(measure_type == "title_count") "Кількість видань" else "Кількість копій",
+      color = str_to_title(category_col)
+    ) +
+    theme_minimal() +
+    scale_x_continuous(breaks = seq(2005, 2023, 2)) +
+    scale_y_continuous(labels = scales::comma) +
+    theme(legend.position = "bottom")
+}
+
 # ---- analysis-below -----------------------------------------------------------
 # Ready for human analysts to create visualizations and conduct analysis
 # All data is loaded and prepared for exploration
+
+# ---- sample-analysis ----------------------------------------------------------
+# Sample analysis demonstrating long format advantages
+
+# Example 1: Multi-language trend analysis
+sample_language_trends <- function() {
+  ds_language_long %>%
+    filter(measure == "title_count", 
+           language %in% c("Українська", "Російська", "Англійська")) %>%
+    ggplot(aes(x = yr, y = value, color = language)) +
+    geom_line(size = 1.2) +
+    geom_point(size = 2) +
+    labs(title = "Publishing Trends by Language",
+         x = "Year", y = "Number of Titles", color = "Language") +
+    theme_minimal() +
+    scale_color_manual(values = c("Українська" = "#005BBB", 
+                                  "Російська" = "#DC143C",
+                                  "Англійська" = "#228B22"))
+}
+
+# Example 2: Regional analysis using enhanced geography data
+sample_regional_analysis <- function() {
+  ds_geography_enhanced %>%
+    filter(measure == "title_count") %>%
+    group_by(yr, region_group) %>%
+    summarise(total_titles = sum(value, na.rm = TRUE), .groups = "drop") %>%
+    ggplot(aes(x = yr, y = total_titles, fill = region_group)) +
+    geom_area(position = "stack", alpha = 0.7) +
+    labs(title = "Regional Distribution of Publications",
+         x = "Year", y = "Number of Titles", fill = "Region") +
+    theme_minimal()
+}
+
+# Example 3: Cross-dimensional analysis (language by region)  
+sample_cross_analysis <- function() {
+  # This would require joining datasets - demonstrating long format flexibility
+  ds_ukr_rus_long %>%
+    filter(measure == "title_count") %>%
+    ggplot(aes(x = yr, y = value, color = language)) +
+    geom_line(size = 1.2) +
+    geom_point(size = 2) +
+    labs(title = "Ukrainian vs Russian Publications Over Time",
+         x = "Year", y = "Number of Titles", color = "Language") +
+    theme_minimal()
+}

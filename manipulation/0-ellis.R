@@ -65,6 +65,52 @@ import_selected_sheets <- function(sheet_url, sheets_to_import, clean_names = TR
   return(combined_table)
 }
 
+# Helper function for robust numeric conversion
+safe_numeric_convert <- function(x) {
+  # Handle various formats and clean the data
+  cleaned <- as.character(x)
+  # Remove all non-numeric characters except dots, minus signs, and spaces
+  cleaned <- gsub("[^0-9.\\s-]", "", cleaned)
+  # Remove extra spaces
+  cleaned <- gsub("\\s+", "", cleaned)
+  # Replace empty strings, lone dashes, and various null representations with zero
+  cleaned[cleaned == "" | cleaned == "-" | cleaned == "NULL" | 
+          cleaned == "NA" | cleaned == "n/a" | is.na(cleaned)] <- "0"
+  # Handle cases where we might have multiple dots
+  cleaned <- gsub("\\.{2,}", ".", cleaned)
+  # Convert to numeric
+  result <- suppressWarnings(as.numeric(cleaned))
+  # Replace any remaining NAs with 0
+  result[is.na(result)] <- 0
+  return(result)
+}
+
+# Safe pivot function that ensures data consistency
+safe_pivot_longer <- function(data, cols, names_to = "yr", values_to = "value", names_prefix = "", ...) {
+  # Ensure numeric columns are truly numeric
+  if (is.character(cols) && length(cols) > 0) {
+    # If cols is character vector, use them directly
+    numeric_cols <- cols
+  } else {
+    # If cols is a selection expression, evaluate it
+    numeric_cols <- names(dplyr::select(data, {{cols}}))
+  }
+  
+  # Ensure all selected columns are numeric
+  data_prepared <- data %>%
+    dplyr::mutate(dplyr::across(dplyr::all_of(numeric_cols), safe_numeric_convert))
+  
+  # Perform the pivot
+  data_prepared %>%
+    tidyr::pivot_longer(
+      cols = dplyr::all_of(numeric_cols),
+      names_to = names_to,
+      values_to = values_to,
+      names_prefix = names_prefix,
+      ...
+    )
+}
+
 ## -------Load libraries-------
 library(magrittr)
 library(ggplot2)   # graphs
@@ -227,12 +273,15 @@ df3$x2010[10] <- 1045.6
 genre_col <- names(df3)[1]
 
 df3_fixed <- df3 %>%
-  mutate(across(-all_of(genre_col), ~ as.numeric(as.character(.))))
+  mutate(across(-all_of(genre_col), safe_numeric_convert))
 
-df3_long <- df3_fixed %>%
-  pivot_longer(
-    cols = -all_of(genre_col),
-    names_to = "yr",
+# Use safe pivot function
+year_columns <- names(df3_fixed)[names(df3_fixed) != genre_col]
+
+df3_long <- safe_pivot_longer(
+  df3_fixed,
+  cols = year_columns,
+  names_to = "yr",
     values_to = "value"
   ) %>%
   mutate(
@@ -410,7 +459,7 @@ df_num <- import_selected_sheets(
 year_cols <- grep("^x\\d{4}$", names(df_num), value = TRUE)
 
 df_num_cleaned <- df_num %>%
-  mutate(across(all_of(year_cols), ~as.numeric(gsub("\\s+", "", as.character(.)))))
+  mutate(across(all_of(year_cols), safe_numeric_convert))
 
 df_num_long <- df_num_cleaned %>%
   pivot_longer(
@@ -461,7 +510,7 @@ df_titles <- ds_titles %>%
 year_cols <- grep("^x\\d{4}$", names(df_titles), value = TRUE)
 
 df_titles <- df_titles %>%
-  mutate(across(x2007:x2010, ~as.numeric(gsub("\\s+", "", as.character(.))))) %>% 
+  mutate(across(all_of(year_cols), safe_numeric_convert)) %>% 
   slice(-27:-37)  # Remove summary rows
 
 df_titles_long <- df_titles %>%
@@ -592,7 +641,7 @@ sheet_url <- "https://docs.google.com/spreadsheets/d/1OOKeZnMFEAzHyr_M51zaOe76uv
 sheet_write(ds_ukr_rus_long, ss = sheet_url, sheet = "ds_ukr_rus_long")
 
 # ---------------------------------------------------------------------- End of Script -------------------
-cat("✅ All CACHE tables created in long format successfully!\n")
+cat("✅ All CACHE tables created successfully!\n")
 cat("Tables created:\n")
 cat("- ds_year_long: yr + measure + value\n")
 cat("- ds_language_long: yr + measure + language + value\n") 

@@ -135,7 +135,8 @@ ds_rail  <- tibble::tribble(
   # ===============================
   
   # Main ETL (Extract-Transform-Load) from Google Sheets to local formats
-  "run_r"     , "manipulation/0-ellis.R",              # Core data import and prep - creates all datasets
+  "run_r"     , "manipulation/0-ellis.R",              # Core data import and prep - creates long format datasets
+  "run_r"     , "manipulation/0-ellis-wide.R",         # Creates wide format datasets for additional analysis
   
   # ===============================
   # PHASE 2: ANALYSIS SCRIPTS

@@ -132,14 +132,16 @@ read_chunk("./analysis/eda-1/eda-1.R") #This allows knitr to call
 
 # Data
 
-This report operates with the following data objects:
+This report operates with the following data objects in **long format**:
 
--   **`ds_year`** - Annual summary data for total publications and copies
--   **`ds_language`** - Publication counts by language (Ukrainian, Russian, English, etc.)\
--   **`ds_genre`** - Distribution across 13 genre categories
--   **`ds_pubtype`** - Distribution across 14 publication types
--   **`ds_geography`** - Regional distribution across Ukrainian oblasts
--   **`ds_ukr_rus`** - Focused comparison between Ukrainian and Russian publications
+-   **`ds_year_long`** - Annual summary data in long format with measures for total publications and copies
+-   **`ds_language_long`** - Publication counts by language in long format (Ukrainian, Russian, English, etc.)\
+-   **`ds_genre_long`** - Distribution across 13 genre categories in long format
+-   **`ds_pubtype_long`** - Distribution across 14 publication types in long format
+-   **`ds_geography_long`** - Regional distribution across Ukrainian oblasts in long format
+-   **`ds_ukr_rus_long`** - Focused comparison between Ukrainian and Russian publications in long format
+
+All datasets follow the consistent long format structure with columns: `yr` (year), `measure` (metric type), `value` (count), and category-specific columns (e.g., `language`, `geography`, `genre`).
 
 
 ```{r }
@@ -159,20 +161,20 @@ This report operates with the following data objects:
 #| eval: true
 #| cache: true
 
-# Display basic information about loaded datasets
-cat("Dataset dimensions:\n")
-cat("ds_year:", dim(ds_year)[1], "rows x", dim(ds_year)[2], "columns\n")
-cat("ds_language:", dim(ds_language)[1], "rows x", dim(ds_language)[2], "columns\n") 
-cat("ds_genre:", dim(ds_genre)[1], "rows x", dim(ds_genre)[2], "columns\n")
-cat("ds_pubtype:", dim(ds_pubtype)[1], "rows x", dim(ds_pubtype)[2], "columns\n")
-cat("ds_geography:", dim(ds_geography)[1], "rows x", dim(ds_geography)[2], "columns\n")
-cat("ds_ukr_rus:", dim(ds_ukr_rus)[1], "rows x", dim(ds_ukr_rus)[2], "columns\n")
+# Display basic information about loaded datasets (long format)
+cat("Dataset dimensions (long format):\n")
+cat("ds_year_long:", dim(ds_year_long)[1], "rows x", dim(ds_year_long)[2], "columns\n")
+cat("ds_language_long:", dim(ds_language_long)[1], "rows x", dim(ds_language_long)[2], "columns\n") 
+cat("ds_genre_long:", dim(ds_genre_long)[1], "rows x", dim(ds_genre_long)[2], "columns\n")
+cat("ds_pubtype_long:", dim(ds_pubtype_long)[1], "rows x", dim(ds_pubtype_long)[2], "columns\n")
+cat("ds_geography_long:", dim(ds_geography_long)[1], "rows x", dim(ds_geography_long)[2], "columns\n")
+cat("ds_ukr_rus_long:", dim(ds_ukr_rus_long)[1], "rows x", dim(ds_ukr_rus_long)[2], "columns\n")
 
 # Show year range
-cat("\nYear range in data:", min(ds_year$yr), "-", max(ds_year$yr), "\n")
+cat("\nYear range in data:", min(ds_year_long$yr), "-", max(ds_year_long$yr), "\n")
 
 # Show measure types
-cat("\nMeasure types available:", paste(unique(ds_year$measure), collapse = ", "), "\n")
+cat("\nMeasure types available:", paste(unique(ds_year_long$measure), collapse = ", "), "\n")
 ```
 
 ## Data Structure Overview
@@ -185,73 +187,106 @@ cat("\nMeasure types available:", paste(unique(ds_year$measure), collapse = ", "
 #| results: hide
 ```
 
-### Annual Totals Structure
+### Annual Totals Structure (Long Format)
 
 ```{r}
-#| code-summary: Overview of annual summary data
+#| code-summary: Overview of annual summary data in long format
 #| code-fold: false
-ds_year %>% 
+ds_year_long %>% 
   head(10) %>%
-  knitr::kable(caption = "Sample of Annual Summary Data")
+  knitr::kable(caption = "Sample of Annual Summary Data (Long Format)")
 ```
 
-### Language Data Structure
+### Language Data Structure (Long Format)
 
 ```{r}
-#| code-summary: Overview of language distribution data
+#| code-summary: Overview of language distribution data in long format
 #| code-fold: false
-ds_language %>% 
-  select(1:6) %>% # Show first few columns
-  head(6) %>%
-  knitr::kable(caption = "Sample of Language Distribution Data")
+ds_language_long %>% 
+  head(10) %>%
+  knitr::kable(caption = "Sample of Language Distribution Data (Long Format)")
 ```
 
-### Ukrainian-Russian Focus Data
+### Ukrainian-Russian Focus Data (Long Format)
 
 ```{r}
-#| code-summary: Overview of Ukrainian-Russian comparison data
+#| code-summary: Overview of Ukrainian-Russian comparison data in long format
 #| code-fold: false  
-ds_ukr_rus %>%
-  head(8) %>%
-  knitr::kable(caption = "Ukrainian vs Russian Publications Data")
+ds_ukr_rus_long %>%
+  head(10) %>%
+  knitr::kable(caption = "Ukrainian vs Russian Publications Data (Long Format)")
 ```
 
 # Ready for Analysis
 
-The data is now loaded and prepared for human analysts to:
+The data is now loaded in **long format** and prepared for human analysts to:
 
-1.  **Create temporal visualizations** showing publishing trends over time
-2.  **Analyze language dynamics** between Ukrainian and Russian publications\
-3.  **Explore geographic patterns** across Ukrainian regions
-4.  **Investigate genre and publication type trends**
-5.  **Correlate patterns** with historical events and policy changes
+1.  **Create temporal visualizations** showing publishing trends over time using consistent long format structure
+2.  **Analyze language dynamics** between Ukrainian and Russian publications with `ds_language_long`\
+3.  **Explore geographic patterns** across Ukrainian regions using `ds_geography_enhanced` with regional groupings
+4.  **Investigate genre and publication type trends** using `ds_genre_long` and `ds_pubtype_long`
+5.  **Correlate patterns** with historical events and policy changes across all dimensions
 
-## Available Helper Functions
+## Available Helper Functions (Long Format Optimized)
 
--   `create_time_series()` - Generate time series plots for any numeric variable
--   `create_language_comparison()` - Compare Ukrainian vs Russian publication patterns
+-   `create_time_series()` - Generate time series plots for any numeric variable from long format data
+-   `create_language_comparison()` - Compare Ukrainian vs Russian publication patterns using `ds_language_long`
+-   `create_regional_comparison()` - Compare trends across Ukrainian regions using `ds_geography_enhanced`
+-   `analyze_category_trends()` - Flexible function to analyze any categorical variable from long format data
 -   `connect_to_db()` - Access SQLite database for custom queries
+
+## Advantages of Long Format
+
+The long format structure provides several analytical advantages:
+
+- **Consistent filtering**: All datasets use `measure` column to distinguish between `title_count` and `copy_count`
+- **Easy aggregation**: Group by categorical variables and sum `value` for custom analysis
+- **Flexible visualization**: Compatible with ggplot2 aesthetic mappings for complex multi-dimensional plots
+- **Scalable analysis**: Same analytical patterns work across all categorical dimensions
 
 ## Next Steps for Human Analysts
 
 ```{r}
-#| code-summary: Template for creating your first visualization
+#| code-summary: Template for creating your first visualization with long format data
 #| eval: false
 #| code-fold: false
 
-# Example 1: Overall publishing trends
-ds_year %>%
+# Example 1: Overall publishing trends using long format
+ds_year_long %>%
   filter(measure == "title_count") %>%
   create_time_series("value", 
                     title = "Total Book Publications in Ukraine",
                     subtitle = "Annual count of new titles published",
                     y_label = "Number of Titles")
 
-# Example 2: Language comparison over time  
-create_language_comparison(ds_language, "title_count")
+# Example 2: Language comparison over time using long format 
+create_language_comparison(ds_language_long, "title_count")
 
-# Example 3: Custom analysis
+# Example 3: Regional analysis using long format
+ds_geography_enhanced %>%
+  filter(measure == "title_count") %>%
+  group_by(yr, region_group) %>%
+  summarise(total_titles = sum(value, na.rm = TRUE), .groups = "drop") %>%
+  ggplot(aes(x = yr, y = total_titles, color = region_group)) +
+  geom_line(size = 1.2) +
+  geom_point(size = 2) +
+  labs(title = "Regional Publishing Trends", 
+       x = "Рік", y = "Number of Titles", color = "Region") +
+  theme_minimal()
+
+# Example 4: Custom analysis with long format data
 # Add your own code here for specific research questions
+```
+
+## Sample Analysis Chunks
+
+The following chunks demonstrate the analytical power of long format data:
+
+```{r}
+#| label: sample-analysis
+#| code-summary: Sample analyses demonstrating long format advantages
+#| eval: false
+#| code-fold: false
 ```
 
 ------------------------------------------------------------------------
