@@ -160,6 +160,7 @@ All datasets follow the consistent long format structure with columns: `yr` (yea
 #| code-fold: false
 #| eval: true
 #| cache: true
+#| echo: false
 
 # Display basic information about loaded datasets (long format)
 cat("Dataset dimensions (long format):\n")
