@@ -1,6 +1,7 @@
-# Ellis Script - Long Format Version
-# This script creates CACHE tables in long format as specified in CACHE-manifest.md
-# Long format schema: yr + measure + [category] + value
+# Ellis Script - Long and Wide Format Version
+# This script creates CACHE tables in both long and wide formats as specified in CACHE-manifest.md
+# Long format schema: year + measure + [category] + value
+# Wide format schema: year + measure + [category columns with values]
 
 # To run this document, you need to connect your profile to Google account, first:
 # Use this command to connect your profile to Google account:
@@ -86,7 +87,7 @@ safe_numeric_convert <- function(x) {
 }
 
 # Safe pivot function that ensures data consistency
-safe_pivot_longer <- function(data, cols, names_to = "yr", values_to = "value", names_prefix = "", ...) {
+safe_pivot_longer <- function(data, cols, names_to = "year", values_to = "value", names_prefix = "", ...) {
   # Ensure numeric columns are truly numeric
   if (is.character(cols) && length(cols) > 0) {
     # If cols is character vector, use them directly
@@ -130,18 +131,20 @@ library(DBI)      # For database connection and operations
 library(RSQLite)
 library(ggrepel)
 library(googlesheets4)
+library(fs)        # file system operations
 
 ## --- Creating folders for data manipulation ----
-data_private_derived <- "./data-private/derived/manipulation/"
+data_private_derived <- "data-private/derived/manipulation/"
 if (!fs::dir_exists(data_private_derived)) {fs::dir_create(data_private_derived)} # nolint
 
-data_private_derived_sqlite <- "./data-private/derived/manipulation/SQLite/"
+data_private_derived_sqlite <- "data-private/derived/manipulation/SQLite/"
 if (!fs::dir_exists(data_private_derived_sqlite)) {fs::dir_create(data_private_derived_sqlite)}
 
-data_private_derived_csv <- "./data-private/derived/manipulation/CSV/"
+data_private_derived_csv <- "data-private/derived/manipulation/CSV/"
 if (!fs::dir_exists(data_private_derived_csv)) {fs::dir_create(data_private_derived_csv)}
 
-books_of_ukraine <- dbConnect(RSQLite::SQLite(), "data-private/derived/manipulation/SQLite/books-of-ukraine.sqlite")
+books_of_ukraine <- dbConnect(RSQLite::SQLite(), "data-private/derived/manipulation/SQLite/books-of-ukraine-long.sqlite")
+books_of_ukraine_wide <- dbConnect(RSQLite::SQLite(), "data-private/derived/manipulation/SQLite/books-of-ukraine-wide.sqlite")
 
 # ------------------------------- DS_YEAR_LONG --------------------------------
 ## ------ Data import ------
@@ -157,15 +160,15 @@ df_raw_clean <- df_raw %>%
 ds_year_long <- df_raw_clean %>%
   pivot_longer(
     cols = -1,
-    names_to = "yr",
+    names_to = "year",
     values_to = "value_raw"
   ) %>%
   mutate(
-    yr = as.integer(str_remove(yr, "^x")),
+    year = as.integer(str_remove(year, "^x")),
     value_clean = str_remove_all(value_raw, " "),
     value = as.numeric(value_clean)
   ) %>%
-  group_by(yr) %>%
+  group_by(year) %>%
   mutate(
     measure = case_when(
       row_number() == 1 ~ "copy_count",
@@ -174,8 +177,8 @@ ds_year_long <- df_raw_clean %>%
     )
   ) %>%
   ungroup() %>%
-  select(yr, measure, value) %>%
-  arrange(yr, measure) %>% 
+  select(year, measure, value) %>%
+  arrange(year, measure) %>% 
   mutate(
     measure = case_when(
       measure == "copy_count" ~ "title_count",
@@ -200,6 +203,26 @@ write.csv(ds_year_long, "data-private/derived/manipulation/CSV/ds_year_long.csv"
 sheet_url <- "https://docs.google.com/spreadsheets/d/1OOKeZnMFEAzHyr_M51zaOe76uv1yuqNmveHXSKpeqpo/edit?gid=2036395854#gid=2036395854"
 sheet_write(ds_year_long, ss = sheet_url, sheet = "ds_year_long")
 
+## ------- Creating Wide Version -------
+ds_year_wide <- ds_year_long %>%
+  pivot_wider(
+    names_from = measure,
+    values_from = value
+  ) %>%
+  arrange(year)
+
+## -------- RDS saving (Wide) --------
+saveRDS(ds_year_wide, "data-private/derived/manipulation/ds_year_wide.rds")
+
+## ------- SQLite saving (Wide) -------
+dbWriteTable(books_of_ukraine_wide, "ds_year_wide", ds_year_wide, overwrite = TRUE)
+
+## ------ CSV saving (Wide) ------
+write.csv(ds_year_wide, "data-private/derived/manipulation/CSV/ds_year_wide.csv", row.names = FALSE)
+
+## ------- Sheet Saving (Wide) -------
+sheet_write(ds_year_wide, ss = sheet_url, sheet = "ds_year_wide")
+
 # ------------------------------- DS_LANGUAGE_LONG --------------------------------
 ## ------ Data import ------
 ds <- import_selected_sheets(
@@ -217,7 +240,7 @@ long_number <- ds %>%
   select(mova, all_of(cols_number)) %>%
   pivot_longer(
     cols = -mova,
-    names_to = "yr",
+    names_to = "year",
     names_prefix = "x",
     values_to = "value"
   ) %>%
@@ -233,15 +256,15 @@ long_circulation <- ds %>%
   ) %>%
   mutate(
     measure = "copy_count",
-    yr = as.character(as.numeric(temp) + 2016)  
+    year = as.character(as.numeric(temp) + 2016)  
   ) %>%
   select(-temp)
 
 # Combine and keep in long format
 ds_language_long <- bind_rows(long_number, long_circulation) %>%
   rename(language = mova) %>%
-  select(yr, measure, language, value) %>%
-  arrange(yr, measure, language)
+  select(year, measure, language, value) %>%
+  arrange(year, measure, language)
 
 ## ------- rm() cleaning -------
 rm(ds, long_number, long_circulation)
@@ -258,6 +281,27 @@ write.csv(ds_language_long, "data-private/derived/manipulation/CSV/ds_language_l
 ## ------- Sheet Saving -------
 sheet_url <- "https://docs.google.com/spreadsheets/d/1OOKeZnMFEAzHyr_M51zaOe76uv1yuqNmveHXSKpeqpo/edit?gid=2036395854#gid=2036395854"
 sheet_write(ds_language_long, ss = sheet_url, sheet = "ds_language_long")
+
+## ------- Creating Wide Version -------
+ds_language_wide <- ds_language_long %>%
+  pivot_wider(
+    id_cols = c(year, measure),
+    names_from = language,
+    values_from = value
+  ) %>%
+  arrange(year, measure)
+
+## -------- RDS saving (Wide) --------
+saveRDS(ds_language_wide, "data-private/derived/manipulation/ds_language_wide.rds")
+
+## ------- SQLite saving (Wide) -------
+dbWriteTable(books_of_ukraine_wide, "ds_language_wide", ds_language_wide, overwrite = TRUE)
+
+## ------ CSV saving (Wide) ------
+write.csv(ds_language_wide, "data-private/derived/manipulation/CSV/ds_language_wide.csv", row.names = FALSE)
+
+## ------- Sheet Saving (Wide) -------
+sheet_write(ds_language_wide, ss = sheet_url, sheet = "ds_language_wide")
 
 # ------------------------------- DS_GENRE_LONG --------------------------------
 ## ------ Data import_naclad------
@@ -281,17 +325,17 @@ year_columns <- names(df3_fixed)[names(df3_fixed) != genre_col]
 df3_long <- safe_pivot_longer(
   df3_fixed,
   cols = year_columns,
-  names_to = "yr",
+  names_to = "year",
     values_to = "value"
   ) %>%
   mutate(
-    yr = as.integer(str_remove(yr, "^x")),
+    year = as.integer(str_remove(year, "^x")),
     measure = "copy_count"
   ) %>%
   # Filter to keep only reasonable years (2005-2025)
-  filter(yr >= 2005 & yr <= 2025) %>%
+  filter(year >= 2005 & year <= 2025) %>%
   rename(genre = !!genre_col) %>%
-  select(yr, measure, genre, value)
+  select(year, measure, genre, value)
 
 ## ------- data-import_number of titles -------
 df <- import_selected_sheets(
@@ -313,19 +357,19 @@ df_long <- df_fixed %>%
   mutate(genre = as.character(genre)) %>%
   pivot_longer(
     cols = -genre,
-    names_to = "yr",
+    names_to = "year",
     values_to = "value_raw"
   )
 
 df_long <- df_long %>%
   mutate(
-    yr = as.integer(yr),
+    year = as.integer(year),
     value = as.numeric(str_remove_all(value_raw, " ")),
     measure = "title_count"
   ) %>%
   # Filter to keep only reasonable years (2005-2025)
-  filter(yr >= 2005 & yr <= 2025) %>%
-  select(yr, measure, genre, value)
+  filter(year >= 2005 & year <= 2025) %>%
+  select(year, measure, genre, value)
 
 # Clean genre names
 df_long <- df_long %>%
@@ -351,17 +395,17 @@ df_0506_long <- df_0506_fixed %>%
   mutate(genre = as.character(genre)) %>%
   pivot_longer(
     cols = -genre,
-    names_to = "yr",
+    names_to = "year",
     values_to = "value_raw"
   ) %>%
   mutate(
-    yr = as.integer(str_extract(yr, "\\d{4}")),  # Extract 2005/2006
+    year = as.integer(str_extract(year, "\\d{4}")),  # Extract 2005/2006
     value = as.numeric(str_remove_all(value_raw, " ")),
     measure = "title_count"
   ) %>%
   # Filter to keep only reasonable years (2005-2025)
-  filter(yr >= 2005 & yr <= 2025) %>%
-  select(yr, measure, genre, value)
+  filter(year >= 2005 & year <= 2025) %>%
+  select(year, measure, genre, value)
 
 # Standardize genre names for 2005-2006 data
 genre_mapping <- c(
@@ -390,7 +434,7 @@ df_0506_long <- df_0506_long %>%
 ## -------- Creating ds_genre_long --------
 # Combine all genre data
 ds_genre_long <- bind_rows(df3_long, df_long, df_0506_long) %>%
-  arrange(yr, measure, genre) %>%
+  arrange(year, measure, genre) %>%
   filter(!is.na(value))
 
 ## ------- rm() cleaning -------
@@ -408,6 +452,27 @@ write.csv(ds_genre_long, "data-private/derived/manipulation/CSV/ds_genre_long.cs
 ## ------- Sheet Saving -------
 sheet_url <- "https://docs.google.com/spreadsheets/d/1OOKeZnMFEAzHyr_M51zaOe76uv1yuqNmveHXSKpeqpo/edit?gid=2036395854#gid=2036395854"
 sheet_write(ds_genre_long, ss = sheet_url, sheet = "ds_genre_long")
+
+## ------- Creating Wide Version -------
+ds_genre_wide <- ds_genre_long %>%
+  pivot_wider(
+    id_cols = c(year, measure),
+    names_from = genre,
+    values_from = value
+  ) %>%
+  arrange(year, measure)
+
+## -------- RDS saving (Wide) --------
+saveRDS(ds_genre_wide, "data-private/derived/manipulation/ds_genre_wide.rds")
+
+## ------- SQLite saving (Wide) -------
+dbWriteTable(books_of_ukraine_wide, "ds_genre_wide", ds_genre_wide, overwrite = TRUE)
+
+## ------ CSV saving (Wide) ------
+write.csv(ds_genre_wide, "data-private/derived/manipulation/CSV/ds_genre_wide.csv", row.names = FALSE)
+
+## ------- Sheet Saving (Wide) -------
+sheet_write(ds_genre_wide, ss = sheet_url, sheet = "ds_genre_wide")
 
 # ------------------------------- DS_PUBTYPE_LONG --------------------------------
 ## ------ Data import circulation ------
@@ -436,9 +501,9 @@ pubtype_mapping <- c(
 )
 
 df_cir_long <- df_cir %>%
-  rename(yr = x) %>%
+  rename(year = x) %>%
   pivot_longer(
-    cols = -yr,
+    cols = -year,
     names_to = "pubtype",
     values_to = "value"
   ) %>%
@@ -447,7 +512,7 @@ df_cir_long <- df_cir %>%
     pubtype = recode(pubtype, !!!pubtype_mapping),
     value = as.numeric(value)
   ) %>%
-  select(yr, measure, pubtype, value)
+  select(year, measure, pubtype, value)
 
 ## ------ Data import titles ------
 df_num <- import_selected_sheets(
@@ -464,20 +529,20 @@ df_num_cleaned <- df_num %>%
 df_num_long <- df_num_cleaned %>%
   pivot_longer(
     cols = all_of(year_cols),   
-    names_to = "yr",
+    names_to = "year",
     names_prefix = "x",
     values_to = "value"
   ) %>%
   mutate(
-    yr = as.integer(yr),
+    year = as.integer(year),
     measure = "title_count"
   ) %>%
   rename(pubtype = x) %>%
-  select(yr, measure, pubtype, value)
+  select(year, measure, pubtype, value)
 
 ## -------- Creating ds_pubtype_long --------
 ds_pubtype_long <- bind_rows(df_cir_long, df_num_long) %>%
-  arrange(yr, measure, pubtype) %>%
+  arrange(year, measure, pubtype) %>%
   filter(!is.na(value))
 
 ## ------- rm() cleaning -------
@@ -495,6 +560,27 @@ write.csv(ds_pubtype_long, "data-private/derived/manipulation/CSV/ds_pubtype_lon
 ## ------- Sheet Saving -------
 sheet_url <- "https://docs.google.com/spreadsheets/d/1OOKeZnMFEAzHyr_M51zaOe76uv1yuqNmveHXSKpeqpo/edit?gid=2036395854#gid=2036395854"
 sheet_write(ds_pubtype_long, ss = sheet_url, sheet = "ds_pubtype_long")
+
+## ------- Creating Wide Version -------
+ds_pubtype_wide <- ds_pubtype_long %>%
+  pivot_wider(
+    id_cols = c(year, measure),
+    names_from = pubtype,
+    values_from = value
+  ) %>%
+  arrange(year, measure)
+
+## -------- RDS saving (Wide) --------
+saveRDS(ds_pubtype_wide, "data-private/derived/manipulation/ds_pubtype_wide.rds")
+
+## ------- SQLite saving (Wide) -------
+dbWriteTable(books_of_ukraine_wide, "ds_pubtype_wide", ds_pubtype_wide, overwrite = TRUE)
+
+## ------ CSV saving (Wide) ------
+write.csv(ds_pubtype_wide, "data-private/derived/manipulation/CSV/ds_pubtype_wide.csv", row.names = FALSE)
+
+## ------- Sheet Saving (Wide) -------
+sheet_write(ds_pubtype_wide, ss = sheet_url, sheet = "ds_pubtype_wide")
 
 # ------------------------------- DS_GEOGRAPHY_LONG --------------------------------
 ## ------ Data import titles ------
@@ -516,16 +602,16 @@ df_titles <- df_titles %>%
 df_titles_long <- df_titles %>%
   pivot_longer(
     cols = -x,           # pivot all columns except 'x'
-    names_to = "yr",
+    names_to = "year",
     names_prefix = "x",
     values_to = "value"
   ) %>%
   mutate(
-    yr = as.integer(yr),
+    year = as.integer(year),
     measure = "title_count"
   ) %>%
   rename(geography = x) %>%
-  select(yr, measure, geography, value)
+  select(year, measure, geography, value)
 
 ## ------ Data import circulation ------
 ds_circulation <- import_selected_sheets(
@@ -537,20 +623,20 @@ ds_circulation <- import_selected_sheets(
 df_circulation_long <- ds_circulation %>%
   pivot_longer(
     cols = -x,              # all columns except "x" (area)
-    names_to = "yr",
+    names_to = "year",
     names_prefix = "x",
     values_to = "value"
   ) %>%
   mutate(
-    yr = as.integer(yr),
+    year = as.integer(year),
     measure = "copy_count"
   ) %>%
   rename(geography = x) %>%
-  select(yr, measure, geography, value)
+  select(year, measure, geography, value)
 
 ## -------- Creating ds_geography_long --------
 ds_geography_long <- bind_rows(df_titles_long, df_circulation_long) %>%
-  arrange(yr, measure, geography) %>%
+  arrange(year, measure, geography) %>%
   filter(!is.na(value))
 
 ## ------- rm() cleaning -------
@@ -569,6 +655,27 @@ write.csv(ds_geography_long, "data-private/derived/manipulation/CSV/ds_geography
 sheet_url <- "https://docs.google.com/spreadsheets/d/1OOKeZnMFEAzHyr_M51zaOe76uv1yuqNmveHXSKpeqpo/edit?gid=2036395854#gid=2036395854"
 sheet_write(ds_geography_long, ss = sheet_url, sheet = "ds_geography_long")
 
+## ------- Creating Wide Version -------
+ds_geography_wide <- ds_geography_long %>%
+  pivot_wider(
+    id_cols = c(year, measure),
+    names_from = geography,
+    values_from = value
+  ) %>%
+  arrange(year, measure)
+
+## -------- RDS saving (Wide) --------
+saveRDS(ds_geography_wide, "data-private/derived/manipulation/ds_geography_wide.rds")
+
+## ------- SQLite saving (Wide) -------
+dbWriteTable(books_of_ukraine_wide, "ds_geography_wide", ds_geography_wide, overwrite = TRUE)
+
+## ------ CSV saving (Wide) ------
+write.csv(ds_geography_wide, "data-private/derived/manipulation/CSV/ds_geography_wide.csv", row.names = FALSE)
+
+## ------- Sheet Saving (Wide) -------
+sheet_write(ds_geography_wide, ss = sheet_url, sheet = "ds_geography_wide")
+
 # ------------------------------- DS_UKR_RUS --------------------------------
 ## ------ Data import ------
 df <- import_selected_sheets(
@@ -581,7 +688,7 @@ df_long <- df %>%
   slice(-c(3,6,7)) %>%
   pivot_longer(
     cols = -x,
-    names_to = "yr",
+    names_to = "year",
     names_prefix = "x",
     values_to = "value"
   ) %>%
@@ -600,12 +707,12 @@ df_long <- df %>%
 
 df_wide <- df_long %>%
   filter(!is.na(measure)) %>%
-  select(yr, measure, lang, value) %>%
+  select(year, measure, lang, value) %>%
   pivot_wider(
     names_from = lang,
     values_from = value
   ) %>%
-  arrange(yr, measure)
+  arrange(year, measure)
 
 ds_ukr_rus_long <- df_wide %>%
   filter(measure %in% c("title_count", "copy_count")) %>%
@@ -640,14 +747,38 @@ write.csv(ds_ukr_rus_long, "data-private/derived/manipulation/CSV/ds_ukr_rus_lon
 sheet_url <- "https://docs.google.com/spreadsheets/d/1OOKeZnMFEAzHyr_M51zaOe76uv1yuqNmveHXSKpeqpo/edit?gid=2036395854#gid=2036395854"
 sheet_write(ds_ukr_rus_long, ss = sheet_url, sheet = "ds_ukr_rus_long")
 
+## ------- Creating Wide Version (already in wide format) -------
+ds_ukr_rus_wide <- ds_ukr_rus_long
+
+## -------- RDS saving (Wide) --------
+saveRDS(ds_ukr_rus_wide, "data-private/derived/manipulation/ds_ukr_rus_wide.rds")
+
+## ------- SQLite saving (Wide) -------
+dbWriteTable(books_of_ukraine_wide, "ds_ukr_rus_wide", ds_ukr_rus_wide, overwrite = TRUE)
+
+## ------ CSV saving (Wide) ------
+write.csv(ds_ukr_rus_wide, "data-private/derived/manipulation/CSV/ds_ukr_rus_wide.csv", row.names = FALSE)
+
+## ------- Sheet Saving (Wide) -------
+sheet_write(ds_ukr_rus_wide, ss = sheet_url, sheet = "ds_ukr_rus_wide")
+
 # ---------------------------------------------------------------------- End of Script -------------------
 cat("✅ All CACHE tables created successfully!\n")
 cat("Tables created:\n")
-cat("- ds_year_long: yr + measure + value\n")
-cat("- ds_language_long: yr + measure + language + value\n") 
-cat("- ds_genre_long: yr + measure + genre + value\n")
-cat("- ds_pubtype_long: yr + measure + pubtype + value\n")
-cat("- ds_geography_long: yr + measure + geography + value\n")
-cat("- ds_ukr_rus_long: yr + measure + ukr + rus + perc_ukr + perc_rus (wide format)\n")
+cat("LONG FORMAT:\n")
+cat("- ds_year_long: year + measure + value\n")
+cat("- ds_language_long: year + measure + language + value\n") 
+cat("- ds_genre_long: year + measure + genre + value\n")
+cat("- ds_pubtype_long: year + measure + pubtype + value\n")
+cat("- ds_geography_long: year + measure + geography + value\n")
+cat("- ds_ukr_rus_long: year + measure + ukr + rus + perc_ukr + perc_rus (wide format)\n")
+cat("\nWIDE FORMAT:\n")
+cat("- ds_year_wide: year + title_count + copy_count\n")
+cat("- ds_language_wide: year + measure + [language columns]\n")
+cat("- ds_genre_wide: year + measure + [genre columns]\n")
+cat("- ds_pubtype_wide: year + measure + [pubtype columns]\n")
+cat("- ds_geography_wide: year + measure + [geography columns]\n")
+cat("- ds_ukr_rus_wide: year + measure + ukr + rus + perc_ukr + perc_rus\n")
 
 dbDisconnect(books_of_ukraine)
+dbDisconnect(books_of_ukraine_wide)

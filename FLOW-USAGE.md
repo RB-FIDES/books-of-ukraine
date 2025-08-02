@@ -200,6 +200,68 @@ update_cache_manifest()  # Always updates regardless of status
 - If datasets have been modified
 
 The manifest is automatically integrated with the AI context system, so updated documentation immediately improves AI assistance quality.
+
+## 📝 File Change Tracking
+
+### What is File Change Tracking?
+The project includes a file change logging system that helps teams track modifications across all project files. This creates an audit trail for collaboration and helps team members understand what changes were made and when.
+
+### File Change Tracking Commands
+
+#### Log changes to any file:
+```r
+log_file_change("path/to/file.ext", "description of changes")
+log_change("file.ext", "description")  # Short alias
+```
+
+#### Examples:
+```r
+# After modifying an analysis script
+log_change("analysis/eda-1/eda-1.R", "Added regional comparison visualizations")
+
+# After updating a report
+log_change("analysis/Data-visualization/Data-visual.qmd", "Fixed axis labels and added legends")
+
+# After configuration changes
+log_change("config.yml", "Updated Google Sheets authentication settings")
+```
+
+#### What gets logged:
+- **File path and name**
+- **Modification timestamp** (when file was actually changed)
+- **User information** (who made the change)
+- **Change description** (what was changed)
+- **Log timestamp** (when the change was logged)
+
+#### Output format in logbook:
+```markdown
+## File Change Log - 2025-08-02
+**File**: `analysis/eda-1/eda-1.qmd`  
+**Modified**: 2025-08-02 14:30:25  
+**Changed by**: muaro  
+**Changes**: Added regional analysis visualizations  
+**Logged**: 2025-08-02 14:35:12
+```
+
+#### When to use:
+- After making significant changes to any project file
+- Before committing changes to version control
+- When collaborating on team projects
+- For important configuration or methodology changes
+- To document decision-making process
+
+#### Integration with workflow:
+The file change tracking integrates with the entire project ecosystem:
+- Changes are logged to `./ai/logbook.md` 
+- Logbook is part of the AI context system
+- Team members can quickly see recent changes
+- Provides audit trail for quality assurance
+
+#### Best practices:
+- Log changes immediately after making them
+- Use descriptive change descriptions
+- Include the reasoning behind changes when significant
+- Log both code and documentation changes
 - `data-private/derived/manipulation/SQLite/` - SQLite database
 - `data-private/derived/manipulation/CSV/` - CSV exports
 - Various HTML reports in `analysis/` subdirectories

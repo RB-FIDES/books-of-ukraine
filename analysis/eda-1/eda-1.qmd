@@ -141,8 +141,7 @@ This report operates with the following data objects in **long format**:
 -   **`ds_geography_long`** - Regional distribution across Ukrainian oblasts in long format
 -   **`ds_ukr_rus_long`** - Focused comparison between Ukrainian and Russian publications in long format
 
-All datasets follow the consistent long format structure with columns: `yr` (year), `measure` (metric type), `value` (count), and category-specific columns (e.g., `language`, `geography`, `genre`).
-
+All datasets follow the consistent long format structure with columns: `year` (year), `measure` (metric type), `value` (count), and category-specific columns (e.g., `language`, `geography`, `genre`).
 
 ```{r }
 #| label: load-data
@@ -172,7 +171,7 @@ cat("ds_geography_long:", dim(ds_geography_long)[1], "rows x", dim(ds_geography_
 cat("ds_ukr_rus_long:", dim(ds_ukr_rus_long)[1], "rows x", dim(ds_ukr_rus_long)[2], "columns\n")
 
 # Show year range
-cat("\nYear range in data:", min(ds_year_long$yr), "-", max(ds_year_long$yr), "\n")
+cat("\nYear range in data:", min(ds_year_long$year), "-", max(ds_year_long$year), "\n")
 
 # Show measure types
 cat("\nMeasure types available:", paste(unique(ds_year_long$measure), collapse = ", "), "\n")
@@ -186,6 +185,45 @@ cat("\nMeasure types available:", paste(unique(ds_year_long$measure), collapse =
 #| code-fold: true
 #| cache: true
 #| results: hide
+
+# Prepare data for analysis - add regional groupings for geography
+# Note: Geography data is now in long format, so we need to work with it differently
+ds_geography_enhanced <- ds_geography_long %>%
+  mutate(
+    region_group = case_when(
+      # Північ (North)
+      geography %in% c("м. Київ", "Київська область", "Чернігівська область", 
+                      "Сумська область", "Житомирська область") ~ "Північ",
+      
+      # Південь (South) 
+      geography %in% c("Одеська область", "Миколаївська область", "Херсонська область",
+                      "Запорізька область", "Автономна Республіка Крим", "м. Севастополь") ~ "Південь",
+      
+      # Схід (East)
+      geography %in% c("Харківська область", "Донецька область", "Луганська область",
+                      "Дніпропетровська область") ~ "Схід",
+      
+      # Захід (West)
+      geography %in% c("Львівська область", "Івано-Франківська область", "Тернопільська область",
+                      "Закарпатська область", "Волинська область", "Рівненська область",
+                      "Хмельницька область", "Чернівецька область") ~ "Захід",
+      
+      # Центр (Center)
+      geography %in% c("Вінницька область", "Полтавська область", "Кіровоградська область",
+                      "Черкаська область") ~ "Центр",
+      
+      TRUE ~ "Інше"
+    )
+  )
+
+# Create summary tables for easier graphing
+ds_year_summary <- ds_year_long %>%
+  arrange(year, measure)
+
+ds_language_summary <- ds_language_long %>%
+  # Filter for main languages of interest
+  filter(language %in% c("Українська", "Російська", "Англійська")) %>%
+  arrange(year, measure, language)
 ```
 
 ### Annual Totals Structure (Long Format)
@@ -240,10 +278,10 @@ The data is now loaded in **long format** and prepared for human analysts to:
 
 The long format structure provides several analytical advantages:
 
-- **Consistent filtering**: All datasets use `measure` column to distinguish between `title_count` and `copy_count`
-- **Easy aggregation**: Group by categorical variables and sum `value` for custom analysis
-- **Flexible visualization**: Compatible with ggplot2 aesthetic mappings for complex multi-dimensional plots
-- **Scalable analysis**: Same analytical patterns work across all categorical dimensions
+-   **Consistent filtering**: All datasets use `measure` column to distinguish between `title_count` and `copy_count`
+-   **Easy aggregation**: Group by categorical variables and sum `value` for custom analysis
+-   **Flexible visualization**: Compatible with ggplot2 aesthetic mappings for complex multi-dimensional plots
+-   **Scalable analysis**: Same analytical patterns work across all categorical dimensions
 
 ## Next Steps for Human Analysts
 
@@ -266,9 +304,9 @@ create_language_comparison(ds_language_long, "title_count")
 # Example 3: Regional analysis using long format
 ds_geography_enhanced %>%
   filter(measure == "title_count") %>%
-  group_by(yr, region_group) %>%
+  group_by(year, region_group) %>%
   summarise(total_titles = sum(value, na.rm = TRUE), .groups = "drop") %>%
-  ggplot(aes(x = yr, y = total_titles, color = region_group)) +
+  ggplot(aes(x = year, y = total_titles, color = region_group)) +
   geom_line(size = 1.2) +
   geom_point(size = 2) +
   labs(title = "Regional Publishing Trends", 

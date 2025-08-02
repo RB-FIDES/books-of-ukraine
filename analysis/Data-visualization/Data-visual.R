@@ -5,13 +5,12 @@ library(ggplot2)
 
 # ----------------------------------------- DS_YEAR -------------------------------------------------------------
 # in this table we can observe the number of titles and the number of copies for each year from 2005
-ds1 <- readRDS("data-private/derived/manipulation/ds_year.rds")
+ds1 <- readRDS("data-private/derived/manipulation/ds_year_wide.rds")
 
-years_all <- seq(min(ds1$yr), max(ds1$yr))
+years_all <- seq(min(ds1$year), max(ds1$year))
 
 g_year_copy <- ds1 %>% 
-  filter(measure == "copy_count") %>% 
-  ggplot(aes(x = yr, y = value)) +
+  ggplot(aes(x = year, y = copy_count)) +
   geom_point() +
   geom_line() +
   scale_x_continuous(breaks = years_all) +             # Show all yearsS
@@ -25,10 +24,7 @@ g_year_copy <- ds1 %>%
   theme(panel.grid.minor = element_blank()) 
 
 g_year_title <- ds1 %>% 
-  filter(
-    measure == "title_count"
-  ) %>% 
-  ggplot(aes(x = yr, y = value)) +
+  ggplot(aes(x = year, y = title_count)) +
   geom_point() +
   geom_line() +
   scale_x_continuous(breaks = years_all) +
@@ -44,16 +40,15 @@ g_year_title <- ds1 %>%
 rm(ds1, years_all)
 # ----------------------------------------- DS_GENRE -------------------------------------------------------------
  
-ds2 <- readRDS("data-private/derived/manipulation/ds_genre.rds")
+ds2 <- readRDS("data-private/derived/manipulation/ds_genre_wide.rds")
 
 ds_genre_copy <- 
   ds2 %>% 
   filter(
     measure == "copy_count"
   ) %>% 
-  group_by(yr)  %>%
   pivot_longer(
-    cols = -c(yr, measure),  # adding genre column
+    cols = -c(year, measure),  # adding genre column
     names_to = "genre",
     values_to = "value"
   )
@@ -62,7 +57,7 @@ ds_genre_copy <-
 g_genre_copy<- ds_genre_copy %>%
   ggplot(aes(x = genre, y = value, fill = genre)) +
   geom_col() +
-  facet_wrap(~ yr, ncol = 4) +
+  facet_wrap(~ year, ncol = 4) +
   scale_y_continuous(breaks = seq(0, 30000, by = 7500), limits = c(0, 37000)) +
   labs(
     title = "Number of Copies by Genre and Year",
@@ -81,9 +76,8 @@ ds_genre_title <-
   filter(
     measure == "title_count"
   ) %>% 
-  group_by(yr) %>%
   pivot_longer(
-    cols = -c(yr, measure),  # adding genre column
+    cols = -c(year, measure),  # adding genre column
     names_to = "genre",
     values_to = "value"
   )
@@ -91,7 +85,7 @@ ds_genre_title <-
 g_genre_title <- ds_genre_title %>%
   ggplot(aes(x = genre, y = value, fill = genre)) +
   geom_col() +
-  facet_wrap(~ yr, ncol = 4) +
+  facet_wrap(~ year, ncol = 4) +
   labs(
     title = "Number of Titles by Genre and Year",
     x = "Genre",
@@ -104,9 +98,9 @@ g_genre_title <- ds_genre_title %>%
     axis.title.x = element_blank()      
   )
 
-rm( ds2_long)
+rm( ds2)
 # ----------------------------------------- DS_GEOGRAPHY -------------------------------------------------------------
-ds3 <- readRDS("data-private/derived/manipulation/ds_geography.rds")
+ds3 <- readRDS("data-private/derived/manipulation/ds_geography_wide.rds")
 
 region_groups <- list(
   "Західна Україна" = c("Львівська", "Івано-Франківська", "Закарпатська", "Тернопільська", "Чернівецька", "Волинська", "Рівненська"),
@@ -124,19 +118,19 @@ region_group_df <- tibble::tibble(
 
 g_geography <- ds3  %>%
   pivot_longer(
-    cols = -c(yr, measure),    
+    cols = -c(year, measure),    
     names_to = "region_name",
     values_to = "value"
   )  %>%
   left_join(region_group_df, by = "region_name") %>%
-  select(yr, measure, region_name, group, everything())
+  select(year, measure, region_name, group, everything())
 
 g_geography_central_copies <- g_geography %>%
   filter(measure == "copy_count", group == "Центральна Україна") %>%
-  complete(yr, region_name, fill = list(value = 0)) %>%
+  complete(year, region_name, fill = list(value = 0)) %>%
   ggplot(aes(x = region_name, y = value, fill = region_name)) +
   geom_col() +
-  facet_wrap(~ yr, ncol = 4) +
+  facet_wrap(~ year, ncol = 4) +
   scale_y_continuous(breaks = seq(0, 750, by = 250)) +      # без limits!
   coord_cartesian(ylim = c(0, 750)) +                       # обрізає тільки картинку!
   labs(
@@ -152,10 +146,10 @@ g_geography_central_copies <- g_geography %>%
   )
 g_geography_zahidna_copies <- g_geography %>%
   filter(measure == "copy_count", group == "Західна Україна") %>%
-  complete(yr, region_name, fill = list(value = 0)) %>%
+  complete(year, region_name, fill = list(value = 0)) %>%
   ggplot(aes(x = region_name, y = value, fill = region_name)) +
   geom_col() +
-  facet_wrap(~ yr, ncol = 4) +
+  facet_wrap(~ year, ncol = 4) +
   scale_y_continuous(breaks = seq(0, 1250, by = 500)) +      # без limits!
   coord_cartesian(ylim = c(0, 1250)) +                       # обрізає тільки картинку!
   labs(
@@ -171,10 +165,10 @@ g_geography_zahidna_copies <- g_geography %>%
   )
 g_geography_shidna_copies <- g_geography %>%
   filter(measure == "copy_count", group == "Східна Україна") %>%
-  complete(yr, region_name, fill = list(value = 0)) %>%
+  complete(year, region_name, fill = list(value = 0)) %>%
   ggplot(aes(x = region_name, y = value, fill = region_name)) +
   geom_col() +
-  facet_wrap(~ yr, ncol = 4) +
+  facet_wrap(~ year, ncol = 4) +
   scale_y_continuous(breaks = seq(0, 3500, by = 1000)) +      # без limits!
   coord_cartesian(ylim = c(0, 3500)) +                       # обрізає тільки картинку!
   labs(
@@ -190,10 +184,10 @@ g_geography_shidna_copies <- g_geography %>%
   )
 g_geography_pivdena_copies <- g_geography %>%
   filter(measure == "copy_count", group == "Південна Україна") %>%
-  complete(yr, region_name, fill = list(value = 0)) %>%
+  complete(year, region_name, fill = list(value = 0)) %>%
   ggplot(aes(x = region_name, y = value, fill = region_name)) +
   geom_col() +
-  facet_wrap(~ yr, ncol = 4) +
+  facet_wrap(~ year, ncol = 4) +
   scale_y_continuous(breaks = seq(0, 500, by = 250)) +      # без limits!
   coord_cartesian(ylim = c(0, 500)) +                       # обрізає тільки картинку!
   labs(
@@ -209,10 +203,10 @@ g_geography_pivdena_copies <- g_geography %>%
   )
 g_geography_pivnichna_copies <- g_geography %>%
   filter(measure == "copy_count", group == "Північна Україна") %>%
-  complete(yr, region_name, fill = list(value = 0)) %>%
+  complete(year, region_name, fill = list(value = 0)) %>%
   ggplot(aes(x = region_name, y = value, fill = region_name)) +
   geom_col() +
-  facet_wrap(~ yr, ncol = 4) +
+  facet_wrap(~ year, ncol = 4) +
   scale_y_continuous(breaks = seq(0, 500, by = 250)) +      # без limits!
   coord_cartesian(ylim = c(0, 500)) +                       # обрізає тільки картинку!
   labs(
@@ -233,7 +227,7 @@ g_geography_krym_copies <-
     measure == "copy_count"
     , group == "Крим"
   ) %>% 
-  ggplot(aes(x = yr, y = value)) +
+  ggplot(aes(x = year, y = value)) +
   geom_point() +
   geom_line() +
   labs(
@@ -254,10 +248,10 @@ g_geography_krym_copies <-
 
 g_geography_central_title <- g_geography %>%
   filter(measure == "title_count", group == "Центральна Україна") %>%
-  complete(yr, region_name, fill = list(value = 0)) %>%
+  complete(year, region_name, fill = list(value = 0)) %>%
   ggplot(aes(x = region_name, y = value, fill = region_name)) +
   geom_col() +
-  facet_wrap(~ yr, ncol = 4) +
+  facet_wrap(~ year, ncol = 4) +
   scale_y_continuous(breaks = seq(0, 750, by = 250)) +      # без limits!
   coord_cartesian(ylim = c(0, 750)) +                       # обрізає тільки картинку!
   labs(
@@ -273,10 +267,10 @@ g_geography_central_title <- g_geography %>%
   )
 g_geography_zahidna_title <- g_geography %>%
   filter(measure == "title_count", group == "Західна Україна") %>%
-  complete(yr, region_name, fill = list(value = 0)) %>%
+  complete(year, region_name, fill = list(value = 0)) %>%
   ggplot(aes(x = region_name, y = value, fill = region_name)) +
   geom_col() +
-  facet_wrap(~ yr, ncol = 4) +
+  facet_wrap(~ year, ncol = 4) +
   scale_y_continuous(breaks = seq(0, 1250, by = 500)) +      # без limits!
   coord_cartesian(ylim = c(0, 1250)) +                       # обрізає тільки картинку!
   labs(
@@ -292,10 +286,10 @@ g_geography_zahidna_title <- g_geography %>%
   )
 g_geography_shidna_title <- g_geography %>%
   filter(measure == "title_count", group == "Східна Україна") %>%
-  complete(yr, region_name, fill = list(value = 0)) %>%
+  complete(year, region_name, fill = list(value = 0)) %>%
   ggplot(aes(x = region_name, y = value, fill = region_name)) +
   geom_col() +
-  facet_wrap(~ yr, ncol = 4) +
+  facet_wrap(~ year, ncol = 4) +
   scale_y_continuous(breaks = seq(0, 4000, by = 1000)) +      # без limits!
   coord_cartesian(ylim = c(0, 4000)) +                       # обрізає тільки картинку!
   labs(
@@ -311,10 +305,10 @@ g_geography_shidna_title <- g_geography %>%
   )
 g_geography_pivdena_title<- g_geography %>%
   filter(measure == "title_count", group == "Південна Україна") %>%
-  complete(yr, region_name, fill = list(value = 0)) %>%
+  complete(year, region_name, fill = list(value = 0)) %>%
   ggplot(aes(x = region_name, y = value, fill = region_name)) +
   geom_col() +
-  facet_wrap(~ yr, ncol = 4) +
+  facet_wrap(~ year, ncol = 4) +
   scale_y_continuous(breaks = seq(0, 750, by = 250)) +      # без limits!
   coord_cartesian(ylim = c(0, 750)) +                       # обрізає тільки картинку!
   labs(
@@ -330,10 +324,10 @@ g_geography_pivdena_title<- g_geography %>%
   )
 g_geography_pivnichna_title <- g_geography %>%
   filter(measure == "title_count", group == "Північна Україна") %>%
-  complete(yr, region_name, fill = list(value = 0)) %>%
+  complete(year, region_name, fill = list(value = 0)) %>%
   ggplot(aes(x = region_name, y = value, fill = region_name)) +
   geom_col() +
-  facet_wrap(~ yr, ncol = 4) +
+  facet_wrap(~ year, ncol = 4) +
   scale_y_continuous(breaks = seq(0, 750, by = 250)) +      # без limits!
   coord_cartesian(ylim = c(0, 750)) +                       # обрізає тільки картинку!
   labs(
@@ -354,7 +348,7 @@ g_geography_krym_title <-
     measure == "title_count"
     , group == "Крим"
   ) %>% 
-  ggplot(aes(x = yr, y = value)) +
+  ggplot(aes(x = year, y = value)) +
   geom_point() +
   geom_line() +
   labs(
@@ -375,11 +369,11 @@ g_geography_krym_title <-
 
 # ----------------------------------------- DS_LANGUAGE -------------------------------------------------------------
 
-g_lanugae <- readRDS("data-private/derived/manipulation/ds_language.rds")
+g_lanugae <- readRDS("data-private/derived/manipulation/ds_language_wide.rds")
 
 g_language <- g_lanugae %>%
   pivot_longer(
-    cols = -c(yr, measure),     
+    cols = -c(year, measure),     
     names_to = "language",
     values_to = "value"
   )
@@ -387,7 +381,7 @@ g_language <- g_lanugae %>%
 g_language_2018 <- 
   g_language %>% 
   filter(
-    , yr == 2018
+    year == 2018
     ,  (measure == "copy_count" & value > 10) | (measure == "title_count" & value > 10)
   ) %>%  mutate(
     measure = recode(measure,
@@ -408,7 +402,7 @@ g_language_2018 <-
 g_language_2019 <- 
   g_language %>% 
   filter(
-    , yr == 2019
+    year == 2019
     ,  (measure == "copy_count" & value > 10) | (measure == "title_count" & value > 10)
   ) %>%  mutate(
     measure = recode(measure,
@@ -429,7 +423,7 @@ g_language_2019 <-
 g_language_2020 <- 
   g_language %>% 
   filter(
-    , yr == 2020
+    year == 2020
     ,  (measure == "copy_count" & value > 10) | (measure == "title_count" & value > 10)
   ) %>%  mutate(
     measure = recode(measure,
@@ -450,7 +444,7 @@ g_language_2020 <-
 g_language_2021 <- 
   g_language %>% 
   filter(
-    , yr == 2021
+    year == 2021
     ,  (measure == "copy_count" & value > 10) | (measure == "title_count" & value > 10)
   ) %>%  mutate(
     measure = recode(measure,
@@ -471,7 +465,7 @@ g_language_2021 <-
 g_language_2022 <- 
   g_language %>% 
   filter(
-    , yr == 2022
+    year == 2022
     ,  (measure == "copy_count" & value > 10) | (measure == "title_count" & value > 10)
   ) %>%  mutate(
     measure = recode(measure,
@@ -492,7 +486,7 @@ g_language_2022 <-
 g_language_2023 <- 
   g_language %>% 
   filter(
-    , yr == 2023
+    year == 2023
     ,  (measure == "copy_count" & value > 10) | (measure == "title_count" & value > 10)
   ) %>%  mutate(
     measure = recode(measure,
@@ -513,7 +507,7 @@ g_language_2023 <-
 g_language_2024 <- 
   g_language %>% 
   filter(
-    , yr == 2024
+    year == 2024
     ,  (measure == "copy_count" & value > 10) | (measure == "title_count" & value > 10)
   ) %>%  mutate(
     measure = recode(measure,
@@ -533,12 +527,12 @@ g_language_2024 <-
 
 # ----------------------------------------- DS_PUBTYPE -------------------------------------------------------------
 
-ds5 <- readRDS("data-private/derived/manipulation/ds_pubtype.rds") 
+ds5 <- readRDS("data-private/derived/manipulation/ds_pubtype_wide.rds") 
 
 
-ds_pubtype_l <- ds_pubtype %>%
+ds_pubtype_l <- ds5 %>%
   pivot_longer(
-    cols = -c(yr, measure),    # залишаємо 'yr' і 'measure', інше — типи видань
+    cols = -c(year, measure),    # залишаємо 'year' і 'measure', інше — типи видань
     names_to = "pubtype",      # назва нової колонки з типом
     values_to = "value"        # значення
   )
@@ -546,13 +540,12 @@ ds_pubtype_l <- ds_pubtype %>%
 
 ds_pubtype_copy <- 
   ds_pubtype_l %>%
-  filter(measure == "copy_count") %>%
-  group_by(yr)
+  filter(measure == "copy_count")
 
 g_pubtype_copy <- ds_pubtype_copy %>%
   ggplot(aes(x = pubtype, y = value, fill = pubtype)) +
   geom_col() +
-  facet_wrap(~ yr, ncol = 4) +
+  facet_wrap(~ year, ncol = 4) +
   scale_y_continuous(breaks = seq(0, 30000, by = 7500), limits = c(0, 37000)) +
   coord_cartesian(ylim = c(0, 37000)) +
   labs(
@@ -569,14 +562,13 @@ g_pubtype_copy <- ds_pubtype_copy %>%
 
 
 ds_pubtype_title <- 
-  ds5 %>%
-  filter(measure == "title_count") %>%
-  group_by(yr)
+  ds_pubtype_l %>%
+  filter(measure == "title_count")
 
 g_pubtype_title <- ds_pubtype_title %>%
   ggplot(aes(x = pubtype, y = value, fill = pubtype)) +
   geom_col() +
-  facet_wrap(~ yr, ncol = 4) +
+  facet_wrap(~ year, ncol = 4) +
   labs(
     title = "Number of Titles by Publication Type and Year",
     x = "Publication Type",
@@ -592,18 +584,18 @@ g_pubtype_title <- ds_pubtype_title %>%
 
 # ----------------------------------------- DS_UKR_RUS -------------------------------------------------------------
 
-ds6 <- readRDS("data-private/derived/manipulation/ds_ukr_rus.rds")
+ds6 <- readRDS("data-private/derived/manipulation/ds_ukr_rus_wide.rds")
 
 g_ukrrus_copies <- 
-  ds_ukr_rus %>%
+  ds6 %>%
   filter(measure == "copy_count") %>%
-  select(yr, ukr, rus) %>%
+  select(year, ukr, rus) %>%
   pivot_longer(
     cols = c(ukr, rus),
     names_to = "language",
     values_to = "value"
   ) %>% 
-ggplot( aes(x = factor(yr), y = value, fill = language)) +
+ggplot( aes(x = factor(year), y = value, fill = language)) +
   geom_col(position = "dodge") +
   scale_x_discrete(expand = expansion(mult = c(0))) +
   labs(
@@ -617,13 +609,13 @@ ggplot( aes(x = factor(yr), y = value, fill = language)) +
 g_ukrrus_title <- 
   ds6 %>%
   filter(measure == "title_count") %>%
-  select(yr, ukr, rus) %>%
+  select(year, ukr, rus) %>%
   pivot_longer(
     cols = c(ukr, rus),
     names_to = "language",
     values_to = "value"
   ) %>% 
-ggplot( aes(x = factor(yr), y = value, fill = language)) +
+ggplot( aes(x = factor(year), y = value, fill = language)) +
   geom_col(position = "dodge") +
   scale_x_discrete(expand = expansion(mult = c(0))) +
   scale_y_continuous(breaks = seq(0, 20000, by = 5000), limits = c(0, 20000)) +

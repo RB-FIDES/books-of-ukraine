@@ -10,7 +10,7 @@ Sequence of scripts that capture data assembly, modeling and reporting.
 
 **Key Operations**:
 - Imports publishing data from multiple Google Sheets tabs covering 2005-2023
-- Creates standardized datasets with consistent structure (yr, measure, values)
+- Creates standardized datasets with consistent structure (year, measure, values)
 - Processes 6 main data domains:
   - `ds_year`: Overall publication counts (titles/copies by year)
   - `ds_language`: Publications by language (including Ukrainian/Russian breakdown)

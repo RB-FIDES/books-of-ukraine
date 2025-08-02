@@ -135,8 +135,7 @@ ds_rail  <- tibble::tribble(
   # ===============================
   
   # Main ETL (Extract-Transform-Load) from Google Sheets to local formats
-  "run_r"     , "manipulation/0-ellis.R",              # Core data import and prep - creates long format datasets
-  "run_r"     , "manipulation/0-ellis-wide.R",         # Creates wide format datasets for additional analysis
+  "run_r"     , "manipulation/0-ellis.R",              # Core data import and prep - creates long and wide format datasets
   
   # ===============================
   # PHASE 2: ANALYSIS SCRIPTS
@@ -144,16 +143,16 @@ ds_rail  <- tibble::tribble(
   
   # Core analysis scripts that depend on the manipulated data
   "run_r"     , "analysis/eda-1/eda-1.R",              # Main exploratory data analysis script
-  # "run_r"     , "analysis/Data-visualization/Data-visual.R",  # Data visualization script
+  "run_r"     , "analysis/Data-visualization/Data-visual.R",  # Data visualization script
   # "run_r"     , "analysis/report-example-2/1-scribe.R", # Scribe script for analysis-ready data
   
   # ===============================
   # PHASE 3: REPORTS & DOCUMENTATION
   # ===============================
   
-  # Primary analysis reports (Quarto format)
-  "run_qmd"   , "analysis/eda-1/eda-1.qmd"            # Main exploratory data analysis report
-  # "run_qmd"   , "analysis/Data-visualization/Data-visual.qmd", # Data visualization report
+  # Primary analysis reports (Quarto format) - WITH IMPROVED ERROR HANDLING
+  "run_qmd"   , "analysis/eda-1/eda-1.qmd",            # Main exploratory data analysis report
+  "run_qmd"   , "analysis/Data-visualization/Data-visual.qmd", # Data visualization report
   # "run_qmd"   , "analysis/report-example-2/eda-1.qmd", # Analysis report example
   
   # Documentation and template examples
@@ -231,25 +230,29 @@ run_qmd <- function( minion ) {
   }
 
   message("\nStarting `", basename(minion), "` at ", Sys.time(), ".")
-  path_out <- quarto::quarto_render(minion, execute_dir = dirname(minion))
-  Sys.sleep(3) # Sleep for three secs, to let quarto finish
-  message(path_out)
-
-  # Uncomment to save a dated version to a different location.
-  #   Do this before the undated version, in case someone left it open (& locked it)
-  # path_out_archive <- strftime(Sys.Date(), config$path_report_screen_archive)
-  # if( !dir.exists(dirname(path_out_archive)) ) {
-  #   # Create a month-specific directory, so they're easier to find & compress later.
-  #   message("Creating subdirectory for archived eligibility reports: `", dirname(path_out_archive), "`.")
-  #   dir.create(dirname(path_out_archive), recursive=T)
-  # }
-  # archive_successful <- file.copy(path_out, path_out_archive, overwrite=TRUE)
-  # message("Archive success: ", archive_successful, " at `", path_out_archive, "`.")
   
-  # Uncomment to copy the undated version to a different location.
-  # If saving to a remote drive, this works better than trying to save directly from `quarto::quarto_render()`.
-  # To use this, you'll need a version of `run_qmd()` that's specialized for the specific qmd.
-  # fs::file_copy(path_out, config$path_out_remote, overwrite = TRUE)
+  # Try-catch for better error handling
+  tryCatch({
+    path_out <- quarto::quarto_render(minion, execute_dir = dirname(minion))
+    Sys.sleep(3) # Sleep for three secs, to let quarto finish
+    message(path_out)
+  }, error = function(e) {
+    message("Error rendering ", basename(minion), ": ", e$message)
+    message("Attempting fallback to direct CLI...")
+    
+    # Fallback to direct CLI call
+    tryCatch({
+      old_wd <- getwd()
+      setwd(dirname(minion))
+      result <- system2(quarto::quarto_path(), c("render", basename(minion)), 
+                       stdout = TRUE, stderr = TRUE)
+      setwd(old_wd)
+      message("CLI render result: ", paste(result, collapse = "\n"))
+    }, error = function(e2) {
+      warning("Both R package and CLI rendering failed for ", basename(minion))
+      message("Error details: ", e2$message)
+    })
+  })
 
   return( TRUE )
 }
