@@ -21,14 +21,8 @@ library(scales)    # format
 library(broom)     # for model
 library(emmeans)   # for interpreting model results
 library(ggalluvial)
-# -- 2.Import only certain functions of a package into the search path.
-# import::from("magrittr", "%>%")
-# -- 3. Verify these packages are available on the machine, but their functions need to be qualified
-requireNamespace("readr"    )# data import/export
-requireNamespace("readxl"   )# data import/export
-requireNamespace("janitor"  )# tidy data
-requireNamespace("testit"   )# For asserting conditions meet expected patterns.
-requireNamespace("googlesheets4") # for Google Sheets import
+library(janitor)  # tidy data
+library(testit)   # For asserting conditions meet expected patterns.
 
 # ---- load-sources ------------------------------------------------------------
 base::source("./scripts/common-functions.R") # project-level
@@ -49,20 +43,19 @@ if (!fs::dir_exists(prints_folder)) {fs::dir_create(prints_folder)}
 
 
 # ---- declare-functions -------------------------------------------------------
-
-# ----- define-query -----------------------------------------------------------
-
+# base::source(paste0(local_root,"local-functions.R")) # project-level
 
 # ---- load-data ---------------------------------------------------------------
-# let's import data from a Google Sheet located at the URL below
-# https://docs.google.com/spreadsheets/d/1FOrg2bg3o-YrnnvGkRdax9sF5xOL-r08839ARJMAE9w/edit?gid=0#gid=0
-# We will import sheets one by one. So, first let's get the names of the sheets
-sheet_names <- googlesheets4::sheet_names("https://docs.google.com/spreadsheets/d/1FOrg2bg3o-YrnnvGkRdax9sF5xOL-r08839ARJMAE9w/edit?gid=0#gid=0")
+# load data from data-public
+ds_wide <- readr::read_csv("./data-public/derived/manipulation/0-ellis-v2-ds2.csv")
+ds_long <- readr::read_csv("./data-public/derived/manipulation/0-ellis-v2-ds3.csv")
+# ---- tweak-data-0 -------------------------------------
 
-print(sheet_names)
-# ---- tweak-data ---------------------------------
+# ---- inspect-data-0 -------------------------------------
 
-# ---- inspect-data --------------------------------
+# ---- inspect-data-1 -------------------------------------
 
+# ---- inspect-data-2 -------------------------------------
 
-# ---- write-to-disk -------------------------
+# ---- analysis-below -------------------------------------
+

@@ -1,7 +1,7 @@
 ---
-title: "Exploratory Data Analysis 1"
-subtitle: "EDA 1"
-author: "TBD"
+title: "Exploratory Data Analysis: Books of Ukraine"
+subtitle: "Publishing Trends and Language Dynamics 2005-2023"
+author: "Research & Open Data"
 format:
   html:
     page-layout: full
@@ -10,7 +10,7 @@ format:
     code-fold: show
     theme: yeti
     highlight-style: breeze
-    colde-line-numbers: true
+    code-line-numbers: true
     self-contained: true
     embed-resources: true
 editor: visual
@@ -20,9 +20,25 @@ editor_options:
 
 # Mission
 
-This document introduces the reader to 
+This document explores publishing trends in Ukraine from 2005 to 2023, with particular attention to:
+
+-   **Temporal patterns** in book publishing volume and circulation
+-   **Language dynamics** between Ukrainian and Russian publications
+-   **Geographic distribution** of publishing activities across Ukrainian regions
+-   **Genre and publication type** patterns over time
+
+The analysis focuses on understanding regional differences and detecting interesting patterns and relationships between Russian language use in published books and the larger cultural, political, and economic context of Ukraine.
 
 # **Definition of Terms**
+
+Following the project ontology, this analysis works with several key measurement dimensions:
+
+-   **Publication Count** (`titles_count`) - Number of unique book titles published
+-   **Copy Count** (`copy_count`) - Total print run/circulation of publications
+-   **Geographic Regions** - Ukrainian oblasts grouped into macro-regions (North, South, East, West, Center)
+-   **Language Categories** - Ukrainian, Russian, English, and other languages
+-   **Genre Structure** - 13 thematic categories from political literature to children's books
+-   **Publication Types** - 14 categories from scientific to religious publications
 
 ```{r}
 #| code-summary: Reconciles working directory between execution modes
@@ -52,8 +68,8 @@ opts_chunk$set(
   tidy         = FALSE,
   # dpi        = 400, # dots per inch,
   out.width  = "960px", # pixels, this affects only the markdown, not the underlying png file.  The height will be scaled appropriately.
-  fig.width    = 6, # inches
-  fig.height   = 4, # inches
+  fig.width    = 10, # inches
+  fig.height   = 6, # inches
   fig.path     = 'figure-png-iso/' # where figures are stored
   
 )
@@ -116,76 +132,204 @@ read_chunk("./analysis/eda-1/eda-1.R") #This allows knitr to call
 
 # Data
 
-This report operates with the following data objects:
+This report operates with the following data objects in **long format**:
 
+-   **`ds_year_long`** - Annual summary data in long format with measures for total publications and copies
+-   **`ds_language_long`** - Publication counts by language in long format (Ukrainian, Russian, English, etc.)\
+-   **`ds_genre_long`** - Distribution across 13 genre categories in long format
+-   **`ds_pubtype_long`** - Distribution across 14 publication types in long format
+-   **`ds_geography_long`** - Regional distribution across Ukrainian oblasts in long format
+-   **`ds_ukr_rus_long`** - Focused comparison between Ukrainian and Russian publications in long format
 
+All datasets follow the consistent long format structure with columns: `year` (year), `measure` (metric type), `value` (count), and category-specific columns (e.g., `language`, `geography`, `genre`).
 
 ```{r }
 #| label: load-data
-#| code-summary: Load data objects 
+#| code-summary: Load data objects from manipulation pipeline
 #| warning: false
 #| code-fold: true
 #| cache: true
-# set your root to Project Directory when developing chunks live in .qmd
-
 ```
 
-## Tweak 0
-
-```{r}
-#| label: tweak-data-0
-#| code-summary: Organize data into `ds0` form. Cleaning up names, optimize some data types.
-#| code-fold: true
-#| cache: true
-#| results: hide
-
-```
-
-## Inspect starting files
+## Data Availability Check
 
 ```{r}
 #| label: inspect-data-0
-#| code-summary: Inspect contents of the available data tables
+#| code-summary: Verify all required datasets are available
 #| code-fold: false
 #| eval: true
 #| cache: true
-ds_support %>% glimpse()
+#| echo: false
+
+# Display basic information about loaded datasets (long format)
+cat("Dataset dimensions (long format):\n")
+cat("ds_year_long:", dim(ds_year_long)[1], "rows x", dim(ds_year_long)[2], "columns\n")
+cat("ds_language_long:", dim(ds_language_long)[1], "rows x", dim(ds_language_long)[2], "columns\n") 
+cat("ds_genre_long:", dim(ds_genre_long)[1], "rows x", dim(ds_genre_long)[2], "columns\n")
+cat("ds_pubtype_long:", dim(ds_pubtype_long)[1], "rows x", dim(ds_pubtype_long)[2], "columns\n")
+cat("ds_geography_long:", dim(ds_geography_long)[1], "rows x", dim(ds_geography_long)[2], "columns\n")
+cat("ds_ukr_rus_long:", dim(ds_ukr_rus_long)[1], "rows x", dim(ds_ukr_rus_long)[2], "columns\n")
+
+# Show year range
+cat("\nYear range in data:", min(ds_year_long$year), "-", max(ds_year_long$year), "\n")
+
+# Show measure types
+cat("\nMeasure types available:", paste(unique(ds_year_long$measure), collapse = ", "), "\n")
 ```
 
-```{r}
-#| label: inspect-data-1
-#| code-summary: Inspect contents of the available data tables
-#| code-fold: false
-#| eval: true
-#| cache: true
-```
+## Data Structure Overview
 
 ```{r}
-#| label: inspect-data-2
-#| code-summary: Inspect contents of the available data tables
-#| code-fold: false
-#| eval: true
-#| cache: true
-cat("QMD file has won")
-```
-
-## Tweak 1
-
-```{r}
-#| label: tweak-data-1
-#| code-summary: Organize data into `ds0` form. Cleaning up names, optimize some data types.
+#| label: tweak-data-0
+#| code-summary: Prepare enhanced datasets for analysis
 #| code-fold: true
 #| cache: true
 #| results: hide
-#| eval: false
+
+# Prepare data for analysis - add regional groupings for geography
+# Note: Geography data is now in long format, so we need to work with it differently
+ds_geography_enhanced <- ds_geography_long %>%
+  mutate(
+    region_group = case_when(
+      # Північ (North)
+      geography %in% c("м. Київ", "Київська область", "Чернігівська область", 
+                      "Сумська область", "Житомирська область") ~ "Північ",
+      
+      # Південь (South) 
+      geography %in% c("Одеська область", "Миколаївська область", "Херсонська область",
+                      "Запорізька область", "Автономна Республіка Крим", "м. Севастополь") ~ "Південь",
+      
+      # Схід (East)
+      geography %in% c("Харківська область", "Донецька область", "Луганська область",
+                      "Дніпропетровська область") ~ "Схід",
+      
+      # Захід (West)
+      geography %in% c("Львівська область", "Івано-Франківська область", "Тернопільська область",
+                      "Закарпатська область", "Волинська область", "Рівненська область",
+                      "Хмельницька область", "Чернівецька область") ~ "Захід",
+      
+      # Центр (Center)
+      geography %in% c("Вінницька область", "Полтавська область", "Кіровоградська область",
+                      "Черкаська область") ~ "Центр",
+      
+      TRUE ~ "Інше"
+    )
+  )
+
+# Create summary tables for easier graphing
+ds_year_summary <- ds_year_long %>%
+  arrange(year, measure)
+
+ds_language_summary <- ds_language_long %>%
+  # Filter for main languages of interest
+  filter(language %in% c("Українська", "Російська", "Англійська")) %>%
+  arrange(year, measure, language)
 ```
 
-# Fundamentals
+### Annual Totals Structure (Long Format)
 
 ```{r}
-#| code-summary: Basic accounting 
-#| code-fold: true
-#| eval: true
-#| cache: true
-
+#| code-summary: Overview of annual summary data in long format
+#| code-fold: false
+ds_year_long %>% 
+  head(10) %>%
+  knitr::kable(caption = "Sample of Annual Summary Data (Long Format)")
 ```
+
+### Language Data Structure (Long Format)
+
+```{r}
+#| code-summary: Overview of language distribution data in long format
+#| code-fold: false
+ds_language_long %>% 
+  head(10) %>%
+  knitr::kable(caption = "Sample of Language Distribution Data (Long Format)")
+```
+
+### Ukrainian-Russian Focus Data (Long Format)
+
+```{r}
+#| code-summary: Overview of Ukrainian-Russian comparison data in long format
+#| code-fold: false  
+ds_ukr_rus_long %>%
+  head(10) %>%
+  knitr::kable(caption = "Ukrainian vs Russian Publications Data (Long Format)")
+```
+
+# Ready for Analysis
+
+The data is now loaded in **long format** and prepared for human analysts to:
+
+1.  **Create temporal visualizations** showing publishing trends over time using consistent long format structure
+2.  **Analyze language dynamics** between Ukrainian and Russian publications with `ds_language_long`\
+3.  **Explore geographic patterns** across Ukrainian regions using `ds_geography_enhanced` with regional groupings
+4.  **Investigate genre and publication type trends** using `ds_genre_long` and `ds_pubtype_long`
+5.  **Correlate patterns** with historical events and policy changes across all dimensions
+
+## Available Helper Functions (Long Format Optimized)
+
+-   `create_time_series()` - Generate time series plots for any numeric variable from long format data
+-   `create_language_comparison()` - Compare Ukrainian vs Russian publication patterns using `ds_language_long`
+-   `create_regional_comparison()` - Compare trends across Ukrainian regions using `ds_geography_enhanced`
+-   `analyze_category_trends()` - Flexible function to analyze any categorical variable from long format data
+-   `connect_to_db()` - Access SQLite database for custom queries
+
+## Advantages of Long Format
+
+The long format structure provides several analytical advantages:
+
+-   **Consistent filtering**: All datasets use `measure` column to distinguish between `title_count` and `copy_count`
+-   **Easy aggregation**: Group by categorical variables and sum `value` for custom analysis
+-   **Flexible visualization**: Compatible with ggplot2 aesthetic mappings for complex multi-dimensional plots
+-   **Scalable analysis**: Same analytical patterns work across all categorical dimensions
+
+## Next Steps for Human Analysts
+
+```{r}
+#| code-summary: Template for creating your first visualization with long format data
+#| eval: false
+#| code-fold: false
+
+# Example 1: Overall publishing trends using long format
+ds_year_long %>%
+  filter(measure == "title_count") %>%
+  create_time_series("value", 
+                    title = "Total Book Publications in Ukraine",
+                    subtitle = "Annual count of new titles published",
+                    y_label = "Number of Titles")
+
+# Example 2: Language comparison over time using long format 
+create_language_comparison(ds_language_long, "title_count")
+
+# Example 3: Regional analysis using long format
+ds_geography_enhanced %>%
+  filter(measure == "title_count") %>%
+  group_by(year, region_group) %>%
+  summarise(total_titles = sum(value, na.rm = TRUE), .groups = "drop") %>%
+  ggplot(aes(x = year, y = total_titles, color = region_group)) +
+  geom_line(size = 1.2) +
+  geom_point(size = 2) +
+  labs(title = "Regional Publishing Trends", 
+       x = "Рік", y = "Number of Titles", color = "Region") +
+  theme_minimal()
+
+# Example 4: Custom analysis with long format data
+# Add your own code here for specific research questions
+```
+
+## Sample Analysis Chunks
+
+The following chunks demonstrate the analytical power of long format data:
+
+```{r}
+#| label: sample-analysis
+#| code-summary: Sample analyses demonstrating long format advantages
+#| eval: false
+#| code-fold: false
+```
+
+------------------------------------------------------------------------
+
+**Report generated:** `r Sys.time()`\
+**Analysis period:** `r target_window_opens` to `r target_window_closes`\
+**Data source:** Ukrainian publishing statistics via manipulation/0-ellis.R pipeline

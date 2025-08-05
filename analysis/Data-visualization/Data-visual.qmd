@@ -9,7 +9,7 @@ format:
     code-fold: show
     theme: yeti
     highlight-style: breeze
-    colde-line-numbers: true
+    code-line-numbers: true
     self-contained: true
     embed-resources: true
 editor: visual
@@ -108,11 +108,11 @@ The first graph shows the number of copies for each year.
 #| fig-height: 10
 
 
-years_all <- seq(min(ds_year$yr), max(ds_year$yr))
+years_all <- seq(min(ds_year$year), max(ds_year$year))
 
 g_year_copy <- ds_year %>% 
   filter(measure == "copy_count") %>% 
-  ggplot(aes(x = yr, y = value)) +
+  ggplot(aes(x = year, y = value)) +
   geom_point() +
   geom_line() +
   scale_x_continuous(breaks = years_all) +             
@@ -151,7 +151,7 @@ g_year_title <- ds_year %>%
   filter(
     measure == "title_count"
   ) %>% 
-  ggplot(aes(x = yr, y = value)) +
+  ggplot(aes(x = year, y = value)) +
   geom_point() +
   geom_line() +
   scale_x_continuous(breaks = years_all) +
@@ -203,9 +203,9 @@ ds_genre_copy <-
   filter(
     measure == "copy_count"
   ) %>% 
-  group_by(yr)  %>%
+  group_by(year)  %>%
   pivot_longer(
-    cols = -c(yr, measure),  # adding genre column
+    cols = -c(year, measure),  # adding genre column
     names_to = "genre",
     values_to = "value"
   )
@@ -214,7 +214,7 @@ ds_genre_copy <-
 g_genre_copy<- ds_genre_copy %>%
   ggplot(aes(x = genre, y = value, fill = genre)) +
   geom_col() +
-  facet_wrap(~ yr, ncol = 4) +
+  facet_wrap(~ year, ncol = 4) +
   scale_y_continuous(breaks = seq(0, 30000, by = 7500), limits = c(0, 37000)) +
   labs(
     title = "Number of Copies by Genre and Year",
@@ -263,9 +263,9 @@ ds_genre_title <-
   filter(
     measure == "title_count"
   ) %>% 
-  group_by(yr) %>%
+  group_by(year) %>%
   pivot_longer(
-    cols = -c(yr, measure),  # adding genre column
+    cols = -c(year, measure),  # adding genre column
     names_to = "genre",
     values_to = "value"
   )
@@ -273,7 +273,7 @@ ds_genre_title <-
 g_genre_title <- ds_genre_title %>%
   ggplot(aes(x = genre, y = value, fill = genre)) +
   geom_col() +
-  facet_wrap(~ yr, ncol = 4) +
+  facet_wrap(~ year, ncol = 4) +
   labs(
     title = "Number of Titles by Genre and Year",
     x = "Genre",
@@ -333,12 +333,12 @@ region_group_df <- tibble::tibble(
 
 g_geography <- ds_geography %>%
   pivot_longer(
-    cols = -c(yr, measure),    
+    cols = -c(year, measure),    
     names_to = "region_name",
     values_to = "value"
   )  %>%
   left_join(region_group_df, by = "region_name") %>%
-  select(yr, measure, region_name, group, everything())
+  select(year, measure, region_name, group, everything())
 
 ```
 
@@ -360,10 +360,10 @@ This graph describes the number of copies for each region in **Central Ukraine**
 
 g_geography_central_copies <- g_geography %>%
   filter(measure == "copy_count", group == "Центральна Україна") %>%
-  complete(yr, region_name, fill = list(value = 0)) %>%
+  complete(year, region_name, fill = list(value = 0)) %>%
   ggplot(aes(x = region_name, y = value, fill = region_name)) +
   geom_col() +
-  facet_wrap(~ yr, ncol = 4) +
+  facet_wrap(~ year, ncol = 4) +
   scale_y_continuous(breaks = seq(0, 750, by = 250)) +      
   coord_cartesian(ylim = c(0, 750)) +                       
   labs(
@@ -412,10 +412,10 @@ This graph describes the number of copies for each region in **North Ukraine**
 
 g_geography_pivnichna_copies <- g_geography %>%
   filter(measure == "copy_count", group == "Північна Україна") %>%
-  complete(yr, region_name, fill = list(value = 0)) %>%
+  complete(year, region_name, fill = list(value = 0)) %>%
   ggplot(aes(x = region_name, y = value, fill = region_name)) +
   geom_col() +
-  facet_wrap(~ yr, ncol = 4) +
+  facet_wrap(~ year, ncol = 4) +
   scale_y_continuous(breaks = seq(0, 500, by = 250)) +      
   coord_cartesian(ylim = c(0, 500)) +                       
   labs(
@@ -464,10 +464,10 @@ This graph describes the number of copies for each region in **South Ukraine**
 
 g_geography_pivdena_copies <- g_geography %>%
   filter(measure == "copy_count", group == "Південна Україна") %>%
-  complete(yr, region_name, fill = list(value = 0)) %>%
+  complete(year, region_name, fill = list(value = 0)) %>%
   ggplot(aes(x = region_name, y = value, fill = region_name)) +
   geom_col() +
-  facet_wrap(~ yr, ncol = 4) +
+  facet_wrap(~ year, ncol = 4) +
   scale_y_continuous(breaks = seq(0, 500, by = 250)) +      
   coord_cartesian(ylim = c(0, 500)) +                       
   labs(
@@ -515,10 +515,10 @@ This graph describes the number of copies for each region in **West Ukraine**
 #| fig-height: 25
 g_geography_zahidna_copies <- g_geography %>%
   filter(measure == "copy_count", group == "Західна Україна") %>%
-  complete(yr, region_name, fill = list(value = 0)) %>%
+  complete(year, region_name, fill = list(value = 0)) %>%
   ggplot(aes(x = region_name, y = value, fill = region_name)) +
   geom_col() +
-  facet_wrap(~ yr, ncol = 4) +
+  facet_wrap(~ year, ncol = 4) +
   scale_y_continuous(breaks = seq(0, 1250, by = 500)) +      
   coord_cartesian(ylim = c(0, 1250)) +                       
   labs(
@@ -565,10 +565,10 @@ This graph describes the number of copies for each region in **East Ukraine**
 #| fig-height: 25
 g_geography_shidna_copies <- g_geography %>%
   filter(measure == "copy_count", group == "Східна Україна") %>%
-  complete(yr, region_name, fill = list(value = 0)) %>%
+  complete(year, region_name, fill = list(value = 0)) %>%
   ggplot(aes(x = region_name, y = value, fill = region_name)) +
   geom_col() +
-  facet_wrap(~ yr, ncol = 4) +
+  facet_wrap(~ year, ncol = 4) +
   scale_y_continuous(breaks = seq(0, 3500, by = 1000)) +      
   coord_cartesian(ylim = c(0, 3500)) +                       
   labs(
@@ -619,7 +619,7 @@ g_geography_krym_copies <-
     measure == "copy_count",
     group == "Крим"
   ) %>% 
-  ggplot(aes(x = yr, y = value, group = 1)) +   # add group=1 for geom_line
+  ggplot(aes(x = year, y = value, group = 1)) +   # add group=1 for geom_line
   geom_point() +
   geom_line() +
   labs(
@@ -659,10 +659,10 @@ This graph describes the number of titles for each region in **Central Ukraine**
 
 g_geography_central_title <- g_geography %>%
   filter(measure == "title_count", group == "Центральна Україна") %>%
-  complete(yr, region_name, fill = list(value = 0)) %>%
+  complete(year, region_name, fill = list(value = 0)) %>%
   ggplot(aes(x = region_name, y = value, fill = region_name)) +
   geom_col() +
-  facet_wrap(~ yr, ncol = 4) +
+  facet_wrap(~ year, ncol = 4) +
   scale_y_continuous(breaks = seq(0, 750, by = 250)) +      
   coord_cartesian(ylim = c(0, 750)) +                       
   labs(
@@ -709,10 +709,10 @@ This graph describes the number of titles for each region in **North Ukraine**
 
 g_geography_pivnichna_title <- g_geography %>%
   filter(measure == "title_count", group == "Північна Україна") %>%
-  complete(yr, region_name, fill = list(value = 0)) %>%
+  complete(year, region_name, fill = list(value = 0)) %>%
   ggplot(aes(x = region_name, y = value, fill = region_name)) +
   geom_col() +
-  facet_wrap(~ yr, ncol = 4) +
+  facet_wrap(~ year, ncol = 4) +
   scale_y_continuous(breaks = seq(0, 750, by = 250)) +      
   coord_cartesian(ylim = c(0, 750)) +                       
   labs(
@@ -760,10 +760,10 @@ This graph describes the number of titles for each region in **South Ukraine**
 
 g_geography_pivdena_title <- g_geography %>%
   filter(measure == "title_count", group == "Південна Україна") %>%
-  complete(yr, region_name, fill = list(value = 0)) %>%
+  complete(year, region_name, fill = list(value = 0)) %>%
   ggplot(aes(x = region_name, y = value, fill = region_name)) +
   geom_col() +
-  facet_wrap(~ yr, ncol = 4) +
+  facet_wrap(~ year, ncol = 4) +
   scale_y_continuous(breaks = seq(0, 750, by = 250)) +      
   coord_cartesian(ylim = c(0, 750)) +                       
   labs(
@@ -811,10 +811,10 @@ This graph describes the number of titles for each region in **West Ukraine**
 
 g_geography_zahidna_title <- g_geography %>%
   filter(measure == "title_count", group == "Західна Україна") %>%
-  complete(yr, region_name, fill = list(value = 0)) %>%
+  complete(year, region_name, fill = list(value = 0)) %>%
   ggplot(aes(x = region_name, y = value, fill = region_name)) +
   geom_col() +
-  facet_wrap(~ yr, ncol = 4) +
+  facet_wrap(~ year, ncol = 4) +
   scale_y_continuous(breaks = seq(0, 1250, by = 500)) +      
   coord_cartesian(ylim = c(0, 1250)) +                       
   labs(
@@ -861,10 +861,10 @@ This graph describes the number of titles for each region in **East Ukraine**
 #| fig-height: 25
 g_geography_shidna_title <- g_geography %>%
   filter(measure == "title_count", group == "Східна Україна") %>%
-  complete(yr, region_name, fill = list(value = 0)) %>%
+  complete(year, region_name, fill = list(value = 0)) %>%
   ggplot(aes(x = region_name, y = value, fill = region_name)) +
   geom_col() +
-  facet_wrap(~ yr, ncol = 4) +
+  facet_wrap(~ year, ncol = 4) +
   scale_y_continuous(breaks = seq(0, 4000, by = 1000)) +      
   coord_cartesian(ylim = c(0, 4000)) +                       
   labs(
@@ -916,7 +916,7 @@ g_geography_krym_title <-
     measure == "title_count",
     group == "Крим"
   ) %>% 
-  ggplot(aes(x = yr, y = value, group = 1)) +  # group=1 for line plot
+  ggplot(aes(x = year, y = value, group = 1)) +  # group=1 for line plot
   geom_point() +
   geom_line() +
   labs(
@@ -955,7 +955,7 @@ To analyze this table, we will examine each year separately. Each graph displays
 
 g_language <- ds_language %>%
   pivot_longer(
-    cols = -c(yr, measure),     
+    cols = -c(year, measure),     
     names_to = "language",
     values_to = "value"
   )
@@ -977,7 +977,7 @@ g_language <- ds_language %>%
 g_language_2018 <- 
   g_language %>% 
   filter(
-    yr == 2018,
+    year == 2018,
     (measure == "copy_count" & value > 10) | (measure == "title_count" & value > 10)
   ) %>%
   mutate(
@@ -1033,7 +1033,7 @@ rm(g_language_2018)
 g_language_2019 <- 
   g_language %>% 
   filter(
-    yr == 2019,
+    year == 2019,
     (measure == "copy_count" & value > 10) | (measure == "title_count" & value > 10)
   ) %>%
   mutate(
@@ -1090,7 +1090,7 @@ rm(g_language_2019)
 g_language_2020 <- 
   g_language %>% 
   filter(
-    yr == 2020,
+    year == 2020,
     (measure == "copy_count" & value > 10) | (measure == "title_count" & value > 10)
   ) %>%
   mutate(
@@ -1147,7 +1147,7 @@ rm(g_language_2020)
 g_language_2021 <- 
   g_language %>% 
   filter(
-    yr == 2021,
+    year == 2021,
     (measure == "copy_count" & value > 10) | (measure == "title_count" & value > 10)
   ) %>%
   mutate(
@@ -1203,7 +1203,7 @@ rm(g_language_2021)
 g_language_2022 <- 
   g_language %>% 
   filter(
-    yr == 2022,
+    year == 2022,
     (measure == "copy_count" & value > 10) | (measure == "title_count" & value > 10)
   ) %>%
   mutate(
@@ -1260,7 +1260,7 @@ rm(g_language_2022)
 g_language_2023 <- 
   g_language %>% 
   filter(
-    yr == 2023,
+    year == 2023,
     (measure == "copy_count" & value > 10) | (measure == "title_count" & value > 10)
   ) %>%
   mutate(
@@ -1316,7 +1316,7 @@ rm(g_language_2023)
 g_language_2024 <- 
   g_language %>% 
   filter(
-    yr == 2024,
+    year == 2024,
     (measure == "copy_count" & value > 10) | (measure == "title_count" & value > 10)
   ) %>%
   mutate(
@@ -1377,7 +1377,7 @@ The first graph shows the number of copies for each publication type, by year.
 
 ds_pubtype_l <- ds_pubtype %>%
   pivot_longer(
-    cols = -c(yr, measure),  
+    cols = -c(year, measure),  
     names_to = "pubtype",      
     values_to = "value"       
   )
@@ -1386,12 +1386,12 @@ ds_pubtype_l <- ds_pubtype %>%
 ds_pubtype_copy <- 
   ds_pubtype_l %>%
   filter(measure == "copy_count") %>%
-  group_by(yr)
+  group_by(year)
 
 g_pubtype_copy <- ds_pubtype_copy %>%
   ggplot(aes(x = pubtype, y = value, fill = pubtype)) +
   geom_col() +
-  facet_wrap(~ yr, ncol = 4) +
+  facet_wrap(~ year, ncol = 4) +
   scale_y_continuous(breaks = seq(0, 30000, by = 7500), limits = c(0, 37000)) +
   coord_cartesian(ylim = c(0, 37000)) +
   labs(
@@ -1438,7 +1438,7 @@ Second graph describes the number of titles of each publication type, by year.
 
 ds_pubtype_l <- ds_pubtype %>%
   pivot_longer(
-    cols = -c(yr, measure),  
+    cols = -c(year, measure),  
     names_to = "pubtype",      
     values_to = "value"       
   )
@@ -1446,12 +1446,12 @@ ds_pubtype_l <- ds_pubtype %>%
 ds_pubtype_title <- 
   ds_pubtype_l %>%
   filter(measure == "title_count") %>%
-  group_by(yr)
+  group_by(year)
 
 g_pubtype_title <- ds_pubtype_title %>%
   ggplot(aes(x = pubtype, y = value, fill = pubtype)) +
   geom_col() +
-  facet_wrap(~ yr, ncol = 4) +
+  facet_wrap(~ year, ncol = 4) +
   scale_y_continuous(breaks = seq(0, 9000, by = 2500), limits = c(0, 9000)) +
   coord_cartesian(ylim = c(0, 9000)) +
   labs(
@@ -1505,13 +1505,13 @@ The first graph shows the number of copies of Ukrainian and Russian books for ea
 g_ukrrus_copies <- 
   ds_ukr_rus %>%
   filter(measure == "copy_count") %>%
-  select(yr, ukr, rus) %>%
+  select(year, ukr, rus) %>%
   pivot_longer(
     cols = c(ukr, rus),
     names_to = "language",
     values_to = "value"
   ) %>% 
-  ggplot(aes(x = factor(yr), y = value, fill = language)) +
+  ggplot(aes(x = factor(year), y = value, fill = language)) +
   geom_col(position = "dodge") +
   scale_x_discrete(expand = expansion(mult = c(0))) +
   labs(
@@ -1557,13 +1557,13 @@ Second graph describes the number of titles of Ukrainian and russian titles for 
 g_ukrrus_title <- 
   ds_ukr_rus %>%
   filter(measure == "title_count") %>%
-  select(yr, ukr, rus) %>%
+  select(year, ukr, rus) %>%
   pivot_longer(
     cols = c(ukr, rus),
     names_to = "language",
     values_to = "value"
   ) %>% 
-  ggplot(aes(x = factor(yr), y = value, fill = language)) +
+  ggplot(aes(x = factor(year), y = value, fill = language)) +
   geom_col(position = "dodge") +
   scale_x_discrete(expand = expansion(mult = c(0))) +
   scale_y_continuous(breaks = seq(0, 20000, by = 5000), limits = c(0, 20000)) +
