@@ -22,7 +22,7 @@ format:
     code-line-numbers: true         # Line numbers in code blocks
     code-copy: true                 # Copy buttons for code
     smaller: true                   # Enable smaller text class
-    scrollable: true               # Allow slide content to scroll
+    scrollable: false              # Disable slide content scrolling
     touch: true                    # Enable touch/swipe navigation
     controls-tutorial: true        # Show control tutorial overlay
     controls-layout: bottom-right  # Position of navigation controls
@@ -33,6 +33,8 @@ format:
       themes: true                 # Theme switcher in menu
       transitions: true            # Transition effects menu
       openButton: true             # Show menu button
+    title-slide-attributes:
+      data-background-color: "#FF0000"  # Bright red for first slide (brightest in gradient)
 editor: visual
 ---
 
@@ -132,9 +134,7 @@ if (!is.null(books_data)) {
 }
 ```
 
-```
-
-## Introduction {background-color="#005BBB"}
+## Introduction {background-color="#FF4444"}
 
 ::: incremental
 -   **Research Focus**: Ukrainian book publishing trends from 2005-2023
@@ -153,7 +153,7 @@ Welcome to our comprehensive analysis of Ukrainian book publishing trends. This 
 
 ------------------------------------------------------------------------
 
-## Data Overview {background-color="#FFD700"}
+## Data Overview {background-color="#FF6A33"}
 
 ::::: columns
 ::: {.column width="50%"}
@@ -208,7 +208,7 @@ Our analysis leverages a comprehensive long-format dataset covering Ukrainian bo
 
 ------------------------------------------------------------------------
 
-## Total Book Publications Overview {background-color="#87CEEB"}
+## Total Book Publications Overview {background-color="#FF9122"}
 
 ```{r}
 #| label: total-publications
@@ -262,7 +262,7 @@ This chart displays the total number of unique book titles published in Ukraine 
 
 ------------------------------------------------------------------------
 
-## Titles vs. Copies Production {background-color="#FFD700"}
+## Titles vs. Copies Production {background-color="#FFB811"}
 
 ```{r}
 #| label: titles-vs-copies
@@ -337,7 +337,7 @@ This visualization compares two key metrics: the number of unique titles publish
 
 ------------------------------------------------------------------------
 
-## Language Distribution Over Time {background-color="#98FB98"}
+## Language Distribution Over Time {background-color="#CCCC00"}
 
 ```{r}
 #| label: language-trends
@@ -406,7 +406,7 @@ This chart reveals the linguistic landscape of Ukrainian publishing over time. W
 
 ------------------------------------------------------------------------
 
-## Regional Publishing Analysis {background-color="#FFB6C1"}
+## Regional Publishing Analysis {background-color="#99BB11"}
 
 ```{r}
 #| label: regional-analysis
@@ -470,7 +470,7 @@ This stacked area chart shows the geographic distribution of book publishing acr
 
 ------------------------------------------------------------------------
 
-## Ukrainian vs Russian Publications {background-color="#DDA0DD"}
+## Ukrainian vs Russian Publications {background-color="#66AA22"}
 
 ```{r}
 #| label: ukr-rus-comparison
@@ -540,7 +540,7 @@ This chart provides a direct side-by-side comparison of Ukrainian (blue) and Rus
 
 ------------------------------------------------------------------------
 
-## Key Insights {background-color="#98FB98"}
+## Key Insights {background-color="#339933"}
 
 ::: incremental
 -   **Overall Publishing Activity**: Total title production shows distinct patterns across the 19-year period
@@ -552,9 +552,10 @@ This chart provides a direct side-by-side comparison of Ukrainian (blue) and Rus
 
 ::: fragment
 ### Critical Questions for Further Analysis
-- What external factors drove major changes in publishing trends?
-- How do genre preferences vary across regions and languages?
-- What role do economic cycles play in publishing decisions?
+
+-   What external factors drove major changes in publishing trends?
+-   How do genre preferences vary across regions and languages?
+-   What role do economic cycles play in publishing decisions?
 :::
 
 ::: notes
@@ -563,7 +564,7 @@ Our analysis reveals several key patterns in Ukrainian book publishing from 2005
 
 ------------------------------------------------------------------------
 
-## Next Steps & Future Research {background-color="#87CEEB"}
+## Next Steps & Future Research {background-color="#226644"}
 
 ::: incremental
 -   **Genre Analysis**: Deep dive into publication types and subject categories
@@ -575,9 +576,10 @@ Our analysis reveals several key patterns in Ukrainian book publishing from 2005
 
 ::: fragment
 ### Methodology Extensions
-- **Time Series Analysis**: Statistical modeling of trends and seasonality  
-- **Regression Analysis**: Quantify relationships between variables
-- **Geographic Mapping**: Spatial visualization of regional patterns
+
+-   **Time Series Analysis**: Statistical modeling of trends and seasonality\
+-   **Regression Analysis**: Quantify relationships between variables
+-   **Geographic Mapping**: Spatial visualization of regional patterns
 :::
 
 ::: notes

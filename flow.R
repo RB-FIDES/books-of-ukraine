@@ -22,6 +22,11 @@ if (!file.exists("manipulation/0-ellis.R")) {
   setup_messages <- c(setup_messages, "❌ Missing: manipulation/0-ellis.R")
 }
 
+if (!file.exists("manipulation/1-ellis.R")) {
+  setup_ok <- FALSE  
+  setup_messages <- c(setup_messages, "❌ Missing: manipulation/1-ellis.R")
+}
+
 # Check authentication
 if (!dir.exists(".secrets")) {
   setup_ok <- FALSE
@@ -136,6 +141,7 @@ ds_rail  <- tibble::tribble(
   
   # Main ETL (Extract-Transform-Load) from Google Sheets to local formats
   "run_r"     , "manipulation/0-ellis.R",              # Core data import and prep - creates long and wide format datasets
+  "run_r"     , "manipulation/1-ellis.R",              # Enhance geography data with bookstore infrastructure - creates enhanced datasets
   
   # ===============================
   # PHASE 2: ANALYSIS SCRIPTS

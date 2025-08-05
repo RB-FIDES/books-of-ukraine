@@ -94,7 +94,7 @@ format:
     code-line-numbers: true         # Line numbers in code blocks
     code-copy: true                 # Copy buttons for code
     smaller: true                   # Enable smaller text class
-    scrollable: true               # Allow slide content to scroll
+    scrollable: false               # Allow slide content to scroll
     touch: true                    # Enable touch/swipe navigation
     controls-tutorial: true        # Show control tutorial overlay
     controls-layout: bottom-right  # Position of navigation controls
@@ -145,6 +145,165 @@ Before creating or modifying a presentation, ask the client which theme they pre
 ```yaml
 theme: night  # Change this value in the YAML header
 ```
+
+## Scrollable Configuration
+
+**⚠️ Important: Always Keep Scrollable Set to False**
+
+For professional presentations, always ensure `scrollable: false` in the RevealJS configuration:
+
+```yaml
+scrollable: false  # Disable slide content scrolling
+```
+
+**Why scrollable should be false:**
+- **Professional appearance**: Content fits within slide boundaries
+- **Traditional presentation experience**: No unexpected scrolling during presentation
+- **Better flow control**: Forces concise, well-structured slide content
+- **Consistent viewing**: All audience members see the same content layout
+- **Print-friendly**: Better PDF export and printing results
+
+**Best practice**: Design slide content to fit within standard slide dimensions rather than relying on scrolling.
+
+## Color Palette Selection
+
+**⚠️ Always Ask Client for Color Palette Preference**
+
+Before setting slide background colors, always ask the client which color approach they prefer:
+
+### Option 1: Fade/Gradient Palette
+
+**Description**: Smooth transition from one color to another across all slides
+
+**Example gradients:**
+- **Red to Green**: `#FF4444` → `#226644` (bright to dark)
+- **Blue to Purple**: `#4A90E2` → `#8E44AD` (cool transition)
+- **Orange to Blue**: `#FF6B35` → `#1E3A8A` (warm to cool)
+- **Yellow to Red**: `#FFD700` → `#DC143C` (energetic)
+- **Green to Blue**: `#228B22` → `#1E3A8A` (natural)
+
+**How to ask:**
+*"Would you like a color gradient across slides? For example, starting bright red and ending dark green, or blue transitioning to purple?"*
+
+### Option 2: Theme-Based Colors
+
+**Description**: Colors that match the overall presentation theme and content
+
+**Professional Business Themes:**
+- **Corporate Blue**: Various shades of blue (`#003366`, `#0066CC`, `#3399FF`)
+- **Academic Gray**: Professional grays (`#2F4F4F`, `#696969`, `#A9A9A9`)
+- **Finance Green**: Money/growth colors (`#006400`, `#228B22`, `#32CD32`)
+
+**Ukraine-Specific Themes:**
+- **National Colors**: Blue and yellow variations (`#005BBB`, `#FFD700`)
+- **Regional Colors**: Different colors for different Ukrainian regions
+- **Cultural Heritage**: Traditional Ukrainian color combinations
+
+**Data-Focused Themes:**
+- **Chart Colors**: Match the colors used in your data visualizations
+- **Categorical**: Different colors for different data categories
+- **Sequential**: Light to dark for ordered data
+
+**Example questions:**
+*"Would you prefer colors that match the Ukrainian flag (blue and yellow), professional corporate colors, or colors that complement your data visualizations?"*
+
+### Option 3: Custom Colors
+
+**Description**: Client specifies exact colors they want to use
+
+**How to ask:**
+*"Do you have specific brand colors or preferred colors you'd like me to use? Please provide hex codes (like #FF0000) or color names."*
+
+**Common custom requests:**
+- **Brand Colors**: Company/organization specific colors
+- **Personal Preference**: Client's favorite colors
+- **Accessibility Colors**: High contrast for visibility
+- **Print-Friendly**: Colors that work well in black and white
+
+### Color Selection Template
+
+**Always ask this question before setting colors:**
+
+*"For the slide backgrounds, I can create:*
+1. *A **gradient/fade** from one color to another (like red to green)*
+2. *A **theme-based** color scheme (Ukrainian national colors, professional business, academic)*
+3. *Your **custom colors** (if you have specific preferences)*
+
+*Which approach would you prefer? If gradient, which two colors? If theme-based, which theme? If custom, what colors?"*
+
+### Default Color Theme
+
+**⚠️ Important: Use Dark Theme as Default if Client Doesn't Specify**
+
+If the client does not provide specific color preferences or does not respond to your color palette questions, **always use the Dark Theme as the default**:
+
+**Default Dark Theme Implementation:**
+```yaml
+# Title slide
+title-slide-attributes:
+  data-background-color: "#2C3E50"  # Dark blue-gray
+
+# Content slides
+## Slide 1 {background-color="#34495E"}  # Medium dark gray
+## Slide 2 {background-color="#2C3E50"}  # Dark blue-gray
+## Slide 3 {background-color="#1A252F"}  # Darker gray
+## Slide 4 {background-color="#273746"}  # Dark slate
+## Slide 5 {background-color="#212F3D"}  # Very dark blue
+```
+
+**Why Dark Theme as Default:**
+- ✅ **Professional Appearance**: Sophisticated and modern look
+- ✅ **High Contrast**: Excellent text readability with light text
+- ✅ **Projector Friendly**: Works well in various lighting conditions
+- ✅ **Eye Comfort**: Reduces eye strain during presentations
+- ✅ **Universally Appropriate**: Suitable for all professional contexts
+- ✅ **Print Compatible**: Converts well to grayscale for handouts
+
+**When to use default:**
+- Client doesn't respond to color preference questions
+- Client says "whatever you think is best"
+- No specific brand or theme requirements mentioned
+- Time constraints prevent detailed color discussion
+
+### Technical Implementation
+
+**Gradient Implementation:**
+```yaml
+# Slide 1 (brightest)
+## Introduction {background-color="#FF4444"}
+
+# Slide 2 
+## Data Overview {background-color="#FF6A33"}
+
+# ... continue progression ...
+
+# Final slide (darkest)
+## Conclusion {background-color="#226644"}
+```
+
+**Theme Implementation:**
+```yaml
+# Ukrainian National Theme
+## Introduction {background-color="#005BBB"}  # Ukrainian blue
+## Data {background-color="#FFD700"}         # Ukrainian yellow
+## Analysis {background-color="#0066CC"}     # Lighter blue
+```
+
+**Custom Implementation:**
+```yaml
+# Use client's specified colors
+## Introduction {background-color="#CLIENT_COLOR_1"}
+## Data {background-color="#CLIENT_COLOR_2"}
+```
+
+### Color Best Practices
+
+- ✅ **High Contrast**: Ensure text is readable on background
+- ✅ **Consistent Progression**: Logical color flow across slides  
+- ✅ **Professional Appearance**: Avoid overly bright or jarring colors
+- ✅ **Cultural Sensitivity**: Consider cultural meanings of colors
+- ✅ **Accessibility**: Test with colorblind-friendly tools
+- ✅ **Print Compatibility**: Colors should work in grayscale
 
 **🎮 Interactive Drawing:**
 - **Chalkboard Mode** (`C` key): Dark overlay with chalk drawing

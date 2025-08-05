@@ -504,3 +504,22 @@ ggsave(
   filename = paste0(prints_folder, "book_publications_by_region_faceted.png"),
   plot = g2_regional, width = 12, height = 8, dpi = 300
 )
+
+# -------- Sasha -------------------------------------------------  
+# How many numbers of titles were published for one bookstore across the places in Ukraine?
+g3 <- 
+  ds_geography_long %>%
+  filter(measure == "title_count") %>%
+  group_by(year, geography) %>%
+  summarise(total_titles = sum(value, na.rm = TRUE), .groups = "drop") %>%
+  ggplot(aes(x = year, y = total_titles)) +
+  geom_line(linewidth = 1.2, color = "#005BBB") +
+  geom_point(size = 2, color = "#005BBB") +
+  labs(title = "Book Publications by Geography",
+       x = "Year", y = "Number of Titles") +
+  theme_minimal() +
+  scale_x_continuous(breaks = seq(2005, 2023, 1)) +
+  scale_y_continuous(labels = scales::comma) +
+  facet_wrap(~ geography, scales = "free_y")
+
+print(g3)  # Print the plot to console
