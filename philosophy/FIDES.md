@@ -59,7 +59,7 @@ FIDES is organized as a modular folder of living documents. Each file plays a sp
    Only people decide what matters, what questions to ask, and how results are used.
 
 5. **Knowledge is a conversation.**  
-   FIDES supports dialectical movement—between modalities, between actors, and over time.
+   FIDES assists in dialectical movement — between modalities, between actors, and over time.
 
 ---
 
