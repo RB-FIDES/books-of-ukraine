@@ -112,6 +112,117 @@ The CACHE follows a multi-layered approach with consistent data organization pat
 
 ---
 
+## Detailed Column Specifications
+
+### Column Schema Reference
+
+All CACHE tables follow standardized schema patterns. Here are detailed specifications for common column types:
+
+#### Core Columns (Present in Most Tables)
+
+| **Column** | **Data Type** | **Range/Values** | **Description** | **Analysis Use** |
+|------------|---------------|------------------|-----------------|------------------|
+| `entity_id` | Character/Integer | Unique identifier | Primary entity identification key | Linking, aggregation, filtering |
+| `sequence_var` | Integer/Date | Sequential values | Temporal or logical ordering | Time series, trajectory analysis |
+| `measure_type` | Character | Categorical values | Type of measurement or observation | Faceting, comparison, aggregation |
+| `value` | Numeric | Domain-specific range | Measured quantity or count | Quantitative analysis, modeling |
+
+#### Category-Specific Columns
+
+| **Column** | **Data Type** | **Tables Present** | **Unique Values** | **Description** |
+|------------|---------------|-------------------|-------------------|-----------------|
+| `category_var` | Character | Classification tables | 10-50 categories | Primary categorical dimension |
+| `subcategory_var` | Character | Hierarchical tables | 50-200 subcategories | Secondary classification level |
+| `geographic_var` | Character | Spatial tables | Region-specific | Geographic/spatial dimension |
+| `temporal_var` | Date/Integer | Time-series tables | Time-dependent | Temporal classification |
+
+---
+
+## Comprehensive Table Documentation
+
+### BASE_ENTITIES - Foundation Table
+**Purpose**: Core registry providing entity identification and baseline characteristics  
+**Dimensions**: Variable based on population scope  
+**Key Use Cases**: Population definition, demographic analysis, linkage foundation
+
+| **Column** | **Specification** | **Example Values** | **Notes** |
+|------------|-------------------|-------------------|-----------|
+| `entity_id` | Primary key | `ENT001`, `ENT002`, `ENT003` | Unique across all tables |
+| `entity_type` | Categorical | `"primary"`, `"secondary"`, `"reference"` | Classification for analysis |
+| `status_flag` | Boolean/Character | `"active"`, `"inactive"`, `"pending"` | Current entity status |
+
+**Data Quality**: Complete entity coverage, validated identifiers, consistent typing
+
+---
+
+### EVENT_RECORDS - Transactional Data
+**Purpose**: Time-sequenced observations enabling behavioral and temporal analysis  
+**Dimensions**: Variable based on event frequency and scope  
+**Key Use Cases**: Pattern detection, frequency analysis, temporal modeling
+
+| **Column** | **Specification** | **Example Values** | **Analysis Notes** |
+|------------|-------------------|-------------------|-------------------|
+| `entity_id` | Foreign key | Links to BASE_ENTITIES | Entity linkage validation |
+| `event_date` | Date/Timestamp | `2023-01-15`, `2023-02-20` | Temporal ordering key |
+| `event_type` | Categorical | `"type_a"`, `"type_b"`, `"type_c"` | Event classification |
+| `event_value` | Numeric | Measurement values | Domain-specific ranges |
+
+**Event Categories**: Varied based on domain - transactions, interactions, status changes, measurements  
+**Special Considerations**: Event frequency varies by type, missing events vs. zero values distinction
+
+---
+
+### CLASSIFICATION_DATA - Categorical Dimensions  
+**Purpose**: Multi-dimensional categorical analysis enabling segmentation and grouping  
+**Dimensions**: Variable based on classification complexity  
+**Key Use Cases**: Segmentation analysis, categorical modeling, cross-classification studies
+
+| **Column** | **Specification** | **Example Values** | **Classification Notes** |
+|------------|-------------------|-------------------|-------------------------|
+| `entity_id` | Foreign key | Links to BASE_ENTITIES | Entity association |
+| `classification_type` | Categorical | `"primary"`, `"secondary"`, `"derived"` | Classification hierarchy |
+| `category_value` | Character | Domain-specific categories | Standardized category names |
+| `classification_date` | Date | Temporal validity | When classification applies |
+
+**Category Hierarchies**: Multi-level classification systems, parent-child relationships, cross-cutting dimensions  
+**Temporal Validity**: Classifications may change over time, historical tracking capabilities
+
+---
+
+### ds_analysis_primary - Main Research Dataset
+**Purpose**: Research-optimized dataset with derived variables and cohort selections  
+**Dimensions**: Research-defined population with enhanced variables  
+**Key Use Cases**: Primary research questions, hypothesis testing, model development
+
+| **Column** | **Specification** | **Example Values** | **Research Notes** |
+|------------|-------------------|-------------------|-------------------|
+| `entity_id` | Primary key | Research cohort members | Filtered population |
+| `research_var1` | Derived measure | Calculated values | Domain-specific derivation |
+| `research_var2` | Standardized category | Harmonized categories | Cross-study comparability |
+| `quality_flag` | Data quality indicator | `"high"`, `"medium"`, `"low"` | Analysis reliability guide |
+
+**Research Variables**: Purpose-built measures, standardized definitions, validation indicators  
+**Cohort Logic**: Explicit inclusion/exclusion criteria, population boundaries, comparison groups
+
+---
+
+### ds_longitudinal - Sequential Analysis
+**Purpose**: Time-ordered analysis enabling trajectory and change studies  
+**Dimensions**: Entities with multiple observations across time/sequence  
+**Key Use Cases**: Change detection, trajectory modeling, longitudinal patterns
+
+| **Column** | **Specification** | **Example Values** | **Temporal Notes** |
+|------------|-------------------|-------------------|-------------------|
+| `entity_id` | Entity identifier | Consistent across observations | Longitudinal linking |
+| `sequence_order` | Sequential ordering | `1`, `2`, `3`, `4` | Observation sequence |
+| `observation_date` | Temporal marker | Time-stamped observations | Actual timing |
+| `change_indicator` | Change detection | `"increase"`, `"decrease"`, `"stable"` | Pattern classification |
+
+**Sequential Logic**: Ordered observations, change calculations, trajectory classification  
+**Temporal Patterns**: Regular vs. irregular intervals, missing observations, sequence completion
+
+---
+
 ## Cohort Definitions and Data Transformations
 
 ### BASE Cohort (Ferry Load Layer)
@@ -235,28 +346,160 @@ The CACHE follows a multi-layered approach with consistent data organization pat
 
 ---
 
-## Usage Guidelines
+## Usage Guidelines and Best Practices
 
-### For Entity-Based Analysis
-1. **Start with BASE_ENTITIES** for population definitions and characteristics
-2. **Join with EVENT_RECORDS** using `entity_id` for behavioral/transactional analysis
-3. **Link to CLASSIFICATION_DATA** for categorical segmentation and grouping
-4. **Use analysis-ready tables** for research-specific variables and cohorts
+### Quick Start Tips
 
-### For Longitudinal Analysis
-- **Sequential Analysis**: Use sequence variables for temporal ordering
-- **Change Detection**: Leverage change-tracking variables for trend analysis
-- **Trajectory Modeling**: Utilize longitudinal cohorts for pathway analysis
-- **Consistency Validation**: Apply consistency checks for multi-observation entities
+**First Steps Checklist:**
+1. **Load and validate**: `glimpse(ds); validate_cache_data(ds)`
+2. **Check completeness**: `ds %>% summarise_all(~sum(is.na(.)))`
+3. **Start with BASE_ENTITIES** - always begin here for population context
+4. **Join strategically** - use entity_id as primary linkage key
 
-### For Cross-Sectional Analysis
-- **Point-in-Time**: Use snapshot variables for cross-sectional comparisons
-- **Demographic Segmentation**: Apply standardized categorical variables
-- **Comparative Analysis**: Use consistent variable definitions across groups
-- **Quality Filtering**: Apply data quality flags for analysis population definition
+```r
+# Essential validation function
+validate_cache_data <- function(ds) {
+  list(
+    missing_ids = sum(is.na(ds$entity_id)),
+    duplicates = ds %>% group_by_all() %>% filter(n() > 1) %>% nrow(),
+    value_range = if("value" %in% names(ds)) range(ds$value, na.rm = TRUE) else NULL
+  )
+}
+```
 
-### For Linkage and Integration
-- **Entity Linkage**: Use `entity_id` as universal linking key
+### Table-Specific Usage
+
+#### **BASE_ENTITIES** - Start Here
+**Tip**: Always profile population first
+```r
+BASE_ENTITIES %>% count(entity_type, status_flag) %>% 
+  mutate(pct = round(100 * n / sum(n), 1))
+```
+
+#### **EVENT_RECORDS** - Temporal Patterns  
+**Tip**: Group by time periods, watch for missing vs. zero events
+```r
+EVENT_RECORDS %>% 
+  mutate(month = floor_date(event_date, "month")) %>%
+  count(month, event_type)
+```
+
+#### **CLASSIFICATION_DATA** - Segmentation
+**Tip**: Use pivot_wider for cross-classification analysis
+```r
+CLASSIFICATION_DATA %>%
+  pivot_wider(names_from = classification_type, values_from = category_value)
+```
+
+### Essential Join Patterns
+
+**Recommendation**: Build comprehensive entity profiles step-by-step
+```r
+# Standard profiling approach
+profiles <- BASE_ENTITIES %>%
+  left_join(EVENT_RECORDS %>% group_by(entity_id) %>% 
+            summarise(events = n(), last_activity = max(event_date)), 
+            by = "entity_id") %>%
+  left_join(CLASSIFICATION_DATA %>% filter(classification_type == "primary") %>%
+            select(entity_id, category = category_value), 
+            by = "entity_id")
+```
+
+### Common Analysis Workflows
+
+**How to approach analysis:**
+
+1. **Population Assessment** - Use BASE_ENTITIES for scope understanding
+2. **Activity Patterns** - Use EVENT_RECORDS for behavioral insights  
+3. **Segmentation** - Use CLASSIFICATION_DATA for grouping
+4. **Integration** - Combine tables using entity_id linkage
+
+**Performance Tips:**
+- Filter early in pipelines: `filter() %>% join()` not `join() %>% filter()`
+- Use `count()` before complex operations
+- Index on entity_id and date columns for database queries
+
+### Quality Control Recommendations
+
+**Critical Checks:**
+- **Missing entity_ids**: Can break joins
+- **Date ranges**: Outside expected boundaries  
+- **Negative values**: Where logically impossible
+- **Duplicate records**: Especially in BASE_ENTITIES
+
+```r
+# Quick quality check
+check_quality <- function(ds) {
+  cat("Rows:", nrow(ds), "\n")
+  cat("Missing entity_ids:", sum(is.na(ds$entity_id)), "\n")
+  if("event_date" %in% names(ds)) {
+    cat("Date range:", as.character(range(ds$event_date, na.rm = TRUE)), "\n")
+  }
+}
+```
+
+### Visualization Standards
+
+**Recommended approach**: Use consistent themes and color schemes
+```r
+# Standard analysis theme
+theme_cache <- theme_minimal() + 
+  theme(plot.title = element_text(size = 12, face = "bold"))
+
+# Color palette
+cache_colors <- c("#1f77b4", "#ff7f0e", "#2ca02c", "#d62728")
+```
+
+
+### Analysis Workflow and Best Practices
+
+#### Recommended Analysis Steps
+1. **Start with BASE_ENTITIES** - Understand population structure and quality
+2. **Examine EVENT_RECORDS** - Identify activity patterns and temporal trends  
+3. **Explore CLASSIFICATION_DATA** - Understand segmentation possibilities
+4. **Create integrated profiles** - Combine tables for comprehensive analysis
+5. **Define research cohorts** - Apply inclusion/exclusion criteria
+6. **Validate findings** - Cross-check patterns across multiple perspectives
+
+#### Common Pitfalls to Avoid
+- **Missing vs. Zero Values**: Distinguish between no data and zero activity
+- **Scale Differences**: Different measures may have vastly different ranges
+- **Temporal Boundaries**: Account for data availability changes over time
+- **Classification Evolution**: Category definitions may change over time
+- **Entity Status Changes**: Account for changing entity characteristics
+
+#### Visualization Standards
+```r
+# Consistent analysis theme
+analysis_theme <- theme_minimal() +
+  theme(
+    plot.title = element_text(size = 14, face = "bold"),
+    axis.title = element_text(size = 11),
+    panel.grid.minor = element_blank()
+  )
+
+# Standard color palettes
+analysis_colors <- list(
+  categorical = c("#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd"),
+  sequential = c("#f7fbff", "#6baed6", "#2171b5", "#08519c")
+)
+```
+
+#### Reporting Guidelines
+**Essential Report Elements:**
+1. **Data Overview** - Population and quality summary
+2. **Methodology** - Analytical approach and assumptions  
+3. **Key Findings** - Results with statistical context
+4. **Limitations** - Data and methodological constraints
+5. **Recommendations** - Actionable insights
+
+**Data Export Recommendations:**
+- **Database queries**: Use native connections for complex analysis
+- **Statistical software**: Parquet format for performance
+- **Sharing**: CSV with appropriate encoding
+- **R analysis**: RDS format for native data types
+
+---
 - **Event Sequencing**: Apply temporal variables for chronological analysis
 - **Classification Joining**: Link multiple classification schemes per analytical needs
 - **Validation**: Use consistency flags to ensure data integrity in joins
@@ -516,3 +759,37 @@ The CACHE follows a multi-layered approach with consistent data organization pat
 - **Open Science Practices** — Approaches to transparency, replication, and community engagement
 - **Regulatory Compliance** — Guidance for meeting institutional, legal, and ethical requirements
 - **Community Resources** — Connections to broader research communities and methodological support networks
+
+---
+
+## Summary
+
+### Data Overview
+**What's Available:** Entity profiles, behavioral events, classifications, and longitudinal tracking data in standardized long-format tables optimized for analysis and visualization.
+
+**Key Capabilities:** Population profiling, temporal trend analysis, cross-classification studies, cohort comparisons, and trajectory modeling.
+
+### Data Format and Structure
+**Table Types:** BASE_ENTITIES (foundation), EVENT_RECORDS (temporal), CLASSIFICATION_DATA (categorical), ds_analysis_* (research-ready)
+
+**Available Formats:** Database (SQLite/SQL Server), R Native (RDS), High-Performance (Parquet), Universal (CSV)
+
+**Schema:** Standardized primary keys, consistent naming, optimized for joins and time-series analysis
+
+### Update Status
+- **Last Updated:** [Insert date]
+- **Coverage:** [Define scope, e.g., 2005-2023]  
+- **Quality:** Validated, complete time series, no missing core variables
+- **Refresh:** [Specify frequency, e.g., annual/quarterly]
+
+### Technical Specs
+**Integration:** R/RStudio, Python, SQL, ggplot2, Tableau, Power BI
+**Performance:** Indexed for fast queries, scalable to millions of observations
+**Access:** Multiple formats support different analytical workflows
+
+### Getting Started
+1. Start with BASE_ENTITIES for population understanding
+2. Explore EVENT_RECORDS for temporal patterns
+3. Use CLASSIFICATION_DATA for segmentation
+4. Join tables using entity_id linkage
+5. Validate findings across multiple perspectives

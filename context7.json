@@ -1,0 +1,30 @@
+{
+  "$schema": "https://context7.com/schema/context7.json",
+  "projectTitle": "Books of Ukraine Research Project",
+  "description": "Data analysis and visualization project investigating Ukrainian publishing trends since 2005, with focus on regional differences and Russian language usage patterns",
+  "folders": [
+    "docs",
+    "analysis",
+    "philosophy",
+    "ai"
+  ],
+  "excludeFolders": [
+    "cache",
+    "data-private",
+    "_cleanup",
+    ".git",
+    ".vscode",
+    "libs"
+  ],
+  "excludeFiles": [
+    "flow.R",
+    "books-of-ukraine.Rproj"
+  ],
+  "rules": [
+    "Follow R coding conventions and use tidyverse packages for data manipulation",
+    "Use Quarto (.qmd) files paired with R scripts for reproducible reports",
+    "Maintain clear documentation in the ai/ folder for project context and methodology",
+    "Use the established project structure with analysis/, manipulation/, and scripts/ folders",
+    "Follow the human-AI collaborative workflow described in the project documentation"
+  ]
+}

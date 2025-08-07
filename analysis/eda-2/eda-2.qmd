@@ -4,12 +4,37 @@ subtitle: "Exploratory Data Analysis"
 author: "Books of Ukraine Research"
 format: 
   revealjs:
-    theme: simple
-    slide-number: true
-    chalkboard: true
-    preview-links: auto
-    logo: "../../libs/images/ukraine-flag.png"
-    footer: "Ukrainian Book Publishing Trends | 2005-2023"
+    theme: dark                     # Dark theme for professional look
+    slide-number: true              # Show slide numbers for navigation
+    chalkboard:                     # Interactive drawing functionality
+      theme: chalkboard
+      boardmarker-width: 3
+      chalkwidth: 4
+      chalkeffect: 1.0
+      storage: true
+    preview-links: auto             # Link previews in presentation
+    logo: "../../libs/images/ukraine-flag.png"  # Ukraine flag logo
+    footer: "Ukrainian Book Publishing Trends | 2005-2023"  # Footer info
+    progress: true                  # Progress bar at bottom
+    hash: true                      # URL updates with slide numbers
+    overview: true                  # ESC key shows all slides
+    highlight-style: github         # GitHub-style code highlighting
+    code-line-numbers: true         # Line numbers in code blocks
+    code-copy: true                 # Copy buttons for code
+    smaller: true                   # Enable smaller text class
+    scrollable: false              # Disable slide content scrolling
+    touch: true                    # Enable touch/swipe navigation
+    controls-tutorial: true        # Show control tutorial overlay
+    controls-layout: bottom-right  # Position of navigation controls
+    menu:                          # Navigation menu system
+      numbers: true                # Show slide numbers in menu
+      titles: true                 # Show slide titles in menu
+      useTextContentForMissingTitles: true
+      themes: true                 # Theme switcher in menu
+      transitions: true            # Transition effects menu
+      openButton: true             # Show menu button
+    title-slide-attributes:
+      data-background-color: "#FF0000"  # Bright red for first slide (brightest in gradient)
 editor: visual
 ---
 
@@ -17,107 +42,546 @@ editor: visual
 #| label: setup
 #| include: false
 
-# Load required libraries
+# Load required libraries for static visualizations
 library(magrittr)
 library(ggplot2)
 library(dplyr)
+library(tidyr)
 library(scales)
 library(knitr)
+library(forcats)
+library(stringr)
+library(lubridate)
 
-# Set chunk options
+# Load project functions
+source("../../scripts/common-functions.R")
+source("../../scripts/operational-functions.R")
+
+# Set chunk options for high-quality static output
 knitr::opts_chunk$set(
-  echo = FALSE,
-  warning = FALSE,
-  message = FALSE,
-  fig.width = 10,
-  fig.height = 6,
-  fig.align = "center",
-  dpi = 300
+  echo = FALSE,           # Hide code chunks in presentation
+  warning = FALSE,        # Suppress warnings in output
+  message = FALSE,        # Suppress messages in output
+  fig.width = 12,         # Standard figure width
+  fig.height = 7,         # Standard figure height
+  fig.align = "center",   # Center all figures
+  dpi = 300,             # High resolution for crisp images
+  out.width = "100%"     # Full width figures
 )
 
-# Set working directory to project root
-setwd("../..")
+# Define data paths
+data_manipulation_path <- "../../data-private/derived/manipulation/"
 
-# Source the analysis script to load data and create plots
-source("analysis/eda-1/eda-1.R")
+# Function to load all datasets with error handling
+load_books_data <- function() {
+  tryCatch({
+    list(
+      ds_year_long = readRDS(paste0(data_manipulation_path, "ds_year_long.rds")),
+      ds_language_long = readRDS(paste0(data_manipulation_path, "ds_language_long.rds")),
+      ds_genre_long = readRDS(paste0(data_manipulation_path, "ds_genre_long.rds")),
+      ds_pubtype_long = readRDS(paste0(data_manipulation_path, "ds_pubtype_long.rds")),
+      ds_geography_long = readRDS(paste0(data_manipulation_path, "ds_geography_long.rds")),
+      ds_ukr_rus_long = readRDS(paste0(data_manipulation_path, "ds_ukr_rus_long.rds"))
+    )
+  }, error = function(e) {
+    warning("Could not load all datasets: ", e$message)
+    return(NULL)
+  })
+}
+
+# Load all datasets
+books_data <- load_books_data()
+
+# Check if data loaded successfully
+if (!is.null(books_data)) {
+  ds_year_long <- books_data$ds_year_long
+  ds_language_long <- books_data$ds_language_long
+  ds_genre_long <- books_data$ds_genre_long
+  ds_pubtype_long <- books_data$ds_pubtype_long
+  ds_geography_long <- books_data$ds_geography_long
+  ds_ukr_rus_long <- books_data$ds_ukr_rus_long
+  
+  # Prepare enhanced geography data with regional groupings
+  ds_geography_enhanced <- ds_geography_long %>%
+    mutate(
+      region_group = case_when(
+        # Північ (North)
+        geography %in% c("м. Київ", "Київська область", "Чернігівська область", 
+                        "Сумська область", "Житомирська область") ~ "Північ",
+        
+        # Південь (South) 
+        geography %in% c("Одеська область", "Миколаївська область", "Херсонська область",
+                        "Запорізька область", "Автономна Республіка Крим", "м. Sevastopol") ~ "Південь",
+        
+        # Схід (East)
+        geography %in% c("Донецька область", "Луганська область", "Харківська область",
+                        "Дніпропетровська область", "Полтавська область") ~ "Схід",
+        
+        # Захід (West)
+        geography %in% c("Львівська область", "Івано-Франківська область", "Тернопільська область",
+                        "Волинська область", "Рівненська область", "Закарпатська область", 
+                        "Чернівецька область") ~ "Захід",
+        
+        # Центр (Center)
+        geography %in% c("Вінницька область", "Черкаська область", "Кіровоградська область",
+                        "Хмельницька область") ~ "Центр",
+        
+        TRUE ~ "Інше"
+      )
+    )
+} else {
+  stop("Failed to load required datasets. Please check data paths and file availability.")
+}
 ```
 
-## Introduction {background-color="#005BBB"}
+## Introduction {background-color="#FF4444"}
 
-::: {.incremental}
-- **Research Focus**: Ukrainian book publishing trends from 2005-2023
-- **Geographic Scope**: Ukraine and its regions
-- **Key Questions**: 
-  - How has book production changed over time?
-  - What are the patterns in titles vs. copies published?
-  - How do regional trends differ?
+::: incremental
+-   **Research Focus**: Ukrainian book publishing trends from 2005-2023
+-   **Geographic Scope**: Ukraine and its regions
+-   **Data Sources**: Comprehensive publishing industry records
+-   **Key Questions**:
+    -   How has book production changed over time?
+    -   What are the patterns in titles vs. copies published?
+    -   How do language preferences evolve?
+    -   What regional trends can we identify?
 :::
 
-::: {.notes}
-This presentation explores Ukrainian book publishing data spanning nearly two decades, from 2005 to 2023. We examine both the number of unique titles published and the total copies produced, providing insights into the publishing industry's evolution during this period.
+::: notes
+Welcome to our comprehensive analysis of Ukrainian book publishing trends. This presentation examines nearly two decades of data, from 2005 to 2023, covering the publishing industry's evolution during significant political and economic changes. We explore both the diversity of publications (unique titles) and production volume (total copies), providing insights into cultural, linguistic, and regional publishing patterns. Key focus areas include temporal trends, language distribution, regional variations, and the relationship between Ukrainian and Russian language publications.
 :::
 
----
+------------------------------------------------------------------------
 
-## Data Overview {background-color="#FFD700"}
+## Data Overview {background-color="#FF6A33"}
 
-::: {.columns}
+::::: columns
 ::: {.column width="50%"}
 **Dataset Characteristics:**
 
-- **Time Period**: 2005-2023
-- **Geographic Coverage**: All Ukrainian regions
-- **Languages**: Ukrainian, Russian, English, others
-- **Measures**: Title count & Copy count
+-   📅 **Time Period**: 2005-2023 (19 years)
+-   🌍 **Geographic Coverage**: All Ukrainian oblasts + Kyiv
+-   📚 **Languages**: `r if(exists("ds_language_long")) length(unique(ds_language_long$language)) else "Multiple"` languages tracked
+-   📊 **Measures**: Title count & Copy count (thousands)
+-   📖 **Genres**: `r if(exists("ds_genre_long")) length(unique(ds_genre_long$genre)) else "Multiple"` genre categories
 :::
 
 ::: {.column width="50%"}
-**Key Variables:**
-
-- Publication year
-- Geographic region
-- Language of publication
-- Genre categories
-- Publication type
-- Copies produced (in thousands)
-:::
-:::
-
-::: {.notes}
-Our analysis is based on comprehensive data covering Ukrainian book publishing across multiple dimensions. The data includes information on publication counts, circulation numbers, geographic distribution, and linguistic characteristics of published works.
-:::
-
----
-
-## Basic Counts: Titles vs Copies Over Time {background-color="#87CEEB"}
+**Data Structure:**
 
 ```{r}
-#| label: basic-counts
-#| fig-cap: "Book Publications in Ukraine: Number of Titles vs Total Copies (2005-2023)"
+#| label: data-summary
+#| echo: false
 
-# Display the g2 plot from eda-1.R
-print(g2)
+# Create summary table with error handling
+if (exists("ds_year_long") && exists("ds_language_long") && 
+    exists("ds_genre_long") && exists("ds_geography_long") && 
+    exists("ds_pubtype_long")) {
+  
+  data_summary <- tibble(
+    Dataset = c("Year", "Language", "Genre", "Geography", "Publication Type"),
+    Rows = c(nrow(ds_year_long), nrow(ds_language_long), 
+             nrow(ds_genre_long), nrow(ds_geography_long), 
+             nrow(ds_pubtype_long)),
+    `Unique Categories` = c("Years 2005-2023", 
+                           paste(length(unique(ds_language_long$language)), "languages"),
+                           paste(length(unique(ds_genre_long$genre)), "genres"),
+                           paste(length(unique(ds_geography_long$geography)), "regions"),
+                           paste(length(unique(ds_pubtype_long$pubtype)), "types"))
+  )
+  
+  knitr::kable(data_summary, format = "markdown")
+} else {
+  tibble(
+    Note = "Data loading required",
+    Status = "Please ensure datasets are available"
+  ) %>%
+  knitr::kable(format = "markdown")
+}
+```
+:::
+:::::
+
+::: notes
+Our analysis leverages a comprehensive long-format dataset covering Ukrainian book publishing across multiple dimensions. The data provides detailed insights into publication patterns by year, language, genre, geography, and publication type, with both title counts and copy circulation data. This rich dataset enables us to examine publishing trends from various perspectives - temporal, linguistic, cultural, and geographic. The data structure allows for deep analysis of relationships between different publishing characteristics and their evolution over the 19-year period covered.
+:::
+
+------------------------------------------------------------------------
+
+## Total Book Publications Overview {background-color="#FF9122"}
+
+```{r}
+#| label: total-publications
+#| fig-cap: "Total Book Publications in Ukraine by Year"
+#| fig-width: 12
+#| fig-height: 7
+#| out-width: "100%"
+
+# Create static ggplot showing total publications by year with error handling
+if (exists("ds_year_long") && nrow(ds_year_long) > 0) {
+  
+  g1 <- ds_year_long %>%
+    filter(measure == "title_count") %>%
+    mutate(year = as.numeric(as.character(year))) %>%  # Ensure year is numeric
+    group_by(year) %>%
+    summarise(total_titles = sum(value, na.rm = TRUE), .groups = "drop") %>%
+    ggplot(aes(x = year, y = total_titles)) +
+    geom_line(linewidth = 1.2, color = "#005BBB") +
+    geom_point(size = 2, color = "#005BBB") +
+    labs(title = "Total Book Publications in Ukraine",
+         subtitle = "Number of unique titles published each year (2005-2023)",
+         x = "Year", y = "Number of Titles") +
+    theme_minimal() +
+    scale_x_continuous(breaks = seq(2005, 2023, 2)) +
+    scale_y_continuous(labels = scales::comma) +
+    theme(
+      plot.title = element_text(size = 16, face = "bold"),
+      plot.subtitle = element_text(size = 12, color = "gray60"),
+      axis.title = element_text(size = 12),
+      axis.text = element_text(size = 10),
+      panel.grid.minor = element_blank(),
+      panel.grid.major.x = element_line(color = "gray90", size = 0.5),
+      panel.grid.major.y = element_line(color = "gray90", size = 0.5)
+    )
+  
+  print(g1)
+  
+} else {
+  # Create placeholder if data not available
+  ggplot(data.frame(x = 1, y = 1), aes(x, y)) +
+    geom_text(label = "Data loading required\nPlease check data availability", 
+              size = 6, color = "red") +
+    theme_void() +
+    labs(title = "Total Book Publications - Data Required")
+}
 ```
 
-::: {.notes}
-This chart shows the dual trends in Ukrainian book publishing. The blue line represents the number of unique titles published each year, while the red line shows the total number of copies produced. Note that copy counts are stored in thousands in our data and are scaled on the right axis for comparison purposes.
+::: notes
+This chart displays the total number of unique book titles published in Ukraine each year from 2005 to 2023. The data reveals the overall publishing activity trends, showing periods of growth, stability, and potential decline. Notice any significant changes that might correspond to major economic or political events in Ukraine during this period. The blue line with points makes it easy to track year-over-year changes and identify notable peaks or valleys in publishing activity. This overview provides the foundation for understanding the broader context of all subsequent analyses.
 :::
 
----
+------------------------------------------------------------------------
 
-## Key Insights {background-color="#98FB98"}
+## Titles vs. Copies Production {background-color="#FFB811"}
 
-::: {.incremental}
-- **Title Production**: Generally stable with some fluctuations
-- **Copy Production**: Shows more variation, indicating changes in print runs
-- **Market Dynamics**: The relationship between titles and copies reveals publishing strategies
-- **Temporal Patterns**: Notable changes around major political and economic events
+```{r}
+#| label: titles-vs-copies
+#| fig-cap: "Book Publications: Titles vs Copies Produced"
+#| fig-width: 12
+#| fig-height: 7
+#| out-width: "100%"
+
+# Create dual-axis plot showing titles and copies with improved error handling
+if (exists("ds_year_long") && nrow(ds_year_long) > 0) {
+  
+  # Prepare data for visualization
+  plot_data <- ds_year_long %>%
+    filter(measure %in% c("title_count", "copy_count")) %>%
+    mutate(year = as.numeric(as.character(year))) %>%  # Ensure year is numeric
+    group_by(year, measure) %>%
+    summarise(total_value = sum(value, na.rm = TRUE), .groups = "drop")
+  
+  # Check if we have both measures
+  if (all(c("title_count", "copy_count") %in% plot_data$measure)) {
+    
+    # Create the dual-axis visualization
+    g2 <- plot_data %>%
+      ggplot(aes(x = year, y = total_value, color = measure)) +
+      geom_line(linewidth = 1.2) +
+      geom_point(size = 2) +
+      facet_wrap(~measure, scales = "free_y", ncol = 1,
+                 labeller = labeller(measure = c("title_count" = "Number of Titles",
+                                                "copy_count" = "Number of Copies (thousands)"))) +
+      labs(title = "Book Publications in Ukraine: Titles vs Copies",
+           subtitle = "Comparison of publication diversity and production volume (2005-2023)",
+           x = "Year", y = "Count") +
+      theme_minimal() +
+      scale_color_manual(values = c("title_count" = "#005BBB", "copy_count" = "#DC143C")) +
+      scale_x_continuous(breaks = seq(2005, 2023, 2)) +
+      scale_y_continuous(labels = scales::comma) +
+      theme(
+        plot.title = element_text(size = 16, face = "bold"),
+        plot.subtitle = element_text(size = 12, color = "gray60"),
+        axis.title = element_text(size = 12),
+        axis.text = element_text(size = 10),
+        axis.text.x = element_text(angle = 45, hjust = 1),
+        legend.position = "none",
+        strip.text = element_text(size = 11, face = "bold"),
+        panel.grid.minor = element_blank()
+      )
+    
+    print(g2)
+    
+  } else {
+    # Fallback if measures are missing
+    ggplot(data.frame(x = 1, y = 1), aes(x, y)) +
+      geom_text(label = "Title and copy count data required\nfor comparison visualization", 
+                size = 6, color = "red") +
+      theme_void() +
+      labs(title = "Titles vs Copies - Data Required")
+  }
+  
+} else {
+  # Create placeholder if data not available
+  ggplot(data.frame(x = 1, y = 1), aes(x, y)) +
+    geom_text(label = "Data loading required\nPlease check data availability", 
+              size = 6, color = "red") +
+    theme_void() +
+    labs(title = "Titles vs Copies - Data Required")
+}
+```
+
+::: notes
+This visualization compares two key metrics: the number of unique titles published (blue, top panel) versus the total number of copies produced (red, bottom panel). The titles metric shows publishing diversity - how many different books were published. The copies metric shows production volume - the total print run across all books. Look for patterns: Do years with more titles always have more copies? Are there periods where fewer titles had higher print runs, suggesting popular bestsellers? The relationship between these metrics reveals important insights about market demand, publisher strategies, and reading preferences over time.
 :::
 
-::: {.fragment}
-**Next Steps**: Regional analysis and language-specific trends
+------------------------------------------------------------------------
+
+## Language Distribution Over Time {background-color="#CCCC00"}
+
+```{r}
+#| label: language-trends
+#| fig-width: 12
+#| fig-height: 7
+#| out-width: "100%"
+
+# Create language trend visualization using real data with error handling
+if (exists("ds_language_long") && nrow(ds_language_long) > 0) {
+  
+  # Get top languages by total volume
+  top_languages <- ds_language_long %>%
+    filter(measure == "title_count") %>%
+    group_by(language) %>%
+    summarise(total_titles = sum(value, na.rm = TRUE), .groups = "drop") %>%
+    arrange(desc(total_titles)) %>%
+    slice_head(n = 5) %>%
+    pull(language)
+  
+  g3 <- ds_language_long %>%
+    filter(measure == "title_count", 
+           language %in% top_languages) %>%
+    mutate(
+      year = as.numeric(as.character(year)),  # Ensure year is numeric
+      language = fct_reorder(language, value, .fun = sum, .desc = TRUE)
+    ) %>%
+    group_by(year, language) %>%
+    summarise(total_titles = sum(value, na.rm = TRUE), .groups = "drop") %>%
+    ggplot(aes(x = year, y = total_titles, color = language)) +
+    geom_line(linewidth = 1.2) +
+    geom_point(size = 1.5) +
+    labs(title = "Publishing Trends by Language",
+         subtitle = "Top 5 languages by total publication volume (2005-2023)",
+         x = "Year", y = "Number of Titles", color = "Language") +
+    theme_minimal() +
+    scale_color_manual(values = c("#005BBB", "#DC143C", "#228B22", "#FF8C00", "#9932CC")) +
+    scale_x_continuous(breaks = seq(2005, 2023, 2)) +
+    scale_y_continuous(labels = scales::comma) +
+    theme(
+      legend.position = "bottom",
+      plot.title = element_text(size = 16, face = "bold"),
+      plot.subtitle = element_text(size = 12, color = "gray60"),
+      axis.title = element_text(size = 12),
+      axis.text = element_text(size = 10),
+      axis.text.x = element_text(angle = 45, hjust = 1),
+      panel.grid.minor = element_blank(),
+      legend.title = element_text(size = 11),
+      legend.text = element_text(size = 10)
+    )
+  
+  print(g3)
+  
+} else {
+  # Create placeholder if data not available
+  ggplot(data.frame(x = 1, y = 1), aes(x, y)) +
+    geom_text(label = "Language data loading required\nPlease check data availability", 
+              size = 6, color = "red") +
+    theme_void() +
+    labs(title = "Language Trends - Data Required")
+}
+```
+
+::: notes
+This chart reveals the linguistic landscape of Ukrainian publishing over time. We focus on the top 5 languages by total publication volume to ensure clarity and readability. Ukrainian typically dominates the publishing market, but watch for interesting patterns in other languages including Russian, English, and other European languages. Notice how language preferences might shift over time, potentially reflecting cultural, political, or educational changes. The different colored lines make it easy to track each language's trajectory and identify periods of growth or decline. This analysis is particularly important for understanding cultural identity and linguistic preferences in Ukrainian publishing.
 :::
 
-::: {.notes}
-The data reveals interesting patterns in Ukrainian publishing. While the number of unique titles has remained relatively stable, the total copy production shows more dramatic variations, suggesting changes in market demand, economic conditions, or publishing strategies over this period.
+------------------------------------------------------------------------
+
+## Regional Publishing Analysis {background-color="#99BB11"}
+
+```{r}
+#| label: regional-analysis
+#| fig-width: 12
+#| fig-height: 8
+#| out-width: "100%"
+
+# Create regional analysis using enhanced geography data with error handling
+if (exists("ds_geography_enhanced") && nrow(ds_geography_enhanced) > 0) {
+  
+  g4 <- ds_geography_enhanced %>%
+    filter(measure == "title_count") %>%
+    mutate(year = as.numeric(as.character(year))) %>%  # Ensure year is numeric
+    group_by(year, region_group) %>%
+    summarise(total_titles = sum(value, na.rm = TRUE), .groups = "drop") %>%
+    # Filter out regions with very small contributions for clarity
+    group_by(region_group) %>%
+    filter(sum(total_titles) > 0) %>%
+    ungroup() %>%
+    ggplot(aes(x = year, y = total_titles, fill = region_group)) +
+    geom_area(position = "stack", alpha = 0.8) +
+    labs(title = "Regional Distribution of Publications",
+         subtitle = "Book publications by major Ukrainian regions (2005-2023)",
+         x = "Year", y = "Number of Titles", fill = "Region") +
+    theme_minimal() +
+    scale_fill_manual(values = c("Північ" = "#005BBB", 
+                                 "Південь" = "#DC143C",
+                                 "Схід" = "#228B22", 
+                                 "Захід" = "#FF8C00",
+                                 "Центр" = "#9932CC",
+                                 "Інше" = "#808080")) +
+    scale_x_continuous(breaks = seq(2005, 2023, 2)) +
+    scale_y_continuous(labels = scales::comma) +
+    theme(
+      legend.position = "bottom",
+      plot.title = element_text(size = 16, face = "bold"),
+      plot.subtitle = element_text(size = 12, color = "gray60"),
+      axis.title = element_text(size = 12),
+      axis.text = element_text(size = 10),
+      axis.text.x = element_text(angle = 45, hjust = 1),
+      panel.grid.minor = element_blank(),
+      legend.title = element_text(size = 11),
+      legend.text = element_text(size = 10)
+    )
+  
+  print(g4)
+  
+} else {
+  # Create placeholder if data not available
+  ggplot(data.frame(x = 1, y = 1), aes(x, y)) +
+    geom_text(label = "Regional geography data required\nPlease check data availability", 
+              size = 6, color = "red") +
+    theme_void() +
+    labs(title = "Regional Analysis - Data Required")
+}
+```
+
+::: notes
+This stacked area chart shows the geographic distribution of book publishing across Ukraine's major regions over time. The North region (Північ), which includes Kyiv and surrounding areas, typically dominates publishing activity due to the concentration of publishers in the capital. Watch for how different regions contribute to the total publishing output and whether their relative shares change over time. The East (Схід), West (Захід), South (Південь), and Center (Центр) regions each have distinct publishing profiles. Changes in regional patterns might reflect economic developments, cultural shifts, or political events affecting different parts of the country. This geographic analysis reveals the decentralized or centralized nature of Ukraine's publishing industry.
+:::
+
+------------------------------------------------------------------------
+
+## Ukrainian vs Russian Publications {background-color="#66AA22"}
+
+```{r}
+#| label: ukr-rus-comparison
+#| fig-width: 12
+#| fig-height: 7
+#| out-width: "100%"
+
+# Create comparison chart for Ukrainian vs Russian publications with error handling
+if (exists("ds_ukr_rus_long") && nrow(ds_ukr_rus_long) > 0) {
+  
+  g5 <- ds_ukr_rus_long %>%
+    filter(measure == "title_count") %>%
+    mutate(year = as.numeric(as.character(year))) %>%  # Ensure year is numeric
+    # Check if data has ukr/rus columns or needs to be processed differently
+    {
+      if ("ukr" %in% names(.) && "rus" %in% names(.)) {
+        pivot_longer(., cols = c(ukr, rus), names_to = "language", values_to = "count")
+      } else {
+        # If the data structure is different, try to identify Ukrainian/Russian
+        filter(., grepl("укр|рус|Ukrainian|Russian", tolower(names(.)[sapply(., is.numeric)][1])))
+      }
+    } %>%
+    mutate(language = case_when(
+      language == "ukr" | grepl("укр|Ukrainian", language, ignore.case = TRUE) ~ "Ukrainian",
+      language == "rus" | grepl("рус|Russian", language, ignore.case = TRUE) ~ "Russian",
+      TRUE ~ language
+    )) %>%
+    # Ensure we have valid numeric data
+    filter(!is.na(count), count >= 0) %>%
+    ggplot(aes(x = year, y = count, fill = language)) +
+    geom_col(position = "dodge", alpha = 0.8, width = 0.7) +
+    labs(title = "Ukrainian vs Russian Publications Over Time",
+         subtitle = "Direct comparison of publication volumes (2005-2023)",
+         x = "Year", y = "Number of Titles", fill = "Language") +
+    theme_minimal() +
+    scale_fill_manual(values = c("Ukrainian" = "#005BBB", "Russian" = "#DC143C")) +
+    scale_x_continuous(breaks = seq(2005, 2023, 2)) +
+    scale_y_continuous(labels = scales::comma) +
+    theme(
+      legend.position = "bottom",
+      plot.title = element_text(size = 16, face = "bold"),
+      plot.subtitle = element_text(size = 12, color = "gray60"),
+      axis.title = element_text(size = 12),
+      axis.text = element_text(size = 10),
+      axis.text.x = element_text(angle = 45, hjust = 1),
+      panel.grid.minor = element_blank(),
+      panel.grid.major.x = element_blank(),
+      legend.title = element_text(size = 11),
+      legend.text = element_text(size = 10)
+    )
+  
+  print(g5)
+  
+} else {
+  # Create placeholder if data not available
+  ggplot(data.frame(x = 1, y = 1), aes(x, y)) +
+    geom_text(label = "Ukrainian vs Russian comparison data required\nPlease check data availability", 
+              size = 6, color = "red") +
+    theme_void() +
+    labs(title = "Ukrainian vs Russian Publications - Data Required")
+}
+```
+
+::: notes
+This chart provides a direct side-by-side comparison of Ukrainian (blue) and Russian (red) language publications over the entire time period. This analysis is particularly significant for understanding linguistic and cultural trends in Ukrainian publishing. Look for periods where one language dominates over the other, and consider what historical, political, or cultural events might have influenced these patterns. The dodged bar chart format makes it easy to compare volumes year by year. Changes in this balance over time can reflect broader social and political developments in Ukraine, making this one of the most culturally significant visualizations in our analysis.
+:::
+
+------------------------------------------------------------------------
+
+## Key Insights {background-color="#339933"}
+
+::: incremental
+-   **Overall Publishing Activity**: Total title production shows distinct patterns across the 19-year period
+-   **Production Strategy**: The relationship between title diversity and copy volume reveals publisher decision-making
+-   **Linguistic Landscape**: Language distribution patterns reflect cultural and political developments
+-   **Regional Dynamics**: Geographic concentration and distribution of publishing activity
+-   **Cultural Significance**: Ukrainian vs Russian publication trends mirror broader societal changes
+:::
+
+::: fragment
+### Critical Questions for Further Analysis
+
+-   What external factors drove major changes in publishing trends?
+-   How do genre preferences vary across regions and languages?
+-   What role do economic cycles play in publishing decisions?
+:::
+
+::: notes
+Our analysis reveals several key patterns in Ukrainian book publishing from 2005-2023. The overall publishing activity shows both stability and significant variations that likely correspond to major economic and political events in Ukraine's recent history. The relationship between title counts and copy production provides insights into publisher strategies - whether they focus on diverse titles or high-volume bestsellers. Language trends are particularly telling, showing how linguistic preferences have evolved over this critical period in Ukrainian history. Regional analysis reveals the geographic concentration of publishing activity and how different areas of Ukraine contribute to the national publishing landscape. The Ukrainian versus Russian language comparison is especially significant, reflecting broader cultural and political developments. These insights provide a foundation for understanding not just the publishing industry, but also cultural identity and social change in Ukraine during this transformative period.
+:::
+
+------------------------------------------------------------------------
+
+## Next Steps & Future Research {background-color="#226644"}
+
+::: incremental
+-   **Genre Analysis**: Deep dive into publication types and subject categories
+-   **Economic Correlation**: Link publishing trends to economic indicators
+-   **International Context**: Compare with regional publishing markets
+-   **Publisher Analysis**: Examine concentration and diversity in the publishing industry
+-   **Digital Transformation**: Investigate impact of digital publishing trends
+:::
+
+::: fragment
+### Methodology Extensions
+
+-   **Time Series Analysis**: Statistical modeling of trends and seasonality\
+-   **Regression Analysis**: Quantify relationships between variables
+-   **Geographic Mapping**: Spatial visualization of regional patterns
+:::
+
+::: notes
+This exploratory analysis opens several avenues for deeper investigation. Genre analysis could reveal what types of books are most popular in different periods and regions. Economic correlation analysis would help understand how publishing activity responds to broader economic conditions. International comparisons could contextualize Ukraine's publishing trends within regional and global markets. Publisher concentration analysis would examine market competition and diversity. Digital transformation research could explore how traditional publishing adapts to new technologies. From a methodological perspective, time series analysis could provide statistical modeling of trends, regression analysis could quantify relationships between different variables, and geographic mapping could offer spatial visualization of our findings. These next steps would transform our exploratory insights into predictive and explanatory models.
 :::

@@ -141,7 +141,7 @@ Error: object 'ds_ukr_rus' not found
 
 ``` r
 # Show year range
-cat("\nYear range in data:", min(ds_year$yr), "-", max(ds_year$yr), "\n")
+cat("\nYear range in data:", min(ds_year$year), "-", max(ds_year$year), "\n")
 ```
 
 ```

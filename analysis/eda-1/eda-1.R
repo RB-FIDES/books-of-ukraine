@@ -26,6 +26,7 @@ library(testit)    # For asserting conditions meet expected patterns.
 library(DBI)       # For database connection and operations
 library(RSQLite)   # SQLite database
 library(ggrepel)   # for text labels in ggplot2
+library(gridExtra) # for combining plots
 
 # ---- load-sources ------------------------------------------------------------
 base::source("./scripts/common-functions.R") # project-level
@@ -75,6 +76,50 @@ check_data_availability <- function() {
     cat("All required data files are available.\n")
     return(TRUE)
   }
+}
+
+# Function to ensure plot device is properly set up for VS Code
+setup_plot_device <- function() {
+  # Check if we're in VS Code R terminal
+  if (Sys.getenv("VSCODE_PID") != "") {
+    # Force graphics device refresh
+    if (length(dev.list()) > 0) {
+      dev.off()
+    }
+    # Set up device for VS Code
+    options(vsc.plot = TRUE)
+  }
+}
+
+# Function to display plot with explicit device handling
+show_plot <- function(plot_obj) {
+  setup_plot_device()
+  print(plot_obj)
+  return(plot_obj)
+}
+
+# Function to display plot in separate window
+show_plot_window <- function(plot_obj, width = 10, height = 6) {
+  # Detect operating system and use appropriate graphics device
+  os_type <- Sys.info()["sysname"]
+  
+  if (os_type == "Windows") {
+    windows(width = width, height = height)
+  } else if (os_type == "Darwin") {  # macOS
+    quartz(width = width, height = height)
+  } else {  # Linux and others
+    x11(width = width, height = height)
+  }
+  
+  print(plot_obj)
+  return(plot_obj)
+}
+
+# Alternative: Use dev.new() which is cross-platform
+show_plot_new_device <- function(plot_obj, width = 10, height = 6) {
+  dev.new(width = width, height = height)
+  print(plot_obj)
+  return(plot_obj)
 }
 
 # Function to load all datasets
@@ -129,7 +174,7 @@ cat("ds_geography_long:", dim(ds_geography_long)[1], "rows x", dim(ds_geography_
 cat("ds_ukr_rus_long:", dim(ds_ukr_rus_long)[1], "rows x", dim(ds_ukr_rus_long)[2], "columns\n")
 
 # Show year range from long format data
-cat("\nYear range in data:", min(ds_year_long$yr), "-", max(ds_year_long$yr), "\n")
+cat("\nYear range in data:", min(ds_year_long$year), "-", max(ds_year_long$year), "\n")
 
 # Show measure types available in long format
 cat("\nMeasure types available:", paste(unique(ds_year_long$measure), collapse = ", "), "\n")
@@ -173,19 +218,19 @@ ds_geography_enhanced <- ds_geography_long %>%
 
 # Create summary tables for easier graphing
 ds_year_summary <- ds_year_long %>%
-  arrange(yr, measure)
+  arrange(year, measure)
 
 ds_language_summary <- ds_language_long %>%
   # Filter for main languages of interest
   filter(language %in% c("Українська", "Російська", "Англійська")) %>%
-  arrange(yr, measure, language)
+  arrange(year, measure, language)
 
 # ---- analysis-functions ------------------------------------------------------
 # Function to create time series plot
 create_time_series <- function(data, value_col, title, subtitle = NULL, y_label = "Count") {
   data %>%
-    ggplot(aes(x = yr, y = !!sym(value_col))) +
-    geom_line(size = 1.2, color = "steelblue") +
+    ggplot(aes(x = year, y = !!sym(value_col))) +
+    geom_line(linewidth = 1.2, color = "steelblue") +
     geom_point(size = 2, color = "steelblue") +
     labs(
       title = title,
@@ -208,8 +253,8 @@ create_time_series <- function(data, value_col, title, subtitle = NULL, y_label 
 create_language_comparison <- function(data, measure_type = "title_count") {
   data %>%
     filter(measure == measure_type, language %in% c("Українська", "Російська")) %>%
-    ggplot(aes(x = yr, y = value, color = language)) +
-    geom_line(size = 1.2) +
+    ggplot(aes(x = year, y = value, color = language)) +
+    geom_line(linewidth = 1.2) +
     geom_point(size = 2) +
     labs(
       title = if(measure_type == "title_count") "Кількість видань за мовами" else "Кількість копій за мовами",
@@ -227,10 +272,10 @@ create_language_comparison <- function(data, measure_type = "title_count") {
 create_regional_comparison <- function(data, measure_type = "title_count") {
   data %>%
     filter(measure == measure_type) %>%
-    group_by(yr, region_group) %>%
+    group_by(year, region_group) %>%
     summarise(total = sum(value, na.rm = TRUE), .groups = "drop") %>%
-    ggplot(aes(x = yr, y = total, color = region_group)) +
-    geom_line(size = 1.2) +
+    ggplot(aes(x = year, y = total, color = region_group)) +
+    geom_line(linewidth = 1.2) +
     geom_point(size = 2) +
     labs(
       title = if(measure_type == "title_count") "Регіональні тенденції публікацій" else "Регіональні тенденції накладу",
@@ -248,7 +293,7 @@ create_regional_comparison <- function(data, measure_type = "title_count") {
 analyze_category_trends <- function(data, category_col, measure_type = "title_count", top_n = 5) {
   data %>%
     filter(measure == measure_type) %>%
-    group_by(yr, !!sym(category_col)) %>%
+    group_by(year, !!sym(category_col)) %>%
     summarise(total = sum(value, na.rm = TRUE), .groups = "drop") %>%
     group_by(!!sym(category_col)) %>%
     summarise(overall_total = sum(total, na.rm = TRUE), .groups = "drop") %>%
@@ -257,10 +302,10 @@ analyze_category_trends <- function(data, category_col, measure_type = "title_co
   
   data %>%
     filter(measure == measure_type, !!sym(category_col) %in% top_categories) %>%
-    group_by(yr, !!sym(category_col)) %>%
+    group_by(year, !!sym(category_col)) %>%
     summarise(total = sum(value, na.rm = TRUE), .groups = "drop") %>%
-    ggplot(aes(x = yr, y = total, color = !!sym(category_col))) +
-    geom_line(size = 1.2) +
+    ggplot(aes(x = year, y = total, color = !!sym(category_col))) +
+    geom_line(linewidth = 1.2) +
     geom_point(size = 2) +
     labs(
       title = paste("Top", top_n, str_to_title(category_col), "Trends"),
@@ -286,8 +331,8 @@ sample_language_trends <- function() {
   ds_language_long %>%
     filter(measure == "title_count", 
            language %in% c("Українська", "Російська", "Англійська")) %>%
-    ggplot(aes(x = yr, y = value, color = language)) +
-    geom_line(size = 1.2) +
+    ggplot(aes(x = year, y = value, color = language)) +
+    geom_line(linewidth = 1.2) +
     geom_point(size = 2) +
     labs(title = "Publishing Trends by Language",
          x = "Year", y = "Number of Titles", color = "Language") +
@@ -303,9 +348,9 @@ sample_language_trends <- function() {
 sample_regional_analysis <- function() {
   ds_geography_enhanced %>%
     filter(measure == "title_count") %>%
-    group_by(yr, region_group) %>%
+    group_by(year, region_group) %>%
     summarise(total_titles = sum(value, na.rm = TRUE), .groups = "drop") %>%
-    ggplot(aes(x = yr, y = total_titles, fill = region_group)) +
+    ggplot(aes(x = year, y = total_titles, fill = region_group)) +
     geom_area(position = "stack", alpha = 0.7) +
     labs(title = "Regional Distribution of Publications",
          x = "Year", y = "Number of Titles", fill = "Region") +
@@ -317,10 +362,10 @@ sample_cross_analysis <- function() {
   # This would require joining datasets - demonstrating long format flexibility
   ds_ukr_rus_long %>%
     filter(measure == "title_count") %>%
-    ggplot(aes(x = yr, y = ukr + rus, fill = "Total")) +
+    ggplot(aes(x = year, y = ukr + rus, fill = "Total")) +
     geom_col(alpha = 0.7) +
-    geom_line(aes(y = ukr, color = "Ukrainian"), size = 1.2) +
-    geom_line(aes(y = rus, color = "Russian"), size = 1.2) +
+    geom_line(aes(y = ukr, color = "Ukrainian"), linewidth = 1.2) +
+    geom_line(aes(y = rus, color = "Russian"), linewidth = 1.2) +
     labs(title = "Ukrainian vs Russian Publications Over Time",
          x = "Year", y = "Number of Titles", 
          color = "Language", fill = "Total") +
@@ -338,17 +383,20 @@ sample_cross_analysis <- function() {
 g1 <- 
   ds_year_long %>%
   filter(measure == "title_count") %>%
-  group_by(yr) %>%
+  group_by(year) %>%
   summarise(total_titles = sum(value, na.rm = TRUE), .groups = "drop") %>%
-  ggplot(aes(x = yr, y = total_titles)) +
-  geom_line(size = 1.2, color = "steelblue") +
+  ggplot(aes(x = year, y = total_titles)) +
+  geom_line(linewidth = 1.2, color = "steelblue") +
   geom_point(size = 2, color = "steelblue") +
   labs(title = "Total Book Publications in Ukraine",
        x = "Year", y = "Number of Titles") +
   theme_minimal() +
   scale_x_continuous(breaks = seq(2005, 2023, 2)) +
   scale_y_continuous(labels = scales::comma)
-g1
+
+# Display the plot in separate window
+show_plot_window(g1)  # Opens plot in separate window
+
 # now save the plot
 ggsave(
   filename = paste0(prints_folder, "total_book_publications.png")
@@ -367,14 +415,14 @@ g2 <-
       TRUE ~ value
     )
   ) %>%
-  ggplot(aes(x = yr)) +
+  ggplot(aes(x = year)) +
   geom_line(data = . %>% filter(measure == "title_count"), 
-            aes(y = actual_value), color = "#005BBB", size = 1.2) +
+            aes(y = actual_value), color = "#005BBB", linewidth = 1.2) +
   geom_point(data = . %>% filter(measure == "title_count"), 
              aes(y = actual_value), color = "#005BBB", size = 2) +
   geom_line(data = . %>% filter(measure == "copy_count"), 
             aes(y = actual_value / max(actual_value, na.rm = TRUE) * max(ds_year_long$value[ds_year_long$measure == "title_count"], na.rm = TRUE)), 
-            color = "#DC143C", size = 1.2) +
+            color = "#DC143C", linewidth = 1.2) +
   geom_point(data = . %>% filter(measure == "copy_count"), 
              aes(y = actual_value / max(actual_value, na.rm = TRUE) * max(ds_year_long$value[ds_year_long$measure == "title_count"], na.rm = TRUE)), 
              color = "#DC143C", size = 2) +
@@ -395,7 +443,8 @@ g2 <-
     axis.title.y.left = element_text(color = "#005BBB"),
     axis.title.y.right = element_text(color = "#DC143C")
   )
-g2
+show_plot_window(g2)  # Opens plot in separate window
+
 # save the plot
 ggsave(
   filename = paste0(prints_folder, "book_publications_titles_vs_copies.png"),
@@ -407,7 +456,7 @@ ggsave(
 g2_regional <- 
   ds_geography_enhanced %>%
   filter(measure %in% c("title_count", "copy_count")) %>%
-  group_by(yr, measure, region_group) %>%
+  group_by(year, measure, region_group) %>%
   summarise(value = sum(value, na.rm = TRUE), .groups = "drop") %>%
   mutate(
     # Convert copy_count from thousands to actual numbers
@@ -428,13 +477,13 @@ g2_regional <-
     )
   ) %>%
   ungroup() %>%
-  ggplot(aes(x = yr)) +
+  ggplot(aes(x = year)) +
   geom_line(data = . %>% filter(measure == "title_count"), 
-            aes(y = scaled_copy), color = "#005BBB", size = 1.0) +
+            aes(y = scaled_copy), color = "#005BBB", linewidth = 1.0) +
   geom_point(data = . %>% filter(measure == "title_count"), 
              aes(y = scaled_copy), color = "#005BBB", size = 1.5) +
   geom_line(data = . %>% filter(measure == "copy_count"), 
-            aes(y = scaled_copy), color = "#DC143C", size = 1.0) +
+            aes(y = scaled_copy), color = "#DC143C", linewidth = 1.0) +
   geom_point(data = . %>% filter(measure == "copy_count"), 
              aes(y = scaled_copy), color = "#DC143C", size = 1.5) +
   facet_wrap(~ region_group, scales = "free_y", ncol = 3) +
@@ -448,7 +497,7 @@ g2_regional <-
     strip.text = element_text(face = "bold"),
     axis.text.x = element_text(angle = 45, hjust = 1)
   )
-g2_regional
+show_plot_window(g2_regional, width = 12, height = 8)  # Opens plot in separate window with custom size
 
 # save the plot
 ggsave(
@@ -456,3 +505,21 @@ ggsave(
   plot = g2_regional, width = 12, height = 8, dpi = 300
 )
 
+# -------- Sasha -------------------------------------------------  
+# How many numbers of titles were published for one bookstore across the places in Ukraine?
+g3 <- 
+  ds_geography_long %>%
+  filter(measure == "title_count") %>%
+  group_by(year, geography) %>%
+  summarise(total_titles = sum(value, na.rm = TRUE), .groups = "drop") %>%
+  ggplot(aes(x = year, y = total_titles)) +
+  geom_line(linewidth = 1.2, color = "#005BBB") +
+  geom_point(size = 2, color = "#005BBB") +
+  labs(title = "Book Publications by Geography",
+       x = "Year", y = "Number of Titles") +
+  theme_minimal() +
+  scale_x_continuous(breaks = seq(2005, 2023, 1)) +
+  scale_y_continuous(labels = scales::comma) +
+  facet_wrap(~ geography, scales = "free_y")
+
+print(g3)  # Print the plot to console

@@ -409,37 +409,37 @@ check_cache_manifest <- function(update_if_needed = TRUE) {
   ellis_datasets <- list(
     "ds_year_long" = list(
       description = "Annual aggregate publishing statistics",
-      primary_key = "yr + measure",
+      primary_key = "year + measure",
       source_sheet = "К-ть видань",
       purpose = "Total publication counts across all categories by year"
     ),
     "ds_language_long" = list(
       description = "Publications by language",
-      primary_key = "yr + measure + language", 
+      primary_key = "year + measure + language", 
       source_sheet = "мови народу світу",
       purpose = "Language distribution of publications over time"
     ),
     "ds_genre_long" = list(
       description = "Publications by thematic genre",
-      primary_key = "yr + measure + genre",
+      primary_key = "year + measure + genre",
       source_sheet = "Тематичні розділи, Наклад тематич., Тематичні розділи 05-06",
       purpose = "Genre/thematic classification of publications"
     ),
     "ds_pubtype_long" = list(
       description = "Publications by publication type",
-      primary_key = "yr + measure + pubtype",
+      primary_key = "year + measure + pubtype",
       source_sheet = "Аркуш15, Цільові призначення", 
       purpose = "Publication type classification and analysis"
     ),
     "ds_geography_long" = list(
       description = "Publications by Ukrainian region",
-      primary_key = "yr + measure + geography",
+      primary_key = "year + measure + geography",
       source_sheet = "території, Терир. наклад",
       purpose = "Regional distribution of publishing activity"
     ),
     "ds_ukr_rus_long" = list(
       description = "Ukrainian vs Russian language publications",
-      primary_key = "yr + measure + language",
+      primary_key = "year + measure + language",
       source_sheet = "мови народу світу (derived)",
       purpose = "Comparative analysis of Ukrainian and Russian language publishing"
     )
@@ -582,7 +582,7 @@ check_cache_manifest <- function(update_if_needed = TRUE) {
     "",
     "| **Column** | **Type** | **Description** |",
     "|------------|----------|-----------------|",
-    "| `yr` | Integer | Year of observation (2005-2023) |",
+    "| `year` | Integer | Year of observation (2005-2023) |",
     "| `measure` | Character | Type of measurement (`title_count` or `copy_count`) |",
     "| `[category]` | Character | Category variable (language, genre, geography, pubtype) |",
     "| `value` | Numeric | Measured value for the year-measure-category combination |",
@@ -1915,11 +1915,95 @@ if (!exists("copilot_context_initialized")) {
   cat("  - check_flow_status()      # 🆕 Quick flow.R status check\n")
   cat("  - ai_memory_check()     # 🧠 Project memory & intent detection\n")
   cat("  - memory_status()       # Quick memory status\n")
+  cat("  - log_file_change()     # 📝 Log file modifications to logbook\n")
+  cat("  - log_change()          # 📝 Short alias for log_file_change()\n")
   cat("  - get_command_help('cmd') # Detailed help for any command\n")
   cat("\n🔧 Project Setup Functions:\n")
   cat("  - project_setup_check() # Full setup validation & diagnostics\n")
   cat("  - quick_setup_check()   # Fast setup status check\n")
   cat("  - safe_run_script()     # Run scripts with automatic setup validation\n")
   
+# ==============================================================================
+# FILE CHANGE LOGGING FUNCTION
+# ==============================================================================
+
+# Log file changes to logbook with timestamp, user, and change description
+log_file_change <- function(file_path, change_description = NULL) {
+  logbook_path <- "./ai/logbook.md"
+  
+  # Validate inputs
+  if (missing(file_path)) {
+    stop("❌ file_path is required. Usage: log_file_change('path/to/file.ext', 'description of changes')")
+  }
+  
+  # Normalize file path (handle relative paths)
+  if (!file.exists(file_path)) {
+    # Try relative to project root
+    alt_path <- file.path(".", file_path)
+    if (file.exists(alt_path)) {
+      file_path <- alt_path
+    } else {
+      stop("❌ File not found: ", file_path)
+    }
+  }
+  
+  # Get file information
+  file_info <- file.info(file_path)
+  file_name <- basename(file_path)
+  file_ext <- tools::file_ext(file_path)
+  mod_time <- format(file_info$mtime, "%Y-%m-%d %H:%M:%S")
+  
+  # Get user information (try multiple methods)
+  user_name <- Sys.getenv("USERNAME", unset = Sys.getenv("USER", unset = "Unknown User"))
+  
+  # Create change description if not provided
+  if (is.null(change_description)) {
+    change_description <- paste("Modified", file_name)
+  }
+  
+  # Create logbook entry
+  timestamp <- format(Sys.time(), "%Y-%m-%d %H:%M:%S")
+  entry <- paste0(
+    "\n## File Change Log - ", format(Sys.time(), "%Y-%m-%d"),
+    "\n**File**: `", file_path, "`  ",
+    "\n**Modified**: ", mod_time, "  ",
+    "\n**Changed by**: ", user_name, "  ",
+    "\n**Changes**: ", change_description, "  ",
+    "\n**Logged**: ", timestamp, "\n"
+  )
+  
+  # Check if logbook exists
+  if (!file.exists(logbook_path)) {
+    # Create basic logbook structure
+    initial_content <- paste0(
+      "# logbook.md\n\n",
+      "## Project Logbook\n",
+      "Use this to document key decisions, model revisions, and reasoning transitions across modalities.\n"
+    )
+    writeLines(initial_content, logbook_path)
+    message("📝 Created new logbook at: ", logbook_path)
+  }
+  
+  # Append the entry to logbook
+  cat(entry, file = logbook_path, append = TRUE)
+  
+  # Provide user feedback
+  message("📝 Logged change to logbook:")
+  message("   File: ", file_name, " (", file_ext, ")")
+  message("   User: ", user_name)
+  message("   Time: ", mod_time)
+  message("   Description: ", change_description)
+  
+  # Return the entry for potential further use
+  invisible(entry)
+}
+
+# Convenience function with shorter name
+log_change <- function(file_path, description = NULL) {
+  log_file_change(file_path, description)
+}
+
+# ==============================================================================
+
   copilot_context_initialized <- TRUE
 }

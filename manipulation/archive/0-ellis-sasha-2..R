@@ -103,15 +103,15 @@ df_raw_clean <- df_raw %>%
 ds_year <- df_raw_clean %>%
   pivot_longer(
     cols = -1,
-    names_to = "yr",
+    names_to = "year",
     values_to = "value_raw"
   ) %>%
   mutate(
-    yr = as.integer(str_remove(yr, "^x")),
+    year = as.integer(str_remove(year, "^x")),
     value_clean = str_remove_all(value_raw, " "),
     value = as.numeric(value_clean)
   ) %>%
-  group_by(yr) %>%
+  group_by(year) %>%
   mutate(
     measure = case_when(
       row_number() == 1 ~ "copy_count",
@@ -120,8 +120,8 @@ ds_year <- df_raw_clean %>%
     )
   ) %>%
   ungroup() %>%
-  select(yr, measure, value) %>%
-  arrange(yr, measure) %>% 
+  select(year, measure, value) %>%
+  arrange(year, measure) %>% 
   mutate(
     measure = case_when(
       measure == "copy_count" ~ "title_count",
@@ -161,7 +161,7 @@ long_number <- ds %>%
   select(mova, all_of(cols_number)) %>%
   pivot_longer(
     cols = -mova,
-    names_to = "yr",
+    names_to = "year",
     names_prefix = "x",
     values_to = "value"
   ) %>%
@@ -177,7 +177,7 @@ long_circulation <- ds %>%
   ) %>%
   mutate(
     measure = "copy_count",
-    yr = as.character(as.numeric(temp) + 2016)  
+    year = as.character(as.numeric(temp) + 2016)  
   ) %>%
   select(-temp)
 
@@ -188,7 +188,7 @@ ds_language <- long_all %>%
     names_from = mova,
     values_from = value
   ) %>%
-  arrange(yr, measure)
+  arrange(year, measure)
 ## ------- rm() cleaning -------
 rm(df_raw, df_raw_clean, ds, long_number, long_circulation, long_all)
 ## -------- RDS saving  -------- 
@@ -219,11 +219,11 @@ df3_fixed <- df3 %>%
 df3_long <- df3_fixed %>%
   pivot_longer(
     cols = -all_of(genre_col),
-    names_to = "yr",
+    names_to = "year",
     values_to = "copy_count"
   ) %>%
   mutate(
-    yr = as.integer(str_remove(yr, "^x"))
+    year = as.integer(str_remove(year, "^x"))
   )
 
 ds_genre_naclad <- df3_long %>%
@@ -232,7 +232,7 @@ ds_genre_naclad <- df3_long %>%
     values_from = "copy_count"
   ) %>%
   mutate(measure = "copy_count") %>%
-  relocate(yr, measure)
+  relocate(year, measure)
 
 ds_genre_naclad
 print(names(ds_genre_naclad))
@@ -260,26 +260,26 @@ df_long <- df_fixed %>%
   mutate(genre = as.character(genre)) %>%
   pivot_longer(
     cols = -genre,
-    names_to = "yr",
+    names_to = "year",
     values_to = "value_raw"
   )
 
 
 df_long <- df_long %>%
   mutate(
-    yr = as.integer(yr),
+    year = as.integer(year),
     value = as.numeric(str_remove_all(value_raw, " ")),
     measure = "title_count"
   )
 
 
 ds_genre_num <- df_long %>%
-  select(yr, measure, genre, value) %>%
+  select(year, measure, genre, value) %>%
   pivot_wider(
     names_from = genre,
     values_from = value
   ) %>%
-  arrange(yr)
+  arrange(year)
 
 
 ds_genre_num <- ds_genre_num %>%
@@ -306,31 +306,31 @@ df_long <- df_fixed %>%
   mutate(genre = as.character(genre)) %>%
   pivot_longer(
     cols = -genre,
-    names_to = "yr",
+    names_to = "year",
     values_to = "value_raw"
   ) %>%
   mutate(
-    yr = as.integer(str_extract(yr, "\\d{4}")),  # Витягуємо саме 2005/2006
+    year = as.integer(str_extract(year, "\\d{4}")),  # Витягуємо саме 2005/2006
     value = as.numeric(str_remove_all(value_raw, " ")),
     measure = "title_count"
   )
 
 
 ds_genre_0506 <- df_long %>%
-  select(yr, measure, genre, value) %>%
+  select(year, measure, genre, value) %>%
   pivot_wider(
     names_from = genre,
     values_from = value
   ) %>%
-  arrange(yr)
+  arrange(year)
 
 ds_genre_num_2 <- ds_genre_0506 %>%
-  mutate(yr = c(2005, 2006))
+  mutate(year = c(2005, 2006))
 glimpse(ds_genre_num_2)
 
 ds_genre_num_0506_filtered <- ds_genre_num_2 %>%
   select(
-    "yr",
+    "year",
     "measure",
     "Політична і соціально-економічна\nлітература, у т.ч:",
     "Природничо-наукова література, у т.ч.:",
@@ -372,24 +372,24 @@ ds_genre_num_0506_filtered_1 <- ds_genre_num_0506_filtered %>%
     , "Література універсального змісту" = "Література універсального змісту"
   )
 ## ------- Data manipulation -------
-ds_0506 <- ds_genre_num_0506_filtered_1 %>% filter(yr %in% c(2005, 2006))
+ds_0506 <- ds_genre_num_0506_filtered_1 %>% filter(year %in% c(2005, 2006))
 
-ds_genre_num_no_0506 <- ds_genre_num %>% filter(!yr %in% c(2005, 2006))
+ds_genre_num_no_0506 <- ds_genre_num %>% filter(!year %in% c(2005, 2006))
 
-ds_genre_number <- bind_rows(ds_genre_num_no_0506, ds_0506) %>% arrange(yr)
+ds_genre_number <- bind_rows(ds_genre_num_no_0506, ds_0506) %>% arrange(year)
 ds_genre_number <- ds_genre_number %>%
   rename("Друк у цілому. Книгознавство. Преса. Поліграфія" = "Друк у цілому. Книгознавство. Преса Поліграфія")
 ## -------- Creating ds_genre --------
 long_naclad <- ds_genre_naclad %>%
   pivot_longer(
-    cols = -c(yr, measure),
+    cols = -c(year, measure),
     names_to = "genre",
     values_to = "value"
   )
 
 long_number <- ds_genre_number %>%
   pivot_longer(
-    cols = -c(yr, measure),
+    cols = -c(year, measure),
     names_to = "genre",
     values_to = "value"
   )
@@ -400,11 +400,11 @@ combined_long <- bind_rows(long_naclad, long_number)
 
 ds_genre <- combined_long %>%
   pivot_wider(
-    id_cols = c(yr, measure),
+    id_cols = c(year, measure),
     names_from = genre,
     values_from = value
   ) %>%
-  arrange(yr, measure)
+  arrange(year, measure)
 ## ------- rm() cleaning -------
 rm(long_naclad, long_number, combined_long, combined_wide, ds_genre_number, ds_genre_naclad, df, df_fixed, df_long, df3, df3_fixed, df3_long, ds_0506, df_genre_0506, ds_genre_num, ds_genre_num_0506_filtered, ds_genre_num_0506_filtered_1, ds_genre_num_no_0506, ds_genre_num_2, ds_genre_0506)
 ## -------- RDS saving  --------
@@ -427,7 +427,7 @@ df <- import_selected_sheets(
 df_cir <- df %>%
   mutate(measure = "copy_count") %>%
   relocate(measure, .after = 1)  %>% 
-  rename(yr = x)
+  rename(year = x)
 df_cir <- df_cir %>% 
   rename(
     "Наукові видання" = "naukovi_vidanna"
@@ -463,27 +463,27 @@ df_num <- df_num %>%
 df_long <- df_num %>%
   pivot_longer(
     cols = -c(x, measure),   
-    names_to = "yr",
+    names_to = "year",
     names_prefix = "x",
     values_to = "value"
   ) %>%
-  select(x, measure, yr, value) %>%
-  mutate(yr = as.integer(yr))
+  select(x, measure, year, value) %>%
+  mutate(year = as.integer(year))
 
 
 df_number  <- df_long %>%
-  select(yr, measure, x, value) %>%
+  select(year, measure, x, value) %>%
   pivot_wider(
     names_from = x, 
     values_from = value
   ) %>%
-  arrange(yr) %>%
-  relocate(measure, .after = yr)
+  arrange(year) %>%
+  relocate(measure, .after = year)
 
 common_cols <- intersect(names(df_cir), names(df_number))
 df_cir <- df_cir %>% select(all_of(common_cols))
 df_number <- df_number %>% select(all_of(common_cols))
-ds_pubtype <- bind_rows(df_cir, df_number) %>% arrange(yr, measure)
+ds_pubtype <- bind_rows(df_cir, df_number) %>% arrange(year, measure)
 
 ## ------- rm() cleaning -------
 rm(df_number, df_cir, common_cols, df_long, df_num, year_cols, df)
@@ -517,23 +517,23 @@ df <- df %>%
 df_long <- df %>%
   pivot_longer(
     cols = -x,           # pivot all columns except 'x'
-    names_to = "yr",
+    names_to = "year",
     names_prefix = "x",
     values_to = "value"
   ) %>%
   mutate(
-    yr = as.integer(yr),
+    year = as.integer(year),
     measure = "title_count"
   )
 
 ds_area_num <- df_long %>%
-  select(yr, measure, x, value) %>%
+  select(year, measure, x, value) %>%
   pivot_wider(
     names_from = x,
     values_from = value
   ) %>%
-  arrange(yr) %>%
-  relocate(measure, .after = yr)
+  arrange(year) %>%
+  relocate(measure, .after = year)
 
 terir_naklad <- import_selected_sheets(
     sheet_url = "https://docs.google.com/spreadsheets/d/1FOrg2bg3o-YrnnvGkRdax9sF5xOL-r08839ARJMAE9w/edit?gid=613842371#gid=613842371",
@@ -544,23 +544,23 @@ terir_naklad <- import_selected_sheets(
 terir_naklad_long <- terir_naklad %>%
   pivot_longer(
     cols = -x,              # all columns except "x" (area)
-    names_to = "yr",
+    names_to = "year",
     names_prefix = "x",
     values_to = "value"
   ) %>%
-  mutate(yr = as.integer(yr))
+  mutate(year = as.integer(year))
 
 ds_area_cir <- terir_naklad_long %>%
-  select(yr, x, value) %>%
+  select(year, x, value) %>%
   pivot_wider(
     names_from = x,
     values_from = value
   ) %>%
-  arrange(yr) %>% mutate(measure = "copy_count") %>%
-  relocate(measure, .after = yr)
+  arrange(year) %>% mutate(measure = "copy_count") %>%
+  relocate(measure, .after = year)
 
   ds_geography <- bind_rows(ds_area_num, ds_area_cir) %>%
-  arrange(yr, measure)
+  arrange(year, measure)
 ## ------- rm() cleaning -------
 rm(ds_area_cir, terir_naklad_long, ds_area_num, df_long, df, year_cols, ds_area_num,ds, terir_naklad)
 ## -------- RDS saving  --------
@@ -590,7 +590,7 @@ df <- df  %>%
     )
   ) %>%
   relocate(measure, .after = 1) %>% 
-  rename(yr = x)
+  rename(year = x)
 
 df_long <- import_selected_sheets(
     sheet_url = "https://docs.google.com/spreadsheets/d/1FOrg2bg3o-YrnnvGkRdax9sF5xOL-r08839ARJMAE9w/edit?gid=613842371#gid=613842371",
@@ -599,7 +599,7 @@ df_long <- import_selected_sheets(
   slice(-c(3,6,7)) %>%
   pivot_longer(
     cols = -x,           # this is the important fix!
-    names_to = "yr",
+    names_to = "year",
     names_prefix = "x",
     values_to = "value"
   )
@@ -621,12 +621,12 @@ df_long <- df_long %>%
 
 df_wide <- df_long %>%
   filter(!is.na(measure)) %>%
-  select(yr, measure, lang, value) %>%
+  select(year, measure, lang, value) %>%
   pivot_wider(
     names_from = lang,
     values_from = value
   ) %>%
-  arrange(yr, measure)
+  arrange(year, measure)
 
   df_perc <- df_wide %>%
   filter(measure == "copy_count") %>%
@@ -641,7 +641,7 @@ df_wide <- df_long %>%
   select(-sum_)
 
 ds_ukr_rus <- bind_rows(df_wide, df_perc) %>%
-  arrange(yr, measure)
+  arrange(year, measure)
 
 ds_ukr_rus <- df_wide %>%
   filter(measure %in% c("title_count", "copy_count")) %>%
@@ -693,19 +693,19 @@ df <- df %>%
 df_long <- df %>%
   pivot_longer(
     cols = -x,           # pivot all columns except 'x'
-    names_to = "yr",
+    names_to = "year",
     names_prefix = "x",
     values_to = "value"
   ) %>%
   mutate(
-    yr = as.integer(yr),
+    year = as.integer(year),
     measure = "title_count"
   )
 
 ds_area_num <- df_long %>%
-  select(yr, measure, geography = x, value) %>%
-  arrange(yr) %>%
-  relocate(measure, .after = yr)
+  select(year, measure, geography = x, value) %>%
+  arrange(year) %>%
+  relocate(measure, .after = year)
 
 terir_naklad <- import_selected_sheets(
   sheet_url = "https://docs.google.com/spreadsheets/d/1FOrg2bg3o-YrnnvGkRdax9sF5xOL-r08839ARJMAE9w/edit?gid=613842371#gid=613842371",
@@ -716,21 +716,21 @@ terir_naklad <- import_selected_sheets(
 terir_naklad_long <- terir_naklad %>%
   pivot_longer(
     cols = -x,              # all columns except "x" (area)
-    names_to = "yr",
+    names_to = "year",
     names_prefix = "x",
     values_to = "value"
   ) %>%
-  mutate(yr = as.integer(yr))
+  mutate(year = as.integer(year))
 
 ds_area_cir <- terir_naklad_long %>%
-  select(yr, geography = x, value) %>%
-  arrange(yr) %>%
+  select(year, geography = x, value) %>%
+  arrange(year) %>%
   mutate(measure = "copy_count") %>%
-  relocate(measure, .after = yr)
+  relocate(measure, .after = year)
 
 ds_geography_looker <- bind_rows(ds_area_num, ds_area_cir) %>%
-  arrange(yr, measure) %>%
-  select(yr, measure, geography, value) %>%
+  arrange(year, measure) %>%
+  select(year, measure, geography, value) %>%
   rename(values = value)
 
 ## ------- rm() cleaning -------

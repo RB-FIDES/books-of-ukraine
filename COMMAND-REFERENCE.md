@@ -166,6 +166,47 @@ This new command provides:
 
 ---
 
+## 📝 File Change Tracking Commands
+
+### `log_file_change('path/to/file.ext', 'description')`
+**Log file modifications to project logbook**
+- Records when file was modified and by whom
+- Automatically captures user information from system environment
+- Appends structured entries to `./ai/logbook.md`
+- Creates logbook if it doesn't exist
+- Handles both absolute and relative file paths
+- Perfect for team collaboration and audit trails
+
+**Example**: 
+```r
+log_file_change("analysis/eda-1/eda-1.qmd", "Added regional analysis visualizations")
+```
+
+**Output in logbook**:
+```markdown
+## File Change Log - 2025-08-02
+**File**: `analysis/eda-1/eda-1.qmd`  
+**Modified**: 2025-08-02 14:30:25  
+**Changed by**: muaro  
+**Changes**: Added regional analysis visualizations  
+**Logged**: 2025-08-02 14:35:12
+```
+
+### `log_change('file.ext', 'description')`
+**Short alias for log_file_change()**
+- Convenient shorter command for frequent use
+- Identical functionality to `log_file_change()`
+- Saves typing for active development sessions
+
+**When to use**:
+- After making significant changes to any project file
+- When modifying analysis scripts or reports
+- For documenting configuration changes
+- Before committing changes to version control
+- When collaborating on team projects
+
+---
+
 ## 📊 Analysis & Help Commands
 
 ### `analyze_project_status()`
@@ -217,6 +258,10 @@ This new command provides:
 1. `ai_memory_check()` - Review project intentions
 2. `analyze_project_status()` - Current state assessment
 3. Update memory with `update_project_memory()` as needed
+
+### 📝 **File Change Tracking**
+1. `log_file_change('path/to/file.ext', 'description')` - Log file modifications to logbook
+2. `log_change('file.ext', 'description')` - Short alias for file change logging
 
 ---
 

@@ -27,6 +27,10 @@ This script now includes comprehensive project management functions:
 - `ai_memory_check()` - Project memory and intent detection
 - `memory_status()` - Quick memory overview
 
+#### 📝 File Change Tracking Functions:
+- `log_file_change()` - Log file modifications to project logbook
+- `log_change()` - Short alias for file change logging
+
 **Usage**: Source this script to access all project management functions.
 
 ### Other Important Scripts

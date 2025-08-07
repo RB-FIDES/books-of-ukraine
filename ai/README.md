@@ -36,6 +36,33 @@ check_cache_manifest()
 update_cache_manifest()
 ```
 
+## 📝 File Change Tracking System
+
+The project includes an **automated file change tracking system** that maintains an audit trail of all modifications:
+
+- **Purpose**: Track file modifications with timestamps, user information, and change descriptions
+- **Integration**: All changes are logged to `logbook.md` for team visibility
+- **AI Context**: Change logs help AI understand project evolution and decision-making
+
+### File Change Tracking Commands:
+```r
+# Log changes to any project file
+log_file_change("path/to/file.ext", "description of changes")
+log_change("file.ext", "description")  # Short alias
+
+# Examples
+log_change("analysis/eda-1/eda-1.R", "Added regional comparison analysis")
+log_change("manipulation/0-ellis.R", "Fixed data type conversion issue")
+```
+
+### What gets tracked:
+- **File path and modification timestamp**
+- **User who made the change**
+- **Description of what was changed**
+- **When the change was logged**
+
+This creates a comprehensive audit trail that supports team collaboration and project transparency.
+
 ## 🔗 Project Pipeline
 
 `./pipeline.md` outlines the flow of analytic work specific to this project.
