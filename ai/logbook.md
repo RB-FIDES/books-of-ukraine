@@ -139,3 +139,23 @@ Use this to document key decisions, model revisions, and reasoning transitions a
 Sasha just finished organizing books-of-ukraine-input document which will serve as the new starting point for data input. The ellis that processes the original messy data (originally created by Halyna)  has been saved as ./manipulation/0-ellis-original-input.R. However, we don't expect to maintain this script in the future, because the now that we understand what input data should look like, we  will build a new ellis that processes the new google sheet input. This is the tast of the current session. 
 
 Let's take the exisitng ./manipulation/0-ellis.R that right now is the exact copy of ./manipulation/0-ellis-original-input.R and modify it to read from the new google sheet input: [books-of-ukraine-input](https://docs.google.com/spreadsheets/d/1nxMTUD9gRhaE_VIT6WPR4V-_7BWNVwsJu__qjtCtSF0/edit?usp=sharing
+## File Change Log - 2025-08-08
+**File**: `./ai/project-map.md`  
+**Modified**: 2025-08-08 10:53:07  
+**Changed by**: andriy.koval  
+**Changes**: Created initial project map  
+**Logged**: 2025-08-08 10:53:07
+
+## File Change Log - 2025-08-08
+**File**: `./ai/project-map.md`  
+**Modified**: 2025-08-08 10:53:34  
+**Changed by**: andriy.koval  
+**Changes**: Project structure changes: Added: project-map.md  
+**Logged**: 2025-08-08 10:53:34
+
+## File Change Log - 2025-08-08
+**File**: `./ai/project-map.md`  
+**Modified**: 2025-08-08 10:58:57  
+**Changed by**: andriy.koval  
+**Changes**: Project structure changes: Removed: books-of-ukraine.Rproj, COMMAND-GUIDE.md, COMMAND-REFERENCE.md, config.yml, context7.json, FLOW-USAGE.md, flow.R, pipeline.md, README.md, CACHE-manifest-example.md, CACHE-manifest.md, FIDES.md, glossary.md, INPUT-manifest.md, logbook.md, memory-system-demo.md, method.md, mission.md, onboarding-ai.md, project-map.md, project-memory.md, semiology.md, vscode-tasks-reference.md, IDEAS.md, looker-studio-assessment.md, contents.md, google-auth-setup.md, service-account-setup.md, setup-google-access.md, 0-ellis-original-input.R, 0-ellis.R, 1-ellis.R, analysis-templatization.md, causal-inference.md, fides-example.md, ontology.md, threats-to-validity.md, ai-memory-functions.R, check-setup.R, clean-and-load-core-context.R, common-chunks.R, common-functions.R, context-refresh.R, google-auth-helper.R, load-core-context.R, operational-functions.R, service-account-auth.R, setup-google-auth.R, test-service-account.R, update-copilot-context.R, common-headers.R, install-packages.R, manipulation/1-ellis.R, scripts/check-setup.R, ai/CACHE-manifest.md  
+**Logged**: 2025-08-08 10:58:57
