@@ -90,37 +90,51 @@ if (!fs::dir_exists(data_private_derived_csv)) {fs::dir_create(data_private_deri
 db_books_of_ukraine <- dbConnect(RSQLite::SQLite(), "data-private/derived/manipulation/SQLite/books-of-ukraine-long.sqlite")
 
 # ---- load-data ---------------------------------------------------------------
-# Define the new clean data source
+# STEP 1: Connect to Google Sheets data source
+# This is the master spreadsheet containing clean, structured Ukrainian book publication data
+# organized by different dimensions (year, language, theme, territory, purpose)
 sheet_url <- "https://docs.google.com/spreadsheets/d/1nxMTUD9gRhaE_VIT6WPR4V-_7BWNVwsJu__qjtCtSF0"
 
-# First, scan all available sheets to understand structure
-sheet_info <- googlesheets4::gs4_get(sheet_url)
-all_sheet_names <- sheet_info$sheets$name
+# STEP 2: Discover all available data sheets in the workbook
+# Before importing, we scan the spreadsheet to see what sheets exist
+# This helps us understand the data structure and process each sheet appropriately
+sheet_info <- googlesheets4::gs4_get(sheet_url)  # Get metadata about the spreadsheet
+all_sheet_names <- sheet_info$sheets$name        # Extract just the sheet names
 
+# STEP 3: Display available sheets for transparency and debugging
+# This shows the user exactly what data sources are being processed
 cat("📊 Available sheets in clean data source:\n")
 for (i in seq_along(all_sheet_names)) {
   cat(sprintf("  %d. %s\n", i, all_sheet_names[i]))
 }
 cat("\n")
 
-# Import each sheet as separate tibble for individual processing
+# STEP 4: Import all sheets into a structured list for processing
+# We create a named list where each element contains one sheet's data
+# This preserves the original sheet structure while allowing systematic processing
 sheets_data <- list()
 
 for (sheet_name in all_sheet_names) {
   cat("📥 Loading sheet:", sheet_name, "\n")
   
+  # Import individual sheet with minimal name repair to preserve original column names
+  # then apply consistent column name cleaning using janitor::clean_names()
   sheet_data <- googlesheets4::read_sheet(
-    ss = sheet_url,
-    sheet = sheet_name,
-    .name_repair = "minimal"
+    ss = sheet_url,              # The spreadsheet URL
+    sheet = sheet_name,          # Current sheet name
+    .name_repair = "minimal"     # Don't auto-fix names, we'll clean them manually
   ) %>%
-    janitor::clean_names()
-  
+    janitor::clean_names()       # Convert to snake_case, handle special characters
+
+  # Store in our master list using the original sheet name as the key
+  # This maintains the connection between data and its source
   sheets_data[[sheet_name]] <- sheet_data
   cat("   ✓ Size:", nrow(sheet_data), "rows ×", ncol(sheet_data), "columns\n")
 }
 
 cat("\n📋 All sheets loaded successfully!\n\n")
+# we can remove temporary files
+rm(sheet_info, sheet_data)
 
 # ---- inspect-data-0 ----------------------------------------------------------
 # Quick inspection of each sheet structure
@@ -154,62 +168,93 @@ for (sheet_name in names(sheets_data)) {
 # - Consistent long format for all measures
 # =============================================================================
 
+# =============================================================================
+# DATA TRANSFORMATION: Convert raw sheets to star schema format
+# =============================================================================
+# This section transforms each sheet from wide format (years as columns) to long format
+# (year-value pairs) while standardizing the structure for analytical queries
 processed_tables <- list()
 
-# Process each sheet based on its consistent structure
+# MAIN PROCESSING LOOP: Handle each sheet according to its data type
+# Each sheet represents a different dimension of Ukrainian book publication data
 for (sheet_name in names(sheets_data)) {
   cat("🔧 Processing sheet:", sheet_name, "\n")
   
   sheet_data <- sheets_data[[sheet_name]]
   
-  # All sheets now have consistent structure: pokaznik + category_column + year_columns
+  # DATA STRUCTURE: All sheets follow pattern: pokaznik + category_column + year_columns
+  # Example: [pokaznik="Наіменувань", мова="Українська", x2005=150, x2006=200, ...]
+  
   if (sheet_name == "Рік") {
-    # YEAR-LEVEL DATA: Total publications by year (no category dimension)
+    # SPECIAL CASE: Year-level totals (no categorical breakdown)
+    # This sheet contains aggregate totals across all categories by year
+    # Structure: [pokaznik, year columns] - no category dimension
     processed_tables[["year_totals"]] <- sheet_data %>%
+      # Add standardized category columns for consistency with other tables
       mutate(
-        category_type = "total",
-        category_value = "all_books"
+        category_type = "total",        # Indicates this is aggregate data
+        category_value = "all_books"    # Single value representing all books
       ) %>%
+      # PIVOT TRANSFORMATION: Convert year columns to year-value pairs
+      # This changes from: [pokaznik, x2005=150, x2006=200] 
+      # To: [pokaznik, year=2005, value=150], [pokaznik, year=2006, value=200]
       pivot_longer(
-        cols = starts_with("x") | matches("\\d{4}"),
-        names_to = "year",
-        values_to = "value"
+        cols = starts_with("x") | matches("\\d{4}"),  # Find year columns (x2005, 2006, etc.)
+        names_to = "year",                            # New column for year values
+        values_to = "value"                           # New column for publication counts
       ) %>%
+      # DATA CLEANING AND STANDARDIZATION
       mutate(
+        # Extract 4-digit year from column names (handles both "x2005" and "2005" formats)
         year = as.integer(str_extract(year, "\\d{4}")),
+        # Clean numeric values, handle missing/malformed data
         value = safe_numeric_convert(value),
+        # MEASURE TYPE DETECTION: Identify what type of count this represents
         measure_type = case_when(
-          pokaznik == "Наіменувань" ~ "title_count",
-          str_detect(pokaznik, "Примірників") ~ "copy_count",
-          TRUE ~ "title_count"  # default
+          pokaznik == "Наіменувань" ~ "title_count",           # Number of unique titles
+          str_detect(pokaznik, "Примірників") ~ "copy_count",  # Number of copies printed
+          TRUE ~ "title_count"  # default fallback
         )
       ) %>%
+      # DATA QUALITY: Remove incomplete records
       filter(!is.na(year), !is.na(value)) %>%
+      # FINAL STRUCTURE: Standardized columns for star schema
       select(year, category_type, category_value, measure_type, value)
     
   } else {
-    # CATEGORICAL DATA: Language, Theme, Territory, Purpose
-    # Get the category column name (second column after pokaznik)
+    # STANDARD CASE: Categorical data (Language, Theme, Territory, Purpose)
+    # These sheets break down publications by specific dimensions
+    # Structure: [pokaznik, category_column, year columns]
+    
+    # COLUMN IDENTIFICATION: Find the category column (always second column)
+    # Example: For "Мова" sheet, this would be the language column
     category_col <- names(sheet_data)[2]
     
-    # Create translated table name
+    # TRANSLATION MAPPING: Create English keys for database storage
+    # This ensures consistent, language-neutral table names
     table_key <- case_when(
-      sheet_name == "Мова" ~ "language",
-      sheet_name == "Тема" ~ "theme", 
-      sheet_name == "Територія" ~ "territory",
-      sheet_name == "Призначення" ~ "purpose",
-      TRUE ~ tolower(sheet_name)
+      sheet_name == "Мова" ~ "language",        # Ukrainian language dimension
+      sheet_name == "Тема" ~ "theme",           # Book theme/subject dimension  
+      sheet_name == "Територія" ~ "territory",  # Geographic/regional dimension
+      sheet_name == "Призначення" ~ "purpose",  # Purpose/target audience dimension
+      TRUE ~ tolower(sheet_name)                # Fallback for unexpected sheets
     )
     
+    # PROCESS CATEGORICAL DATA: Same pivot logic as year totals but with categories
     processed_tables[[table_key]] <- sheet_data %>%
+      # PIVOT TRANSFORMATION: Convert wide format to long format
       pivot_longer(
-        cols = starts_with("x") | matches("\\d{4}"),
-        names_to = "year",
-        values_to = "value"
+        cols = starts_with("x") | matches("\\d{4}"),  # Year columns to pivot
+        names_to = "year",                            # Extract years
+        values_to = "value"                           # Extract values
       ) %>%
+      # DATA STANDARDIZATION AND ENRICHMENT
       mutate(
+        # Clean and convert year values
         year = as.integer(str_extract(year, "\\d{4}")),
+        # Clean numeric values with robust conversion
         value = safe_numeric_convert(value),
+        # CATEGORY TYPE MAPPING: Standardize dimension names
         category_type = case_when(
           sheet_name == "Мова" ~ "language",
           sheet_name == "Тема" ~ "theme", 
@@ -217,20 +262,26 @@ for (sheet_name in names(sheets_data)) {
           sheet_name == "Призначення" ~ "purpose",
           TRUE ~ tolower(sheet_name)
         ),
-        category_value = .data[[category_col]],
+        # CATEGORY VALUE: Extract the actual category (e.g., "Українська", "Російська")
+        category_value = .data[[category_col]],  # Use dynamic column reference
+        # MEASURE TYPE: Same logic as year totals
         measure_type = case_when(
           pokaznik == "Наіменувань" ~ "title_count",
           str_detect(pokaznik, "Примірників") ~ "copy_count", 
           TRUE ~ "title_count"  # default
         )
       ) %>%
+      # DATA QUALITY: Remove incomplete records (more stringent for categorical data)
       filter(!is.na(year), !is.na(value), !is.na(category_value)) %>%
+      # FINAL STRUCTURE: Consistent schema across all tables
       select(year, category_type, category_value, measure_type, value)
   }
   
+  # PROGRESS TRACKING: Show how many records were created from this sheet
   cat("   ✓ Processed:", nrow(processed_tables[[length(processed_tables)]]), "records\n")
 }
 
+rm(sheet_data)
 # Combine all processed data into unified fact table
 fact_book_publications <- bind_rows(processed_tables) %>%
   arrange(year, category_type, category_value, measure_type)
