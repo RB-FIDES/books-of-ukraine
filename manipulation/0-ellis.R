@@ -3,31 +3,60 @@
 # Long format schema: year + measure + [category] + value
 # Wide format schema: year + measure + [category columns with values]
 
-# Manual Authentical process (obsolete)
-# To run this document, you need to connect your profile to Google account, first:
-# Use this command to connect your profile to Google account:
-# library(googlesheets4) - run it in console first
-# gs4_auth() - then run this, and connect account
-# ------------------------------------- Important to run ------------------------------------- 
-# If you run this scripts first, you can run chunks below in order you want
-## ------- Preparation -------
 rm(list = ls(all.names = TRUE)) # Clear the memory of variables from previous run. This is not called by knitr, because it's above the first chunk.
-cat("\014") # Clear the console 
+cat("\014") # Clear the console
 # verify root location
 cat("Working directory: ", getwd()) # Must be set to Project Directory
 # Project Directory should be the root by default unless overwritten
 
-## ------- Google Sheets Authentication -------
-# Automatic authentication using service account (preferred) or cached tokens (fallback)
-source("scripts/service-account-auth.R")
+# ---- load-packages -----------------------------------------------------------
+# Choose to be greedy: load only what's needed
+# Three ways, from least (1) to most(3) greedy:
+# -- 1.Attach these packages so their functions don't need to be qualified: 
+# http://r-pkgs.had.co.nz/namespace.html#search-path
+library(magrittr)
+library(ggplot2)   # graphs
+library(forcats)   # factors
+library(stringr)   # strings
+library(lubridate) # dates
+library(labelled)  # labels
+library(dplyr)     # data wrangling
+library(tidyr)     # data wrangling
+library(scales)    # format
+library(broom)     # for model
+library(emmeans)   # for interpreting model results
+library(ggalluvial)
+library(janitor)   # tidy data
+library(googlesheets4) # Google Sheets integration
+library(DBI)       # For database connection and operations
+library(RSQLite)   # SQLite database interface
+library(ggrepel)   # improved text positioning
+# -- 2.Import only certain functions of a package into the search path.
+# import::from("magrittr", "%>%")
+# -- 3. Verify these packages are available on the machine, but their functions need to be qualified
+requireNamespace("openxlsx"  )# Excel operations
+requireNamespace("fs"        )# file system operations
 
+# ---- load-sources ------------------------------------------------------------
+base::source("./scripts/common-functions.R") # project-level
+base::source("./scripts/operational-functions.R") # project-level
+base::source("./scripts/service-account-auth.R") # Google Sheets authentication
+
+# ---- declare-globals ---------------------------------------------------------
+local_root <- "./manipulation/"
+local_data <- paste0(local_root, "data-local/") # for local outputs
+
+if (!fs::dir_exists(local_data)) {fs::dir_create(local_data)}
+
+# ---- authenticate-google-sheets ----------------------------------------------
+# Automatic authentication using service account (preferred) or cached tokens (fallback)
 # This will:
 # 1. Try service account authentication (google-service-account.json) - NO BROWSER
 # 2. Fall back to cached token authentication if no service account
 # 3. Fall back to interactive authentication if neither available
 authenticate_google_sheets()
 
-## ------- Creating a Function -------
+# ---- declare-functions -------------------------------------------------------
 import_selected_sheets <- function(sheet_url, sheets_to_import, clean_names = TRUE) {
   
   # Get sheet information
@@ -97,30 +126,9 @@ safe_numeric_convert <- function(x) {
   return(result)
 }
 
-## -------Load libraries-------
-library(magrittr)
-library(ggplot2)   # graphs
-library(forcats)   # factors
-library(stringr)   # strings
-library(lubridate) # dates
-library(labelled)  # labels
-library(dplyr)     # data wrangling
-library(tidyr)     # data wrangling
-library(scales)    # format
-library(broom)     # for model
-library(emmeans)   # for interpreting model results
-library(ggalluvial)
-library(janitor)
-library(openxlsx)
-library(DBI)      # For database connection and operations
-library(RSQLite)
-library(ggrepel)
-library(googlesheets4)
-library(fs)        # file system operations
-
-## --- Creating folders for data manipulation ----
+# ---- create-directories ------------------------------------------------------
 data_private_derived <- "data-private/derived/manipulation/"
-if (!fs::dir_exists(data_private_derived)) {fs::dir_create(data_private_derived)} # nolint
+if (!fs::dir_exists(data_private_derived)) {fs::dir_create(data_private_derived)}
 
 data_private_derived_sqlite <- "data-private/derived/manipulation/SQLite/"
 if (!fs::dir_exists(data_private_derived_sqlite)) {fs::dir_create(data_private_derived_sqlite)}
@@ -128,11 +136,20 @@ if (!fs::dir_exists(data_private_derived_sqlite)) {fs::dir_create(data_private_d
 data_private_derived_csv <- "data-private/derived/manipulation/CSV/"
 if (!fs::dir_exists(data_private_derived_csv)) {fs::dir_create(data_private_derived_csv)}
 
+# ---- establish-database-connection -------------------------------------------
 db_books_of_ukraine <- dbConnect(RSQLite::SQLite(), "data-private/derived/manipulation/SQLite/books-of-ukraine-long.sqlite")
 
-## ------ Data import ------
+# ---- load-data ---------------------------------------------------------------
 df_raw <- import_selected_sheets(
   sheet_url = "https://docs.google.com/spreadsheets/d/1nxMTUD9gRhaE_VIT6WPR4V-_7BWNVwsJu__qjtCtSF0",
   sheets_to_import = "Рік"
 )
+
+# ---- inspect-data-0 ----------------------------------------------------------
+
+# ---- tweak-data-0 ------------------------------------------------------------
+
+# ---- save-to-disk ------------------------------------------------------------
+
+# ---- analysis-below ----------------------------------------------------------
 
