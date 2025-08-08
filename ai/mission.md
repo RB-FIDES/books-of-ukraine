@@ -20,4 +20,9 @@ A collection of reproducible scripted reports (e.g. .R, .qmd) that explore, anal
 
 A convenient and efficient way to update the data and reports as new data becomes available, with clear version control and change logs.
 
+### Specific Deliverables
 
+- a google spreadsheet with the data organized for two purposes: 
+    - 1. To serve as the input for ./manipulation/0-ellis.R
+    - 2. To face the use who will enter new data as they become available
+    - 3. [books-of-ukraine-input](https://docs.google.com/spreadsheets/d/1nxMTUD9gRhaE_VIT6WPR4V-_7BWNVwsJu__qjtCtSF0/edit?usp=sharing)
