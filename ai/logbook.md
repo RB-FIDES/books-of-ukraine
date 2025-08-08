@@ -135,6 +135,7 @@ Use this to document key decisions, model revisions, and reasoning transitions a
 
 # 2025-08-01 12:15:02
 
-Sasha just finished organizing books-of-ukraine-input document which will serve as the new starting point for data input. The ellis that processes the original messe data (originally created by Halyna)  has been saved as ./manipulation/0-ellis-original-input.R. However, we don't expect to maintain this script in the future, because the now that we understand what input data should look like, we  will build a new ellis that processes the new google sheet input. This is the tast of the current session. 
+## 1 
+Sasha just finished organizing books-of-ukraine-input document which will serve as the new starting point for data input. The ellis that processes the original messy data (originally created by Halyna)  has been saved as ./manipulation/0-ellis-original-input.R. However, we don't expect to maintain this script in the future, because the now that we understand what input data should look like, we  will build a new ellis that processes the new google sheet input. This is the tast of the current session. 
 
-l
+Let's take the exisitng ./manipulation/0-ellis.R that right now is the exact copy of ./manipulation/0-ellis-original-input.R and modify it to read from the new google sheet input: [books-of-ukraine-input](https://docs.google.com/spreadsheets/d/1nxMTUD9gRhaE_VIT6WPR4V-_7BWNVwsJu__qjtCtSF0/edit?usp=sharing

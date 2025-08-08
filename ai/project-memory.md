@@ -62,3 +62,32 @@
   - **Intent**: Streamline AI collaboration by making context management a one-click operation
 
 **Pattern Recognition**: Development team increasingly focused on automation and workflow efficiency, building tools that reduce friction in AI-human collaboration cycles.
+
+### Google Sheets Authentication Architecture (August 8, 2025):
+**Achievement**: Implemented comprehensive service account authentication system for zero-friction data access
+
+- **Problem Solved**: Eliminated browser-based authentication barriers for new users and automated script execution
+- **Technical Implementation**:
+  - **Service Account Authentication**: Primary method using `google-service-account.json` for browser-free access
+  - **Graceful Fallbacks**: Cached token authentication → Interactive authentication (last resort)
+  - **Authentication Helper**: `scripts/service-account-auth.R` with robust error handling and user guidance
+  - **Testing Infrastructure**: `scripts/test-service-account.R` for setup verification
+  - **Security**: Enhanced `.gitignore` patterns to protect all credential files
+
+- **User Experience Achievement**:
+  - **New User Workflow**: Clone repo → Place JSON file → Run scripts (no browser interaction)
+  - **Automation Ready**: Perfect for CI/CD and unattended script execution
+  - **Team Scalability**: Each user gets their own service account credentials
+
+- **Files Created/Enhanced**:
+  - `docs/service-account-setup.md` - Complete setup documentation
+  - `scripts/service-account-auth.R` - Authentication logic
+  - `scripts/test-service-account.R` - Setup verification
+  - `manipulation/0-ellis.R` - Updated with new authentication
+  - `google-service-account.json.template` - Credential file template
+
+- **Design Philosophy**: Prioritized automation and new user experience over simplicity, recognizing that research projects need reliable, repeatable data access patterns
+
+**Strategic Intent**: This authentication system enables the project to scale to multiple contributors and automated environments while maintaining security and ease of use.
+
+**✅ MILESTONE ACHIEVED** (August 8, 2025): Google Sheets authentication system successfully implemented and tested by Andriy. The service account approach is now fully operational - scripts run without browser interaction as designed. This establishes the foundation for future CI/CD implementation when the project reaches that stage.
