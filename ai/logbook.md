@@ -131,3 +131,10 @@ Use this to document key decisions, model revisions, and reasoning transitions a
 - Added/updated 6 datasets: ds_year_long, ds_language_long, ds_genre_long, ds_pubtype_long, ds_geography_long, ds_ukr_rus_long
 - Verified 6 total datasets in CACHE
 - Updated file sizes and modification dates
+
+
+# 2025-08-01 12:15:02
+
+Sasha just finished organizing books-of-ukraine-input document which will serve as the new starting point for data input. The ellis that processes the original messe data (originally created by Halyna)  has been saved as ./manipulation/0-ellis-original-input.R. However, we don't expect to maintain this script in the future, because the now that we understand what input data should look like, we  will build a new ellis that processes the new google sheet input. This is the tast of the current session. 
+
+l
