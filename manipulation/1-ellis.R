@@ -258,9 +258,9 @@ cat(paste(rep("=", 50), collapse=""), "\n")
 # ---- saving -------------------------------------
 cat("\nSaving enhanced geography datasets...\n")
 
-# Connect to SQLite databases
-books_of_ukraine <- DBI::dbConnect(RSQLite::SQLite(), "data-private/derived/manipulation/SQLite/books-of-ukraine-long.sqlite")
-books_of_ukraine_wide <- DBI::dbConnect(RSQLite::SQLite(), "data-private/derived/manipulation/SQLite/books-of-ukraine-wide.sqlite")
+
+# Connect to single SQLite database for all tables
+books_of_ukraine <- DBI::dbConnect(RSQLite::SQLite(), "data-private/derived/manipulation/SQLite/books-of-ukraine.sqlite")
 
 ## -------- RDS saving (replace original versions) --------
 saveRDS(ds_long_enhanced, "data-private/derived/manipulation/ds_geography.rds")
@@ -287,7 +287,6 @@ tryCatch({
 
 # Close database connections
 DBI::dbDisconnect(books_of_ukraine)
-DBI::dbDisconnect(books_of_ukraine_wide)
 
 cat("\n", paste(rep("=", 50), collapse=""), "\n")
 cat("DATASETS UPDATED: All ds_geography versions now include bookstore_count measure\n")

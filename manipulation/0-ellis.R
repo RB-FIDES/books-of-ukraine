@@ -137,7 +137,7 @@ data_private_derived_csv <- "data-private/derived/manipulation/CSV/"
 if (!fs::dir_exists(data_private_derived_csv)) {fs::dir_create(data_private_derived_csv)}
 
 # ---- establish-database-connection -------------------------------------------
-db_books_of_ukraine <- dbConnect(RSQLite::SQLite(), "data-private/derived/manipulation/SQLite/books-of-ukraine-long.sqlite")
+db_books_of_ukraine <- dbConnect(RSQLite::SQLite(), "data-private/derived/manipulation/SQLite/books-of-ukraine.sqlite")
 
 
 
@@ -211,7 +211,7 @@ write.csv(df_year, csv_path, row.names = FALSE, fileEncoding = "UTF-8")
 cat("Saved CSV to:", csv_path, "\n")
 
 # ------ SAVE SQLite ---------------------------------------------------
-dbWriteTable(db_books_of_ukraine, "ds_year", df_year, overwrite = TRUE)
+DBI::dbWriteTable(db_books_of_ukraine, "ds_year", df_year, overwrite = TRUE)
 cat("Saved table 'ds_year' to SQLite database.\n")
 
 # ------ SAVE RDS   ---------------------------------------------------
@@ -294,7 +294,7 @@ write.csv(df_language, csv_path, row.names = FALSE, fileEncoding = "UTF-8")
 cat("Saved CSV to:", csv_path, "\n")
 
 # ------ SAVE SQLite ---------------------------------------------------
-dbWriteTable(db_books_of_ukraine, "ds_language", df_language, overwrite = TRUE)
+DBI::dbWriteTable(db_books_of_ukraine, "ds_language", df_language, overwrite = TRUE)
 cat("Saved table 'ds_language' to SQLite database.\n")
 
 # ------ SAVE RDS   ---------------------------------------------------
@@ -373,7 +373,7 @@ write.csv(df_genre, csv_path, row.names = FALSE, fileEncoding = "UTF-8")
 cat("Saved CSV to:", csv_path, "\n")
 
 # ------ SAVE SQLite ---------------------------------------------------
-dbWriteTable(db_books_of_ukraine, "ds_genre", df_genre, overwrite = TRUE)
+DBI::dbWriteTable(db_books_of_ukraine, "ds_genre", df_genre, overwrite = TRUE)
 cat("Saved table 'ds_genre' to SQLite database.\n")
 
 # ------ SAVE RDS   ---------------------------------------------------
@@ -452,7 +452,7 @@ write.csv(df_geography, csv_path, row.names = FALSE, fileEncoding = "UTF-8")
 cat("Saved CSV to:", csv_path, "\n")
 
 # ------ SAVE SQLite ---------------------------------------------------
-dbWriteTable(db_books_of_ukraine, "ds_geography", df_geography, overwrite = TRUE)
+DBI::dbWriteTable(db_books_of_ukraine, "ds_geography", df_geography, overwrite = TRUE)
 cat("Saved table 'ds_geography' to SQLite database.\n")
 
 # ------ SAVE RDS   ---------------------------------------------------
@@ -531,7 +531,7 @@ write.csv(df_pubtype, csv_path, row.names = FALSE, fileEncoding = "UTF-8")
 cat("Saved CSV to:", csv_path, "\n")
 
 # ------ SAVE SQLite ---------------------------------------------------
-dbWriteTable(db_books_of_ukraine, "ds_pubtype", df_pubtype, overwrite = TRUE)
+DBI::dbWriteTable(db_books_of_ukraine, "ds_pubtype", df_pubtype, overwrite = TRUE)
 cat("Saved table 'ds_pubtype' to SQLite database.\n")
 
 # ------ SAVE RDS   ---------------------------------------------------
