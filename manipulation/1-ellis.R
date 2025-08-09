@@ -1,298 +1,432 @@
-rm(list = ls(all.names = TRUE)) # Clear the memory of variables from previous run. This is not called by knitr, because it's above the first chunk.
-cat("\014") # Clear the console
-# verify root location
+# Ellis Script 1 - Enhanced Database Creation
+# This script creates an enhanced SQLite database by:
+# 1. Copying the core database (from 0-ellis.R) 
+# 2. Adding extension data (geography, future sources)
+# 3. Creating integrated views for analysis
+# 4. Generating comprehensive documentation
+
+rm(list = ls(all.names = TRUE)) # Clear memory
+cat("\014") # Clear console
 cat("Working directory: ", getwd()) # Must be set to Project Directory
-# Project Directory should be the root by default unless overwritten
 
 # ---- load-packages -----------------------------------------------------------
-# Choose to be greedy: load only what's needed
-# Three ways, from least (1) to most(3) greedy:
-# -- 1.Attach these packages so their functions don't need to be qualified: 
-# http://r-pkgs.had.co.nz/namespace.html#search-path
 library(magrittr)
-library(ggplot2)   # graphs
-library(forcats)   # factors
-library(stringr)   # strings
-library(lubridate) # dates
-library(labelled)  # labels
 library(dplyr)     # data wrangling
 library(tidyr)     # data wrangling
-library(scales)    # format
-library(broom)     # for model
-library(emmeans)   # for interpreting model results
-library(ggalluvial)
-library(janitor)  # tidy data
-library(testit)   # For asserting conditions meet expected patterns.
-library(DBI)      # database interface
-library(RSQLite)  # SQLite database
-library(googlesheets4)  # Google Sheets integration
+library(stringr)   # strings
+library(purrr)     # functional programming
+library(DBI)       # database interface
+library(RSQLite)   # SQLite database
 
 # ---- load-sources ------------------------------------------------------------
 base::source("./scripts/common-functions.R") # project-level
 base::source("./scripts/operational-functions.R") # project-level
 
 # ---- declare-globals ---------------------------------------------------------
-
 local_root <- "./manipulation/"
-local_data <- paste0(local_root, "data-local/") # for local outputs
-
+local_data <- paste0(local_root, "data-local/")
 if (!fs::dir_exists(local_data)) {fs::dir_create(local_data)}
 
 data_private_derived <- "./data-private/derived/manipulation/"
 if (!fs::dir_exists(data_private_derived)) {fs::dir_create(data_private_derived)}
 
-prints_folder <- paste0(local_root, "prints/")
-if (!fs::dir_exists(prints_folder)) {fs::dir_create(prints_folder)}
+# Database paths
+core_db_path <- "data-private/derived/manipulation/SQLite/books-of-ukraine-long.sqlite"
+enhanced_db_path <- "data-private/derived/manipulation/SQLite/books-of-ukraine-enhanced.sqlite"
 
 
 # ---- declare-functions -------------------------------------------------------
-# base::source(paste0(local_root,"local-functions.R")) # project-level
 
-# ---- load-data ---------------------------------------------------------------
-# Load existing ds_geography datasets instead of the national data
-if (file.exists("data-private/derived/manipulation/ds_geography.rds")) {
-  ds_geography <- readRDS("data-private/derived/manipulation/ds_geography.rds")
-  cat("Loaded ds_geography with", nrow(ds_geography), "rows\n")
-} else {
-  stop("ds_geography.rds not found. Please run 0-ellis.R first.")
+# Function to safely convert numeric values (consistent with 0-ellis.R)
+safe_numeric_convert <- function(x) {
+  cleaned <- as.character(x)
+  cleaned <- gsub("[^0-9.\\s-]", "", cleaned)
+  cleaned <- gsub("\\s+", "", cleaned)
+  cleaned[cleaned == "" | cleaned == "-" | cleaned == "NULL" | 
+          cleaned == "NA" | cleaned == "n/a" | is.na(cleaned)] <- "0"
+  cleaned <- gsub("\\.{2,}", ".", cleaned)
+  result <- suppressWarnings(as.numeric(cleaned))
+  result[is.na(result)] <- 0
+  return(result)
 }
 
+# Function to create enhanced database by copying core
+create_enhanced_database <- function(core_path, enhanced_path) {
+  cat("📋 Creating enhanced database...\n")
+  
+  if (!file.exists(core_path)) {
+    stop("❌ Core database not found: ", core_path, "\nRun 0-ellis.R first!")
+  }
+  
+  # Remove existing enhanced database
+  if (file.exists(enhanced_path)) {
+    file.remove(enhanced_path)
+    cat("  ✓ Removed existing enhanced database\n")
+  }
+  
+  # Copy core to enhanced
+  file.copy(core_path, enhanced_path)
+  cat("  ✓ Copied core database to enhanced location\n")
+  
+  return(enhanced_path)
+}
 
-# Check existing data structure
-cat("Existing measures:", paste(unique(ds_geography$measure), collapse = ", "), "\n")
-cat("Sample geographies:", paste(head(unique(ds_geography$geography), 5), collapse = ", "), "\n")
+# Function to add geography extension to enhanced database
+add_geography_extension <- function(db_connection) {
+  cat("🌍 Adding geography extension...\n")
+  
+  # Load territorial data
+  territori_path <- "data-private/derived/manipulation/teritorii.rds"
+  if (!file.exists(territori_path)) {
+    cat("  ⚠️ Geographic data not found, skipping extension\n")
+    return(invisible())
+  }
+  
+  # Process territorial data
+  raw_teritorii <- readRDS(territori_path)
+  
+  # Clean and transform territorial data
+  terir_cleaned <- raw_teritorii %>%
+    filter(!is.na(x) & x != "") %>%
+    # Handle mixed data types in year columns
+    mutate(across(starts_with("x") & !matches("^x$"), ~ {
+      if (is.list(.)) {
+        map_chr(., ~ {
+          if (is.null(.)) "0"
+          else if (is.character(.)) str_replace_all(., "[\\s,]", "")
+          else as.character(.)
+        })
+      } else {
+        as.character(.)
+      }
+    }))
+  
+  # Transform to long format for star schema integration
+  ds_geography_ext <- terir_cleaned %>%
+    pivot_longer(
+      cols = starts_with("x") & !matches("^x$"),
+      names_to = "year", 
+      values_to = "value"
+    ) %>%
+    mutate(
+      year = as.integer(str_extract(year, "\\d{4}")),
+      value = safe_numeric_convert(value),
+      category_type = "territory",
+      category_value = x,
+      measure_type = "title_count"
+    ) %>%
+    filter(!is.na(year), !is.na(value), year >= 2005, year <= 2024) %>%
+    select(year, category_type, category_value, measure_type, value) %>%
+    arrange(year, category_value)
+  
+  # Save as extension table
+  dbWriteTable(db_connection, "ext_geography_publications", ds_geography_ext, overwrite = TRUE)
+  cat("  ✓ Added ext_geography_publications:", nrow(ds_geography_ext), "records\n")
+  
+  # Create enhanced fact table combining core + extensions
+  cat("  📊 Creating enhanced fact table...\n")
+  core_facts <- dbReadTable(db_connection, "fact_book_publications")
+  
+  # Remove any existing territory data from core to avoid duplicates
+  enhanced_facts <- core_facts %>%
+    filter(category_type != "territory") %>%
+    bind_rows(ds_geography_ext) %>%
+    arrange(year, category_type, category_value, measure_type)
+  
+  # Save enhanced fact table
+  dbWriteTable(db_connection, "fact_enhanced", enhanced_facts, overwrite = TRUE)
+  cat("  ✓ Created fact_enhanced:", nrow(enhanced_facts), "records\n")
+  
+  # Update categories dimension if needed
+  dim_categories <- dbReadTable(db_connection, "dim_categories")
+  new_categories <- ds_geography_ext %>%
+    distinct(category_type, category_value) %>%
+    anti_join(dim_categories, by = c("category_type", "category_value"))
+  
+  if (nrow(new_categories) > 0) {
+    max_id <- max(dim_categories$category_id, na.rm = TRUE)
+    new_categories <- new_categories %>%
+      mutate(category_id = max_id + row_number())
+    
+    updated_categories <- bind_rows(dim_categories, new_categories)
+    dbWriteTable(db_connection, "dim_categories", updated_categories, overwrite = TRUE)
+    cat("  ✓ Added", nrow(new_categories), "new categories to dimensions\n")
+  }
+  
+  invisible()
+}
 
-# Check all geography names in the original data
-original_geographies <- unique(ds_geography$geography)
-cat("Total original geographies:", length(original_geographies), "\n")
-cat("All original geographies:\n")
-print(original_geographies)
-
-# ---- tweak-data-0 -------------------------------------
-# Create bookstore data based on screenshot showing regional distribution
-# Match the geography names exactly with the original dataset format
-bookstore_data <- tibble(
-  geography = c(
-    # Major regions with highest numbers
-    "Київ",  # Not "м. Київ" 
-    "Львівська",  # Not "Львівська область"
-    "Харківська", 
-    "Дніпропетровська",
-    "Одеська",
-    
-    # Medium-sized regions  
-    "Івано-Франківська",
-    "Запорізька",
-    "Тернопільська",
-    "Вінницька",
-    "Хмельницька",
-    "Черкаська",
-    "Полтавська",
-    "Київська",
-    "Чернігівська",
-    "Сумська",
-    
-    # Smaller regions
-    "Житомирська",
-    "Рівненська", 
-    "Волинська",
-    "Кіровоградська",
-    "Миколаївська",
-    "Херсонська",
-    "Закарпатська",
-    "Чернівецька"
-  ),
-  bookstore_count = c(
-    # Major regions (high numbers from screenshot + Forbes data)
-    99,  # Київ
-    50,  # Львівська
-    17,  # Харківська
-    21,  # Дніпропетровська - updated from Forbes data
-    17,  # Одеська
-    
-    # Medium regions
-    19,  # Івано-Франківська
-    4,   # Запорізька - updated from Forbes data
-    23,  # Тернопільська
-    17,  # Вінницька
-    15,  # Хмельницька
-    12,  # Черкаська
-    15,   # Полтавська
-    18,   # Київська
-    6,   # Чернігівська
-    13,   # Сумська
-    
-    # Smaller regions
-    10,  # Житомирська - updated from Forbes data
-    18,   # Рівненська
-    17,   # Волинська
-    4,   # Кіровоградська
-    2,   # Миколаївська
-    2,   # Херсонська
-    14,  # Закарпатська
-    8    # Чернівецька
+# Function to generate enhanced CACHE manifest
+generate_enhanced_manifest <- function(db_connection, output_path = "ai/CACHE-manifest.md") {
+  cat("📝 Generating enhanced CACHE-manifest.md...\n")
+  
+  tables <- dbListTables(db_connection)
+  
+  markdown_content <- c(
+    "# CACHE Manifest - Books of Ukraine Enhanced Database",
+    "",
+    paste("**Generated:**", Sys.time()),
+    paste("**Database:** books-of-ukraine-enhanced.sqlite"),
+    paste("**Total Tables:**", length(tables)),
+    "",
+    "## 📊 Enhanced Star Schema Architecture",
+    "",
+    "This database extends the core star schema with supplementary data sources.",
+    "",
+    "### �️ Architecture Overview",
+    "",
+    "```",
+    "CORE (from 0-ellis.R)          ENHANCED (from 1-ellis.R)",
+    "┌─────────────────────┐       ┌─────────────────────────┐",
+    "│ fact_book_publications │    │ fact_enhanced           │",
+    "│ dim_years              │ → │ ext_geography_*         │",
+    "│ dim_categories         │    │ ext_future_*            │",
+    "│ dim_measures           │    │ (preserves core intact) │",
+    "│ raw_*                  │    └─────────────────────────┘",
+    "└─────────────────────┘",
+    "```",
+    "",
+    "### 🔗 Integration Strategy",
+    "",
+    "**CORE TABLES** (unchanged from 0-ellis.R):",
+    "- `fact_book_publications`: Original publication data",
+    "- `dim_*`: Core dimension tables",
+    "- `raw_*`: Original source data",
+    "",
+    "**EXTENSION TABLES** (added by 1-ellis.R):",
+    "- `ext_geography_publications`: Geographic/territorial data",
+    "- `fact_enhanced`: Integrated view combining core + extensions",
+    "",
+    "**ANALYSIS RECOMMENDATION**: Use `fact_enhanced` for comprehensive analysis",
+    "",
+    "---",
+    "",
+    "## 📋 Table Catalog",
+    ""
   )
-)
-
-# Create years range from existing data
-years_range <- unique(ds_geography$year)
-cat("Years available in data:", min(years_range), "to", max(years_range), "\n")
-
-# Check if bookstore data already exists and clean it first
-if ("bookstore_count" %in% unique(ds_geography$measure)) {
-  cat("Existing bookstore_count data found - cleaning before adding new data\n")
-  ds_geography_clean <- ds_geography %>%
-    filter(measure != "bookstore_count")
-} else {
-  cat("No existing bookstore_count data found - proceeding with original data\n")
-  ds_geography_clean <- ds_geography
-}
-
-# Create bookstore data in long format for all years
-ds_bookstore_long <- bookstore_data %>%
-  crossing(year = years_range) %>%  # Create rows for all years
-  mutate(
-    measure = "bookstore_count",
-    value = bookstore_count
-  ) %>%
-  select(year, measure, geography, value) %>%
-  arrange(year, geography)
-
-# Combine cleaned data with new bookstore data
-ds_long_enhanced <- bind_rows(ds_geography_clean, ds_bookstore_long) %>%
-  arrange(year, measure, geography)
-
-# Create enhanced wide version
-ds_wide_enhanced <- ds_long_enhanced %>%
-  pivot_wider(
-    id_cols = c(year, measure),
-    names_from = geography,
-    values_from = value
-  ) %>%
-  arrange(year, measure)
-
-# ---- inspect-data-0 -------------------------------------
-cat("Original ds_geography dimensions:", dim(ds_geography), "\n")
-cat("Enhanced ds_long dimensions:", dim(ds_long_enhanced), "\n")
-cat("Enhanced ds_wide dimensions:", dim(ds_wide_enhanced), "\n")
-
-# Check measures in original and enhanced dataset
-measures_original <- unique(ds_geography$measure)
-measures_enhanced <- unique(ds_long_enhanced$measure)
-cat("Measures in original dataset:", paste(measures_original, collapse = ", "), "\n")
-cat("Measures in enhanced dataset:", paste(measures_enhanced, collapse = ", "), "\n")
-
-# Show sample of each measure type
-cat("\nSample data by measure:\n")
-for(measure_name in measures_enhanced) {
-  cat("\n", measure_name, ":\n")
-  sample_data <- ds_long_enhanced %>%
-    filter(measure == measure_name) %>%
-    slice_head(n = 3)
-  print(sample_data)
-}
-
-# ---- inspect-data-1 -------------------------------------
-# Check bookstore data coverage
-bookstore_coverage <- ds_long_enhanced %>%
-  filter(measure == "bookstore_count") %>%
-  group_by(geography) %>%
-  summarise(
-    years_covered = n(),
-    avg_bookstores = mean(value, na.rm = TRUE),
-    .groups = "drop"
-  ) %>%
-  arrange(desc(avg_bookstores))
-
-cat("\nTop 10 regions by bookstore count:\n")
-print(head(bookstore_coverage, 10))
-
-# ---- inspect-data-2 -------------------------------------
-# Compare all measures across top regions
-measures_comparison <- ds_long_enhanced %>%
-  group_by(measure, geography) %>%
-  summarise(
-    total_value = sum(value, na.rm = TRUE),
-    avg_value = mean(value, na.rm = TRUE),
-    .groups = "drop"
-  ) %>%
-  filter(geography %in% c("Київ", "Львівська", "Харківська", "Одеська")) %>%
-  arrange(geography, measure)
-
-cat("\nMeasures comparison for top regions (all measures):\n")
-print(measures_comparison)
-
-# Show structure by measure type
-cat("\nMeasure structure summary:\n")
-measure_summary <- ds_long_enhanced %>%
-  group_by(measure) %>%
-  summarise(
-    regions = n_distinct(geography),
-    years = n_distinct(year), 
-    total_records = n(),
-    total_value = sum(value, na.rm = TRUE),
-    avg_value = mean(value, na.rm = TRUE),
-    .groups = "drop"
+  
+  # Organize tables by type
+  fact_tables <- grep("^fact_", tables, value = TRUE)
+  dim_tables <- grep("^dim_", tables, value = TRUE)
+  ext_tables <- grep("^ext_", tables, value = TRUE)
+  raw_tables <- grep("^raw_", tables, value = TRUE)
+  
+  table_order <- c(sort(fact_tables), sort(dim_tables), sort(ext_tables), sort(raw_tables))
+  
+  for(table_name in table_order) {
+    structure <- dbGetQuery(db_connection, paste("PRAGMA table_info(", table_name, ")"))
+    row_count <- dbGetQuery(db_connection, paste("SELECT COUNT(*) as count FROM", table_name))$count
+    
+    table_type <- case_when(
+      table_name == "fact_enhanced" ~ "**ENHANCED FACT TABLE**",
+      str_starts(table_name, "fact_") ~ "**FACT TABLE**",
+      str_starts(table_name, "dim_") ~ "**DIMENSION TABLE**",
+      str_starts(table_name, "ext_") ~ "**EXTENSION TABLE**",
+      str_starts(table_name, "raw_") ~ "**RAW DATA TABLE**",
+      TRUE ~ "**DATA TABLE**"
+    )
+    
+    description <- case_when(
+      table_name == "fact_enhanced" ~ "Integrated fact table combining core publications with geographic and future extensions",
+      table_name == "fact_book_publications" ~ "Core fact table from 0-ellis.R (publications only)",
+      table_name == "ext_geography_publications" ~ "Geographic extension: publication counts by territory",
+      str_starts(table_name, "dim_") ~ paste("Dimension table:", str_remove(table_name, "dim_")),
+      str_starts(table_name, "raw_") ~ paste("Original source data:", str_remove(table_name, "raw_")),
+      TRUE ~ "Supporting data table"
+    )
+    
+    table_section <- c(
+      paste("### 📊", table_name),
+      "",
+      paste(table_type, "-", description),
+      "",
+      paste("- **Records:**", format(row_count, big.mark = ",")),
+      paste("- **Columns:**", nrow(structure)),
+      "",
+      "#### Column Structure",
+      "",
+      "| Column | Type | Description |",
+      "|--------|------|-------------|"
+    )
+    
+    for(i in seq_len(nrow(structure))) {
+      col <- structure[i, ]
+      col_description <- case_when(
+        col$name == "year" ~ "Publication year (2005-2024)",
+        col$name == "category_type" ~ "Category type (language, theme, territory, purpose, total)",
+        col$name == "category_value" ~ "Specific category value",
+        col$name == "measure_type" ~ "Measure type (title_count, copy_count)",
+        col$name == "value" ~ "Numeric value for the measure",
+        str_ends(col$name, "_id") ~ "Dimension table identifier",
+        TRUE ~ "Data field"
+      )
+      
+      table_section <- c(table_section,
+        paste("|", col$name, "|", col$type, "|", col_description, "|"))
+    }
+    
+    table_section <- c(table_section, "", "---", "")
+    markdown_content <- c(markdown_content, table_section)
+  }
+  
+  # Enhanced usage examples
+  usage_section <- c(
+    "## 🔍 Enhanced Query Patterns",
+    "",
+    "### Core vs Enhanced Analysis",
+    "```sql",
+    "-- Core publications only",
+    "SELECT year, SUM(value) as core_titles",
+    "FROM fact_book_publications",
+    "WHERE measure_type = 'title_count'",
+    "GROUP BY year;",
+    "",
+    "-- Enhanced with geographic data",
+    "SELECT year, SUM(value) as enhanced_titles",
+    "FROM fact_enhanced",
+    "WHERE measure_type = 'title_count'", 
+    "GROUP BY year;",
+    "```",
+    "",
+    "### Multi-Source Geographic Analysis",
+    "```sql",
+    "-- Territory breakdown from extensions",
+    "SELECT category_value as territory, SUM(value) as total_publications",
+    "FROM fact_enhanced",
+    "WHERE category_type = 'territory' AND measure_type = 'title_count'",
+    "GROUP BY category_value",
+    "ORDER BY total_publications DESC;",
+    "```",
+    "",
+    "### Extension Data Quality",
+    "```sql",
+    "-- Compare core vs extension coverage",
+    "SELECT 'core' as source, COUNT(*) as records",
+    "FROM fact_book_publications",
+    "UNION ALL",
+    "SELECT 'enhanced' as source, COUNT(*) as records", 
+    "FROM fact_enhanced;",
+    "```",
+    "",
+    "## 🔧 Extension Development Guide",
+    "",
+    "To add new data sources to the enhanced database:",
+    "",
+    "1. **Create extension table**: `ext_[source_name]`",
+    "2. **Standardize schema**: Match fact table structure (year, category_type, category_value, measure_type, value)",
+    "3. **Update fact_enhanced**: Combine new extension with existing data",
+    "4. **Extend dimensions**: Add new categories/measures as needed",
+    "5. **Document**: Update this manifest",
+    "",
+    "### Extension Naming Convention",
+    "- `ext_geography_*`: Geographic/territorial data",
+    "- `ext_economic_*`: Economic indicators",
+    "- `ext_cultural_*`: Cultural events/metrics",
+    "- `ext_institutional_*`: Institutional data",
+    "",
+    "---",
+    "",
+    "*Enhanced database maintains backward compatibility while enabling multi-source analysis.*"
   )
-print(measure_summary)
-
-# Show top regions for each measure
-cat("\nTop 5 regions by total value for each measure:\n")
-for(measure_name in unique(ds_long_enhanced$measure)) {
-  cat("\n", toupper(measure_name), ":\n")
-  top_regions <- ds_long_enhanced %>%
-    filter(measure == measure_name) %>%
-    group_by(geography) %>%
-    summarise(total = sum(value, na.rm = TRUE), .groups = "drop") %>%
-    arrange(desc(total)) %>%
-    head(5)
-  print(top_regions)
+  
+  markdown_content <- c(markdown_content, usage_section)
+  
+  writeLines(markdown_content, output_path)
+  cat("  ✓ Generated enhanced manifest at:", output_path, "\n")
 }
 
-# ---- analysis-below -------------------------------------
-# Summary completed - enhanced geography datasets now include bookstore_count measure
-cat("\n", paste(rep("=", 50), collapse=""), "\n")
-cat("SUCCESS: Enhanced geography datasets ready with all three measures\n")
-cat(paste(rep("=", 50), collapse=""), "\n")
+# ---- create-enhanced-database -----------------------------------------------
+cat("� CREATING ENHANCED DATABASE\n")
+cat(paste(rep("=", 50), collapse = ""), "\n")
 
-# ---- saving -------------------------------------
-cat("\nSaving enhanced geography datasets...\n")
+# Step 1: Create enhanced database by copying core
+enhanced_db_path <- create_enhanced_database(core_db_path, enhanced_db_path)
 
+# Step 2: Connect to enhanced database
+db_enhanced <- dbConnect(RSQLite::SQLite(), enhanced_db_path)
 
-# Connect to single SQLite database for all tables
-books_of_ukraine <- DBI::dbConnect(RSQLite::SQLite(), "data-private/derived/manipulation/SQLite/books-of-ukraine.sqlite")
+# Step 3: Verify core tables are present
+core_tables <- dbListTables(db_enhanced)
+cat("✓ Enhanced database created with", length(core_tables), "core tables\n")
 
-## -------- RDS saving (replace original versions) --------
-saveRDS(ds_long_enhanced, "data-private/derived/manipulation/ds_geography.rds")
-cat("✓ Saved enhanced RDS files (replaced original versions)\n")
+# ---- add-extensions ----------------------------------------------------------
+cat("\n� ADDING EXTENSIONS\n")
+cat(paste(rep("=", 30), collapse = ""), "\n")
 
-## ------- SQLite saving (replace original versions) -------
-DBI::dbWriteTable(books_of_ukraine, "ds_geography", ds_long_enhanced, overwrite = TRUE)
-cat("✓ Saved to SQLite databases (replaced original versions)\n")
+# Add geography extension
+add_geography_extension(db_enhanced)
 
-## ------ CSV saving (replace original versions) ------
-write.csv(ds_long_enhanced, "data-private/derived/manipulation/CSV/ds_geography.csv", row.names = FALSE)
-cat("✓ Saved CSV files (replaced original versions)\n")
+# Future extensions can be added here:
+# add_economic_extension(db_enhanced)
+# add_cultural_extension(db_enhanced)
 
-## ------- Google Sheets saving (replace original versions) -------
-sheet_url <- "https://docs.google.com/spreadsheets/d/1OOKeZnMFEAzHyr_M51zaOe76uv1yuqNmveHXSKpeqpo/edit?gid=2036395854#gid=2036395854"
+# ---- validate-enhanced-database ----------------------------------------------
+cat("\n📊 VALIDATING ENHANCED DATABASE\n")
+cat(paste(rep("=", 35), collapse = ""), "\n")
 
-tryCatch({
-  googlesheets4::sheet_write(ds_long_enhanced, ss = sheet_url, sheet = "ds_geography")
-  cat("✓ Saved to Google Sheets (replaced original versions)\n")
-}, error = function(e) {
-  cat("⚠ Google Sheets saving failed:", e$message, "\n")
-  cat("  Please check your Google authentication and permissions\n")
-})
+# Get all tables in enhanced database
+all_tables <- dbListTables(db_enhanced)
+fact_tables <- grep("^fact_", all_tables, value = TRUE)
+ext_tables <- grep("^ext_", all_tables, value = TRUE)
 
-# Close database connections
-DBI::dbDisconnect(books_of_ukraine)
+cat("Total tables:", length(all_tables), "\n")
+cat("Fact tables:", paste(fact_tables, collapse = ", "), "\n")
+cat("Extension tables:", paste(ext_tables, collapse = ", "), "\n")
 
-cat("\n", paste(rep("=", 50), collapse=""), "\n")
-cat("DATASETS UPDATED: All ds_geography versions now include bookstore_count measure\n")
-cat("Files updated:\n")
-cat("- ds_geography.rds (1,500 rows with 3 measures)\n")
-cat("- CSV versions\n")
-cat("- SQLite versions\n")
-cat("- Google Sheets versions\n")
-cat(paste(rep("=", 50), collapse=""), "\n")
+# Validate fact_enhanced if it exists
+if ("fact_enhanced" %in% all_tables) {
+  enhanced_count <- dbGetQuery(db_enhanced, "SELECT COUNT(*) as count FROM fact_enhanced")$count
+  core_count <- dbGetQuery(db_enhanced, "SELECT COUNT(*) as count FROM fact_book_publications")$count
+  
+  cat("\nFact table comparison:\n")
+  cat("  Core fact table:", format(core_count, big.mark = ","), "records\n")
+  cat("  Enhanced fact table:", format(enhanced_count, big.mark = ","), "records\n")
+  cat("  Extensions added:", format(enhanced_count - core_count, big.mark = ","), "records\n")
+  
+  # Show category breakdown in enhanced table
+  cat("\nCategory breakdown in enhanced table:\n")
+  category_summary <- dbGetQuery(db_enhanced, "
+    SELECT category_type, COUNT(*) as records, COUNT(DISTINCT category_value) as unique_values
+    FROM fact_enhanced 
+    GROUP BY category_type 
+    ORDER BY category_type
+  ")
+  print(category_summary)
+}
+
+# ---- generate-documentation --------------------------------------------------
+cat("\n📝 GENERATING DOCUMENTATION\n")
+cat(paste(rep("=", 30), collapse = ""), "\n")
+
+# Generate enhanced manifest
+generate_enhanced_manifest(db_enhanced)
+
+# ---- cleanup -----------------------------------------------------------------
+# Close database connection
+dbDisconnect(db_enhanced)
+
+# Final summary
+cat("\n", paste(rep("=", 60), collapse = ""), "\n")
+cat("🎉 ENHANCED DATABASE CREATION COMPLETE!\n")
+cat(paste(rep("=", 60), collapse = ""), "\n")
+
+cat("\n📂 DELIVERABLES:\n")
+cat("  ✓ Enhanced SQLite database:", enhanced_db_path, "\n")
+cat("  ✓ Core tables preserved (backward compatible)\n")
+cat("  ✓ Extension tables added (ext_*)\n")
+cat("  ✓ Integrated fact table (fact_enhanced)\n")
+cat("  ✓ Comprehensive documentation (ai/CACHE-manifest.md)\n")
+
+cat("\n🔍 RECOMMENDED USAGE:\n")
+cat("  • Use fact_enhanced for comprehensive analysis\n")
+cat("  • Use fact_book_publications for core-only analysis\n")
+cat("  • Query ext_* tables for specific extensions\n")
+cat("  • Reference ai/CACHE-manifest.md for schema details\n")
+
+cat("\n🚀 NEXT STEPS:\n")
+cat("  1. Review ai/CACHE-manifest.md for detailed documentation\n")
+cat("  2. Test queries using the enhanced fact table\n")
+cat("  3. Use analysis/eda-* scripts with enhanced database\n")
+cat("  4. Add future extensions following the established pattern\n")
+
+cat("\n", paste(rep("=", 60), collapse = ""), "\n")

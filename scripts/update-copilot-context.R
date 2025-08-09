@@ -16,6 +16,7 @@ update_copilot_instructions <- function(file_list) {
     "onboarding-ai" = "./ai/onboarding-ai.md",
     "mission" = "./ai/mission.md", 
     "method" = "./ai/method.md",
+    "project-map" = "./ai/project-map.md",
     "glossary" = "./ai/glossary.md",
     "semiology" = "./ai/semiology.md",
     "pipeline" = "./pipeline.md",
@@ -103,6 +104,7 @@ add_to_instructions <- function(...) {
       "onboarding-ai" = "./ai/onboarding-ai.md",
       "mission" = "./ai/mission.md", 
       "method" = "./ai/method.md",
+      "project-map" = "./ai/project-map.md",
       "glossary" = "./ai/glossary.md",
       "semiology" = "./ai/semiology.md",
       "pipeline" = "./pipeline.md",
@@ -122,7 +124,7 @@ add_to_instructions <- function(...) {
 
 # Quick alias for common combinations
 add_core_context <- function() {
-  add_to_instructions("onboarding-ai", "mission", "method")
+  add_to_instructions("onboarding-ai", "mission", "method", "project-map")
 }
 
 add_full_context <- function() {
@@ -280,6 +282,7 @@ validate_context <- function() {
     "onboarding-ai" = "./ai/onboarding-ai.md",
     "mission" = "./ai/mission.md", 
     "method" = "./ai/method.md",
+    "project-map" = "./ai/project-map.md",
     "glossary" = "./ai/glossary.md",
     "semiology" = "./ai/semiology.md",
     "pipeline" = "./pipeline.md",
@@ -945,7 +948,7 @@ analyze_project_status <- function() {
   
   cat("\n📚 CONTEXT MANAGEMENT:\n")
   cat("├─ context_refresh()         │ Complete status scan + setup check + context options\n")
-  cat("├─ add_core_context()        │ Load essential context (onboarding, mission, method)\n")
+  cat("├─ add_core_context()        │ Load essential context (onboarding, mission, method, project-map)\n")
   cat("├─ add_data_context()        │ Load data-focused context (cache-manifest, pipeline)\n")
   cat("├─ add_compass_context()     │ Load compass-specific context (logbook)\n")
   cat("├─ add_full_context()        │ Load comprehensive context set\n")
@@ -956,6 +959,8 @@ analyze_project_status <- function() {
   cat("├─ check_context_size()      │ Monitor context file size and performance impact\n")
   cat("├─ check_cache_manifest()    │ 🆕 Check CACHE manifest status and update if needed\n")
   cat("├─ update_cache_manifest()   │ 🆕 Force update CACHE manifest with current 0-ellis outputs\n")
+  cat("├─ check_project_map()       │ 🆕 Scan project structure and update project map\n")
+  cat("├─ update_project_map()      │ 🆕 Force update project map with current structure\n")
   cat("├─ check_flow_currency()     │ 🆕 Check if flow.R is current vs project scripts\n")
   cat("├─ analyze_and_update_flow() │ 🆕 Intelligently analyze and update flow.R structure\n")
   cat("└─ check_flow_status()       │ 🆕 Quick flow.R status check\n")
@@ -1051,6 +1056,7 @@ validate_context_silent <- function() {
     "onboarding-ai" = "./ai/onboarding-ai.md",
     "mission" = "./ai/mission.md", 
     "method" = "./ai/method.md",
+    "project-map" = "./ai/project-map.md",
     "glossary" = "./ai/glossary.md",
     "semiology" = "./ai/semiology.md",
     "pipeline" = "./pipeline.md",
@@ -1105,10 +1111,10 @@ get_command_help <- function(command_name = NULL) {
     ),
     
     "add_core_context" = list(
-      description = "Load essential AI context (onboarding, mission, method)",
+      description = "Load essential AI context (onboarding, mission, method, project-map)",
       usage = "add_core_context()",
-      purpose = "Provides AI with fundamental project understanding",
-      when_to_use = "Starting analysis work, when AI needs project background"
+      purpose = "Provides AI with fundamental project understanding and structure overview",
+      when_to_use = "Starting analysis work, when AI needs project background and navigation"
     ),
     
     "analyze_project_status" = list(
@@ -1137,6 +1143,20 @@ get_command_help <- function(command_name = NULL) {
       usage = "check_flow_status()",
       purpose = "Lightweight boolean check of flow.R currency for automation",
       when_to_use = "Script automation, quick status checks, CI/CD workflows"
+    ),
+    
+    "check_project_map" = list(
+      description = "Scan project structure and create/update project-map.md",
+      usage = "check_project_map(update_if_needed = TRUE)",
+      purpose = "Creates comprehensive project overview for new team members and tracks structural changes",
+      when_to_use = "New team member onboarding, after adding new files/directories, periodic documentation updates"
+    ),
+    
+    "update_project_map" = list(
+      description = "Force update project map with current structure",
+      usage = "update_project_map()",
+      purpose = "Regenerates project map regardless of current status and logs any detected changes",
+      when_to_use = "After major project reorganization, when you want to ensure map is completely current"
     )
   )
   
@@ -1901,7 +1921,7 @@ if (!exists("copilot_context_initialized")) {
   cat("📚 Available functions:\n")
   cat("  - analyze_project_status() # 🆕 COMPREHENSIVE project analysis + recommendations\n")
   cat("  - context_refresh()     # Quick status + refresh options\n")
-  cat("  - add_core_context()    # onboarding-ai, mission, method\n")
+  cat("  - add_core_context()    # onboarding-ai, mission, method, project-map\n")
   cat("  - add_data_context()    # cache-manifest, pipeline\n")
   cat("  - add_compass_context() # logbook\n")
   cat("  - add_full_context()    # comprehensive set\n")
@@ -1910,6 +1930,8 @@ if (!exists("copilot_context_initialized")) {
   cat("  - remove_all_dynamic_instructions() # reset dynamic content\n")
   cat("  - check_cache_manifest()   # 🆕 Check CACHE manifest status & update if needed\n")
   cat("  - update_cache_manifest()  # 🆕 Force update CACHE manifest from 0-ellis outputs\n")
+  cat("  - check_project_map()      # 🆕 Scan project structure & update project map\n")
+  cat("  - update_project_map()     # 🆕 Force update project map with current structure\n")
   cat("  - check_flow_currency()    # 🆕 Check if flow.R is current vs project scripts\n")
   cat("  - analyze_and_update_flow() # 🆕 Intelligently analyze and update flow.R\n")
   cat("  - check_flow_status()      # 🆕 Quick flow.R status check\n")
@@ -2001,6 +2023,425 @@ log_file_change <- function(file_path, change_description = NULL) {
 # Convenience function with shorter name
 log_change <- function(file_path, description = NULL) {
   log_file_change(file_path, description)
+}
+
+# ==============================================================================
+# PROJECT MAP GENERATION FUNCTION
+# ==============================================================================
+
+# Function to scan project structure and create/update project-map.md
+check_project_map <- function(update_if_needed = TRUE) {
+  project_map_path <- "./ai/project-map.md"
+  logbook_path <- "./ai/logbook.md"
+  
+  message("🗺️  Scanning project structure...")
+  
+  # Check if project map exists and get its timestamp
+  map_exists <- file.exists(project_map_path)
+  map_timestamp <- if (map_exists) file.mtime(project_map_path) else NULL
+  
+  message("📋 Project Map Status:")
+  if (map_exists) {
+    message("   ✅ File exists: ", project_map_path)
+    message("   📅 Last updated: ", format(map_timestamp, "%Y-%m-%d %H:%M:%S"))
+  } else {
+    message("   ❌ File missing: ", project_map_path)
+  }
+  
+  # Generate current project structure
+  current_structure <- generate_project_structure()
+  
+  # If map doesn't exist or update is needed
+  should_update <- !map_exists || update_if_needed
+  
+  if (should_update) {
+    message("🔄 Generating project map...")
+    
+    # Read existing map if it exists for comparison
+    existing_content <- NULL
+    if (map_exists) {
+      existing_content <- readLines(project_map_path, warn = FALSE)
+    }
+    
+    # Generate new map content
+    new_content <- create_project_map_content(current_structure)
+    
+    # Write the new content
+    writeLines(new_content, project_map_path)
+    
+    # Compare and log changes if map existed before
+    if (!is.null(existing_content)) {
+      changes <- detect_project_changes(existing_content, new_content)
+      if (length(changes) > 0) {
+        message("📝 Changes detected:")
+        for (change in changes) {
+          message("   ", change)
+        }
+        
+        # Log to logbook
+        change_summary <- paste(changes, collapse = "; ")
+        log_file_change(project_map_path, paste("Project structure changes:", change_summary))
+      } else {
+        message("✅ No structural changes detected")
+      }
+    } else {
+      message("📝 Created new project map")
+      log_file_change(project_map_path, "Created initial project map")
+    }
+    
+    message("✅ Project map updated: ", project_map_path)
+  } else {
+    message("ℹ️  Project map is current (use update_project_map() to force update)")
+  }
+  
+  invisible(current_structure)
+}
+
+# Function to force update project map regardless of status
+update_project_map <- function() {
+  message("🔄 Force updating project map...")
+  result <- check_project_map(update_if_needed = TRUE)
+  return(result)
+}
+
+# Helper function to generate project structure
+generate_project_structure <- function() {
+  # Define key directories to scan
+  key_dirs <- c(".", "ai", "analysis", "data-private", "data-public", "docs", 
+                "guides", "libs", "manipulation", "philosophy", "scripts", "utility")
+  
+  # Define file types to highlight
+  important_extensions <- c(".R", ".qmd", ".md", ".yml", ".json", ".Rproj")
+  
+  structure <- list()
+  
+  for (dir in key_dirs) {
+    if (dir.exists(dir)) {
+      dir_path <- if (dir == ".") getwd() else file.path(getwd(), dir)
+      
+      # Get files in directory
+      files <- list.files(dir, full.names = FALSE, recursive = FALSE)
+      
+      # Separate directories and files
+      subdirs <- files[file.info(file.path(dir, files))$isdir %in% TRUE]
+      files <- files[!file.info(file.path(dir, files))$isdir %in% TRUE]
+      
+      # Filter for important files
+      important_files <- files[tools::file_ext(files) %in% gsub("\\.", "", important_extensions)]
+      other_files <- files[!files %in% important_files]
+      
+      structure[[dir]] <- list(
+        subdirs = subdirs,
+        important_files = important_files,
+        other_files = other_files,
+        total_files = length(files)
+      )
+    }
+  }
+  
+  return(structure)
+}
+
+# Helper function to create project map content (tree-style ASCII diagram)
+create_project_map_content <- function(structure) {
+  content <- c(
+    "# Project Map",
+    "",
+    paste("**Generated**: ", format(Sys.time(), "%Y-%m-%d %H:%M:%S")),
+    "",
+    "## 🗂️ Books of Ukraine - Project Structure Tree",
+    "",
+    "**Mission**: Investigate Ukrainian publishing trends (2005+), regional differences, Russian language patterns",
+    "**Tech Stack**: R/Quarto + SQLite + Google Sheets | **Team**: Research & Data Science Unit",
+    "",
+    "```"
+  )
+  
+  # Create tree structure
+  tree_lines <- create_tree_structure(structure)
+  content <- c(content, tree_lines)
+  
+  content <- c(content,
+    "```",
+    "",
+    "---",
+    "",
+    "## 🚀 Quick Commands",
+    "",
+    "**Setup & Status**: `context_refresh()` • `analyze_project_status()` • `check_cache_manifest()`",
+    "**Data Pipeline**: `manipulation/0-ellis.R` → `check_cache_manifest()` → `analysis/eda-*`",
+    "**Help**: `get_command_help('function_name')` • `ai/logbook.md` • `ai/README.md`",
+    "",
+    "*Auto-maintained. Use `update_project_map()` to refresh.*"
+  )
+  
+  return(content)
+}
+
+# Helper function to create tree structure (ASCII art style)
+create_tree_structure <- function(structure) {
+  tree_lines <- c()
+  
+  # Sort directories for consistent output - root first, then alphabetically
+  dirs <- names(structure)
+  root_dir <- "."
+  other_dirs <- sort(setdiff(dirs, "."))
+  ordered_dirs <- c(root_dir, other_dirs)
+  
+  for (i in seq_along(ordered_dirs)) {
+    dir_name <- ordered_dirs[i]
+    dir_info <- structure[[dir_name]]
+    is_last_dir <- (i == length(ordered_dirs))
+    
+    # Directory line with emoji
+    emoji <- switch(dir_name,
+      "." = "🏠",
+      "ai" = "🧠", "analysis" = "📊", "data-private" = "🔒", "data-public" = "📂",
+      "docs" = "📚", "guides" = "📖", "libs" = "📦", "manipulation" = "🔧",
+      "philosophy" = "🤔", "scripts" = "⚙️", "utility" = "🛠️", "_cleanup" = "�️", "�📁"
+    )
+    
+    # Brief description
+    desc <- switch(dir_name,
+      "." = "Project config & docs",
+      "ai" = "Context mgmt & AI memory", 
+      "analysis" = "Reports & EDA",
+      "data-private" = "Datasets (private)",
+      "data-public" = "Datasets (public)",
+      "docs" = "Setup guides",
+      "guides" = "User workflows", 
+      "libs" = "Shared libraries",
+      "manipulation" = "Data processing", 
+      "philosophy" = "Methods & frameworks",
+      "scripts" = "Automation & utilities",
+      "utility" = "Project maintenance",
+      "_cleanup" = "Temporary/cleanup files",
+      ""
+    )
+    
+    if (dir_name == ".") {
+      tree_lines <- c(tree_lines, paste0("books-of-ukraine/  ", emoji, " ", desc))
+      prefix <- ""
+    } else {
+      connector <- if (is_last_dir) "└── " else "├── "
+      tree_lines <- c(tree_lines, paste0(connector, dir_name, "/  ", emoji, " ", desc))
+      prefix <- if (is_last_dir) "    " else "│   "
+    }
+    
+    # Get ALL important files (no truncation)
+    all_files <- sort(dir_info$important_files)
+    all_subdirs <- sort(dir_info$subdirs)
+    
+    # Combine files and subdirs for proper ordering
+    all_items <- c()
+    if (length(all_files) > 0) {
+      all_items <- c(all_items, paste0("FILE:", all_files))
+    }
+    if (length(all_subdirs) > 0) {
+      all_items <- c(all_items, paste0("DIR:", all_subdirs))
+    }
+    
+    # Sort all items together
+    all_items <- sort(all_items)
+    
+    for (j in seq_along(all_items)) {
+      item <- all_items[j]
+      is_last_item <- (j == length(all_items))
+      
+      item_connector <- if (is_last_item) "└── " else "├── "
+      
+      if (startsWith(item, "FILE:")) {
+        file <- sub("^FILE:", "", item)
+        file_desc <- get_brief_file_description(file)
+        tree_lines <- c(tree_lines, paste0(prefix, item_connector, file, "  ", file_desc))
+      } else if (startsWith(item, "DIR:")) {
+        subdir <- sub("^DIR:", "", item)
+        tree_lines <- c(tree_lines, paste0(prefix, item_connector, subdir, "/"))
+      }
+    }
+  }
+  
+  return(tree_lines)
+}
+
+# Helper function for very brief file descriptions
+get_brief_file_description <- function(filename) {
+  descriptions <- list(
+    # Root files
+    "README.md" = "📄 Project overview",
+    "flow.R" = "⚡ Main workflow",
+    "config.yml" = "⚙️ Configuration", 
+    "books-of-ukraine.Rproj" = "🔧 RStudio project",
+    "pipeline.md" = "📋 Data pipeline docs",
+    "COMMAND-GUIDE.md" = "📖 Command guide",
+    "COMMAND-REFERENCE.md" = "📚 Reference manual",
+    "FLOW-USAGE.md" = "🔄 Flow usage guide",
+    "context7.json" = "🗂️ Context data",
+    "LICENSE" = "⚖️ License",
+    
+    # AI directory
+    "mission.md" = "🎯 Project aims",
+    "CACHE-manifest.md" = "📊 Dataset docs",
+    "project-memory.md" = "🧠 Decisions log",
+    "logbook.md" = "📝 Change log",
+    "method.md" = "📐 Methods",
+    "onboarding-ai.md" = "🤖 AI config",
+    "FIDES.md" = "🔬 Research framework",
+    "glossary.md" = "📖 Terms",
+    "semiology.md" = "🔤 Symbols guide",
+    "INPUT-manifest.md" = "📥 Input data docs",
+    "CACHE-manifest-example.md" = "📋 Template",
+    "vscode-tasks-reference.md" = "🔧 VS Code tasks",
+    "memory-system-demo.md" = "🧠 Memory demo",
+    
+    # Analysis directory
+    "IDEAS.md" = "💡 Analysis ideas",
+    "looker-studio-assessment.md" = "📊 Looker assessment",
+    
+    # Data directories
+    "contents.md" = "📄 Data contents",
+    
+    # Documentation directories
+    "google-auth-setup.md" = "🔐 Google auth setup",
+    "service-account-setup.md" = "🔑 Service account setup",
+    "setup-google-access.md" = "🌐 Google access guide",
+    
+    # Manipulation directory
+    "0-ellis.R" = "📥 Data import",
+    "1-ellis.R" = "🔄 Data processing",
+    "0-ellis-original-input.R" = "📥 Original import",
+    
+    # Philosophy directory
+    "analysis-templatization.md" = "📝 Analysis templates",
+    "causal-inference.md" = "🔬 Causal methods",
+    "fides-example.md" = "📖 FIDES example",
+    "ontology.md" = "🧬 Data ontology",
+    "threats-to-validity.md" = "⚠️ Validity threats",
+    
+    # Scripts directory
+    "update-copilot-context.R" = "🤖 Context mgmt",
+    "common-functions.R" = "🛠️ Shared utils",
+    "load-core-context.R" = "📚 Context loader",
+    "ai-memory-functions.R" = "🧠 Memory system",
+    "check-setup.R" = "✅ Setup check",
+    "context-refresh.R" = "� Context refresh",
+    "operational-functions.R" = "⚙️ Operations",
+    "google-auth-helper.R" = "� Google auth",
+    "service-account-auth.R" = "� Service auth",
+    "setup-google-auth.R" = "� Auth setup",
+    "test-service-account.R" = "🧪 Auth test",
+    "clean-and-load-core-context.R" = "� Context clean",
+    "common-chunks.R" = "📄 Common chunks",
+    
+    # Utility directory
+    "common-headers.R" = "� Common headers",
+    "install-packages.R" = "📦 Package install",
+    "package-dependency-list.csv" = "� Dependencies",
+    "eager.gitignore" = "🚫 Git ignore"
+  )
+  
+  if (filename %in% names(descriptions)) {
+    return(descriptions[[filename]])
+  } else {
+    # Generic by extension
+    ext <- tools::file_ext(filename)
+    switch(ext,
+      "R" = "📊 R script",
+      "qmd" = "📑 Report", 
+      "md" = "📄 Docs",
+      "yml" = "⚙️ Config",
+      "yaml" = "⚙️ Config",
+      "json" = "🗂️ Data",
+      "csv" = "📊 Data",
+      "txt" = "📄 Text",
+      "Rproj" = "🔧 R project",
+      ""
+    )
+  }
+}
+get_file_description <- function(filename, directory) {
+  # File-specific descriptions
+  descriptions <- list(
+    # Root files
+    "books-of-ukraine.Rproj" = "RStudio project configuration",
+    "README.md" = "Project overview and getting started guide",
+    "config.yml" = "Project configuration settings",
+    "flow.R" = "Main analysis workflow orchestration",
+    "pipeline.md" = "Data processing pipeline documentation",
+    
+    # AI directory
+    "project-memory.md" = "Project decisions and intent tracking",
+    "CACHE-manifest.md" = "Automatically generated dataset documentation",
+    "mission.md" = "Project objectives and epistemic aims",
+    "method.md" = "Methodological approaches and standards",
+    "onboarding-ai.md" = "AI assistant configuration and behavior",
+    "logbook.md" = "Change tracking and decision log",
+    
+    # Scripts directory
+    "update-copilot-context.R" = "Context management and automation functions",
+    "common-functions.R" = "Shared utility functions across project",
+    "operational-functions.R" = "Data processing and analysis helpers",
+    "load-core-context.R" = "Core context loading automation",
+    
+    # Manipulation directory
+    "0-ellis.R" = "Primary data import and initial processing",
+    "1-ellis.R" = "Secondary data transformation and enrichment",
+    
+    # Analysis directories
+    "eda-1.R" = "Exploratory data analysis scripts",
+    "eda-1.qmd" = "Exploratory analysis report document",
+    "Data-visual.R" = "Data visualization script",
+    "Data-visual.qmd" = "Data visualization report"
+  )
+  
+  # Return specific description or generic one
+  if (filename %in% names(descriptions)) {
+    return(descriptions[[filename]])
+  } else {
+    # Generic descriptions based on file extension
+    ext <- tools::file_ext(filename)
+    switch(ext,
+      "R" = "R analysis script",
+      "qmd" = "Quarto document for reporting",
+      "md" = "Markdown documentation",
+      "yml" = "YAML configuration file", 
+      "json" = "JSON configuration or data file",
+      "Rproj" = "RStudio project file",
+      "File in project"
+    )
+  }
+}
+
+# Helper function to detect changes between old and new project maps
+detect_project_changes <- function(old_content, new_content) {
+  changes <- c()
+  
+  # Simple change detection - could be enhanced
+  old_files <- extract_files_from_content(old_content)
+  new_files <- extract_files_from_content(new_content)
+  
+  # Check for new files
+  added_files <- setdiff(new_files, old_files)
+  if (length(added_files) > 0) {
+    changes <- c(changes, paste("Added:", paste(added_files, collapse = ", ")))
+  }
+  
+  # Check for removed files  
+  removed_files <- setdiff(old_files, new_files)
+  if (length(removed_files) > 0) {
+    changes <- c(changes, paste("Removed:", paste(removed_files, collapse = ", ")))
+  }
+  
+  return(changes)
+}
+
+# Helper function to extract file names from content
+extract_files_from_content <- function(content) {
+  # Extract files mentioned in backticks
+  file_pattern <- "`([^`]+\\.[a-zA-Z]+)`"
+  matches <- regmatches(content, gregexpr(file_pattern, content))
+  files <- unlist(lapply(matches, function(x) gsub("`", "", x)))
+  return(unique(files[files != ""]))
 }
 
 # ==============================================================================

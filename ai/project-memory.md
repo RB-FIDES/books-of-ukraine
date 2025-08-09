@@ -91,3 +91,68 @@
 **Strategic Intent**: This authentication system enables the project to scale to multiple contributors and automated environments while maintaining security and ease of use.
 
 **✅ MILESTONE ACHIEVED** (August 8, 2025): Google Sheets authentication system successfully implemented and tested by Andriy. The service account approach is now fully operational - scripts run without browser interaction as designed. This establishes the foundation for future CI/CD implementation when the project reaches that stage.
+
+### Project Navigation System (August 8, 2025):
+**Achievement**: Created automated project structure documentation and mapping system
+
+- **Problem Solved**: Need for comprehensive project navigation, especially for new team members and AI context management
+- **Technical Implementation**:
+  - **ASCII Tree Generator**: `update_project_map()` function creates visual project structure with Unicode tree characters
+  - **Exhaustive File Mapping**: Scans all directories and categorizes files by type (configs, docs, scripts, etc.)
+  - **Core Context Integration**: Added project-map.md to essential context loading via `add_core_context()`
+  - **Auto-Maintenance**: `ai/project-map.md` auto-generated with timestamp and quick command reference
+
+- **Navigation Features**:
+  - **Visual Tree Structure**: ASCII art showing complete project hierarchy with file counts and descriptions
+  - **Emoji Categories**: File type identification with visual icons (🔧 configs, 📊 analysis, 🛠️ utilities, etc.)
+  - **Quick Commands Section**: Essential functions and workflow shortcuts
+  - **Context Functions**: `check_project_map()`, `update_project_map()` for maintenance
+
+- **Strategic Value**: 
+  - **New User Onboarding**: Instant understanding of project structure and purpose
+  - **AI Context Management**: Project navigation now part of core context for all AI interactions
+  - **Documentation Automation**: Self-maintaining project overview reduces manual documentation burden
+
+**Intent**: This navigation system transforms project discovery from exploration task to instant comprehension, supporting both human team scaling and AI effectiveness in complex project environments.
+
+### 1-ellis.R Enhancement & Geographic Enrichment Architecture (August 8, 2025):
+**Achievement**: Complete architectural overhaul of data processing pipeline for enhanced database creation
+
+**Problem Context**: 
+- Legacy `1-ellis.R` script contained problematic features: Google Sheets uploads, wide format processing, and complex integration that violated clean architecture principles
+- User demanded clean separation: "don't upload anything to google sheets", "don't bother with wide format", "consider a good way to organize extensions to the core database"
+
+**Solution Implemented**:
+- **Complete Script Rewrite**: Transformed 400+ line complex script into clean ~200 line modular architecture
+- **Enhanced Database Pattern**: Created `books-of-ukraine-enhanced.sqlite` by copying core database and adding extensions
+- **Extension Architecture**: Implemented `ext_*` table pattern for modular data enrichment (currently `ext_geography_publications`)
+- **Star Schema Design**: Enhanced fact table (`fact_enhanced`) combining core publications with geographic dimensions
+
+**Technical Architecture**:
+- **Core Preservation**: `0-ellis.R` remains untouched as segregated checkpoint (3,180 publications)
+- **Extension Framework**: Geographic enrichment using `teritorii.rds` data (580 publications mapped to territories)
+- **Integration View**: `fact_enhanced` table provides unified access to core + geographic data
+- **Documentation**: Auto-generated `ai/CACHE-manifest.md` with comprehensive schema documentation
+
+**Current Database Structure**:
+```
+books-of-ukraine-enhanced.sqlite (11 tables):
+├── Core Tables (copied from books-of-ukraine-long.sqlite)
+├── ext_geography_publications (580 records)
+└── fact_enhanced (3,180 records with geographic dimensions)
+```
+
+**Geographic Data Integration**:
+- Successfully mapped publications to Ukrainian territories (Київ, Харківська, Львівська, etc.)
+- Sample territorial coverage for 2023: Київ (5,328 publications), regional variations documented
+- Data sourced from internal `teritorii.rds` file with territory-year grain structure
+
+**NEXT SESSION FOCUS** 🎯:
+- **Primary Objective**: External geographic enrichment using KSE-Loc-Data-Hub (https://github.com/kse-ua/KSE-Loc-Data-Hub/)
+- **Target Enhancement**: Expand geographic enrichment beyond internal data to external economic/demographic datasets
+- **Geographic-Year Grain**: Focus on territory-year level data integration for comprehensive regional analysis
+- **Extension Pattern**: Apply established `ext_*` architecture to incorporate KSE economic indicators
+
+**Current State**: Enhanced database architecture fully operational and tested. Framework ready for external data integration via KSE-Loc-Data-Hub in next session.
+
+**Strategic Intent**: Build comprehensive territorial intelligence by layering external economic data onto core publishing patterns, enabling sophisticated geographic-temporal analysis of Ukrainian publishing landscape.
