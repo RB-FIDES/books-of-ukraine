@@ -336,8 +336,18 @@ dbWriteTable(db_books_of_ukraine, "dim_categories", dim_categories, overwrite = 
 dbWriteTable(db_books_of_ukraine, "dim_measures", dim_measures, overwrite = TRUE)
 
 # Save raw sheets data for reference
+# ISSUE FIX: Use translated names instead of regex that removes Cyrillic characters
 for (sheet_name in names(sheets_data)) {
-  safe_name <- str_replace_all(sheet_name, "[^a-zA-Z0-9]", "_")
+  # Create consistent English table names for raw data storage
+  safe_name <- case_when(
+    sheet_name == "Рік" ~ "year",           # Year totals sheet
+    sheet_name == "Мова" ~ "language",      # Language dimension
+    sheet_name == "Тема" ~ "theme",         # Theme/subject dimension  
+    sheet_name == "Територія" ~ "territory", # Geographic dimension
+    sheet_name == "Призначення" ~ "purpose", # Purpose dimension
+    TRUE ~ str_replace_all(tolower(sheet_name), "[^a-zA-Z0-9]", "_") # Fallback for unexpected sheets
+  )
+  # Save with descriptive table name: raw_language, raw_theme, etc.
   dbWriteTable(db_books_of_ukraine, paste0("raw_", safe_name), sheets_data[[sheet_name]], overwrite = TRUE)
 }
 
