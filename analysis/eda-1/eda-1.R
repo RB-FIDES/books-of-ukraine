@@ -1,3 +1,8 @@
+# ---- suppress-dplyr-globals --------------------------------------------------
+# Suppress R CMD check notes for dplyr pipelines
+utils::globalVariables(c(
+  "measure", "language", "value", "region_group", "total", "overall_total", "total_titles", "year", "geography", "actual_value", "title_max", "copy_max", "scaled_copy"
+))
 rm(list = ls(all.names = TRUE)) # Clear the memory of variables from previous run. This is not called by knitr, because it's above the first chunk.
 cat("\014") # Clear the console
 # verify root location
@@ -45,7 +50,7 @@ prints_folder <- paste0(local_root, "prints/")
 if (!fs::dir_exists(prints_folder)) {fs::dir_create(prints_folder)}
 
 # Data paths
-data_manipulation_path <- "./data-private/derived/manipulation/"
+data_manipulation_path <- "data-private/derived/manipulation/"
 sqlite_db_path <- paste0(data_manipulation_path, "SQLite/books-of-ukraine.sqlite")
 
 # Define analysis periods
@@ -57,12 +62,11 @@ target_window <- c(target_window_opens, target_window_closes)
 # Custom function to check if data files exist
 check_data_availability <- function() {
   files_to_check <- c(
-    paste0(data_manipulation_path, "ds_year_long.rds"),
-    paste0(data_manipulation_path, "ds_language_long.rds"),
-    paste0(data_manipulation_path, "ds_genre_long.rds"),
-    paste0(data_manipulation_path, "ds_pubtype_long.rds"),
-    paste0(data_manipulation_path, "ds_geography_long.rds"),
-    paste0(data_manipulation_path, "ds_ukr_rus_long.rds")
+    paste0(data_manipulation_path, "ds_year.rds"),
+    paste0(data_manipulation_path, "ds_language.rds"),
+    paste0(data_manipulation_path, "ds_genre.rds"),
+    paste0(data_manipulation_path, "ds_pubtype.rds"),
+    paste0(data_manipulation_path, "ds_geography.rds")
   )
   
   missing_files <- files_to_check[!file.exists(files_to_check)]
@@ -106,7 +110,8 @@ show_plot_window <- function(plot_obj, width = 10, height = 6) {
   if (os_type == "Windows") {
     windows(width = width, height = height)
   } else if (os_type == "Darwin") {  # macOS
-    quartz(width = width, height = height)
+    # quartz(width = width, height = height) # Removed for cross-platform compatibility
+    x11(width = width, height = height)
   } else {  # Linux and others
     x11(width = width, height = height)
   }
@@ -129,12 +134,11 @@ load_books_data <- function() {
   }
   
   list(
-    ds_year_long = readRDS(paste0(data_manipulation_path, "ds_year_long.rds")),
-    ds_language_long = readRDS(paste0(data_manipulation_path, "ds_language_long.rds")),
-    ds_genre_long = readRDS(paste0(data_manipulation_path, "ds_genre_long.rds")),
-    ds_pubtype_long = readRDS(paste0(data_manipulation_path, "ds_pubtype_long.rds")),
-    ds_geography_long = readRDS(paste0(data_manipulation_path, "ds_geography_long.rds")),
-    ds_ukr_rus_long = readRDS(paste0(data_manipulation_path, "ds_ukr_rus_long.rds"))
+    ds_year = readRDS(paste0(data_manipulation_path, "ds_year.rds")),
+    ds_language = readRDS(paste0(data_manipulation_path, "ds_language.rds")),
+    ds_genre = readRDS(paste0(data_manipulation_path, "ds_genre.rds")),
+    ds_pubtype = readRDS(paste0(data_manipulation_path, "ds_pubtype.rds")),
+    ds_geography = readRDS(paste0(data_manipulation_path, "ds_geography.rds"))
   )
 }
 
@@ -153,12 +157,11 @@ connect_to_db <- function() {
 books_data <- load_books_data()
 
 # Extract individual datasets for easier access
-ds_year_long <- books_data$ds_year_long
-ds_language_long <- books_data$ds_language_long
-ds_genre_long <- books_data$ds_genre_long
-ds_pubtype_long <- books_data$ds_pubtype_long
-ds_geography_long <- books_data$ds_geography_long
-ds_ukr_rus_long <- books_data$ds_ukr_rus_long
+ds_year <- books_data$ds_year
+ds_language <- books_data$ds_language
+ds_genre <- books_data$ds_genre
+ds_pubtype <- books_data$ds_pubtype
+ds_geography <- books_data$ds_geography
 
 # Optional: Connect to SQLite database for SQL queries
 # books_db <- connect_to_db()
@@ -166,29 +169,28 @@ ds_ukr_rus_long <- books_data$ds_ukr_rus_long
 # ---- inspect-data-0 -----------------------------------------------------------
 # Basic inspection of all datasets
 cat("Dataset dimensions (long format):\n")
-cat("ds_year_long:", dim(ds_year_long)[1], "rows x", dim(ds_year_long)[2], "columns\n")
-cat("ds_language_long:", dim(ds_language_long)[1], "rows x", dim(ds_language_long)[2], "columns\n") 
-cat("ds_genre_long:", dim(ds_genre_long)[1], "rows x", dim(ds_genre_long)[2], "columns\n")
-cat("ds_pubtype_long:", dim(ds_pubtype_long)[1], "rows x", dim(ds_pubtype_long)[2], "columns\n")
-cat("ds_geography_long:", dim(ds_geography_long)[1], "rows x", dim(ds_geography_long)[2], "columns\n")
-cat("ds_ukr_rus_long:", dim(ds_ukr_rus_long)[1], "rows x", dim(ds_ukr_rus_long)[2], "columns\n")
+cat("ds_year:", dim(ds_year)[1], "rows x", dim(ds_year)[2], "columns\n")
+cat("ds_language:", dim(ds_language)[1], "rows x", dim(ds_language)[2], "columns\n") 
+cat("ds_genre:", dim(ds_genre)[1], "rows x", dim(ds_genre)[2], "columns\n")
+cat("ds_pubtype:", dim(ds_pubtype)[1], "rows x", dim(ds_pubtype)[2], "columns\n")
+cat("ds_geography:", dim(ds_geography)[1], "rows x", dim(ds_geography)[2], "columns\n")
 
 # Show year range from long format data
-cat("\nYear range in data:", min(ds_year_long$year), "-", max(ds_year_long$year), "\n")
+cat("\nYear range in data:", min(ds_year$year), "-", max(ds_year$year), "\n")
 
 # Show measure types available in long format
-cat("\nMeasure types available:", paste(unique(ds_year_long$measure), collapse = ", "), "\n")
+cat("\nMeasure types available:", paste(unique(ds_year$measure), collapse = ", "), "\n")
 
 # Show structure of long format datasets
 cat("\nStructure of long format datasets:\n")
-str(ds_year_long)
-cat("\nSample of ds_language_long:\n")
-head(ds_language_long, 10)
+str(ds_year)
+cat("\nSample of ds_language:\n")
+head(ds_language, 10)
 
 # ---- tweak-data-0 ------------------------------------------------------------
 # Prepare data for analysis - add regional groupings for geography
 # Note: Geography data is now in long format, so we need to work with it differently
-ds_geography_enhanced <- ds_geography_long %>%
+ds_geography_enhanced <- ds_geography %>%
   mutate(
     region_group = case_when(
       # Північ (North)
@@ -217,10 +219,10 @@ ds_geography_enhanced <- ds_geography_long %>%
   )
 
 # Create summary tables for easier graphing
-ds_year_summary <- ds_year_long %>%
+ds_year_summary <- ds_year %>%
   arrange(year, measure)
 
-ds_language_summary <- ds_language_long %>%
+ds_language_summary <- ds_language %>%
   # Filter for main languages of interest
   filter(language %in% c("Українська", "Російська", "Англійська")) %>%
   arrange(year, measure, language)
@@ -328,7 +330,7 @@ analyze_category_trends <- function(data, category_col, measure_type = "title_co
 
 # Example 1: Multi-language trend analysis
 sample_language_trends <- function() {
-  ds_language_long %>%
+  ds_language %>%
     filter(measure == "title_count", 
            language %in% c("Українська", "Російська", "Англійська")) %>%
     ggplot(aes(x = year, y = value, color = language)) +
@@ -360,28 +362,12 @@ sample_regional_analysis <- function() {
 # Example 3: Cross-dimensional analysis (language by region)  
 sample_cross_analysis <- function() {
   # This would require joining datasets - demonstrating long format flexibility
-  ds_ukr_rus_long %>%
-    filter(measure == "title_count") %>%
-    ggplot(aes(x = year, y = ukr + rus, fill = "Total")) +
-    geom_col(alpha = 0.7) +
-    geom_line(aes(y = ukr, color = "Ukrainian"), linewidth = 1.2) +
-    geom_line(aes(y = rus, color = "Russian"), linewidth = 1.2) +
-    labs(title = "Ukrainian vs Russian Publications Over Time",
-         x = "Year", y = "Number of Titles", 
-         color = "Language", fill = "Total") +
-    theme_minimal() +
-    scale_color_manual(values = c("Ukrainian" = "#005BBB", "Russian" = "#DC143C")) +
-    scale_fill_manual(values = c("Total" = "gray80")) +
-    scale_x_continuous(breaks = seq(2005, 2023, 2)) +
-    scale_y_continuous(labels = scales::comma)
 }
-
-
 # ----- q1 ---------------------------------------------------------
 # How me how many books was publised every year since 2005?
 
 g1 <- 
-  ds_year_long %>%
+  ds_year %>%
   filter(measure == "title_count") %>%
   group_by(year) %>%
   summarise(total_titles = sum(value, na.rm = TRUE), .groups = "drop") %>%
@@ -406,7 +392,7 @@ ggsave(
 # number of books can mean different things: number of unique titles and total copies published.
 # Note: copy_count is in thousands, so we multiply by 1000 to get actual copies
 g2 <- 
-  ds_year_long %>%
+  ds_year %>%
   filter(measure %in% c("title_count", "copy_count")) %>%
   mutate(
     # Convert copy_count from thousands to actual numbers
@@ -421,16 +407,16 @@ g2 <-
   geom_point(data = . %>% filter(measure == "title_count"), 
              aes(y = actual_value), color = "#005BBB", size = 2) +
   geom_line(data = . %>% filter(measure == "copy_count"), 
-            aes(y = actual_value / max(actual_value, na.rm = TRUE) * max(ds_year_long$value[ds_year_long$measure == "title_count"], na.rm = TRUE)), 
+            aes(y = actual_value / max(actual_value, na.rm = TRUE) * max(ds_year$value[ds_year$measure == "title_count"], na.rm = TRUE)), 
             color = "#DC143C", linewidth = 1.2) +
   geom_point(data = . %>% filter(measure == "copy_count"), 
-             aes(y = actual_value / max(actual_value, na.rm = TRUE) * max(ds_year_long$value[ds_year_long$measure == "title_count"], na.rm = TRUE)), 
+             aes(y = actual_value / max(actual_value, na.rm = TRUE) * max(ds_year$value[ds_year$measure == "title_count"], na.rm = TRUE)), 
              color = "#DC143C", size = 2) +
   scale_y_continuous(
     name = "Number of Titles",
     labels = scales::comma,
-    sec.axis = sec_axis(~ . / max(ds_year_long$value[ds_year_long$measure == "title_count"], na.rm = TRUE) * 
-                        max(ds_year_long$value[ds_year_long$measure == "copy_count"] * 1000, na.rm = TRUE),
+    sec.axis = sec_axis(~ . / max(ds_year$value[ds_year$measure == "title_count"], na.rm = TRUE) * 
+                        max(ds_year$value[ds_year$measure == "copy_count"] * 1000, na.rm = TRUE),
                         name = "Number of Copies", 
                         labels = scales::comma)
   ) +
@@ -508,7 +494,7 @@ ggsave(
 # -------- Sasha -------------------------------------------------  
 # How many numbers of titles were published for one bookstore across the places in Ukraine?
 g3 <- 
-  ds_geography_long %>%
+  ds_geography %>%
   filter(measure == "title_count") %>%
   group_by(year, geography) %>%
   summarise(total_titles = sum(value, na.rm = TRUE), .groups = "drop") %>%

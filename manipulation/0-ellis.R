@@ -139,17 +139,412 @@ if (!fs::dir_exists(data_private_derived_csv)) {fs::dir_create(data_private_deri
 # ---- establish-database-connection -------------------------------------------
 db_books_of_ukraine <- dbConnect(RSQLite::SQLite(), "data-private/derived/manipulation/SQLite/books-of-ukraine-long.sqlite")
 
+
+
+# ------------------------------------------------------------------ DS_YEAR ----------------------------------------------------------------------------------------------------------------------------------------------
+
 # ---- load-data ---------------------------------------------------------------
 df_raw <- import_selected_sheets(
   sheet_url = "https://docs.google.com/spreadsheets/d/1nxMTUD9gRhaE_VIT6WPR4V-_7BWNVwsJu__qjtCtSF0",
   sheets_to_import = "Рік"
 )
 
-# ---- inspect-data-0 ----------------------------------------------------------
+# ----data-cleaning-------------------------------------------------------------
 
-# ---- tweak-data-0 ------------------------------------------------------------
 
-# ---- save-to-disk ------------------------------------------------------------
+# Clean and reshape the raw data to match CACHE manifest (ds_year_long)
 
-# ---- analysis-below ----------------------------------------------------------
+years_expected <- 2005:2024
+measures_expected <- c("title_count", "copy_count")
+
+# Remove whitespace from column names and ensure all are character
+df_raw <- df_raw %>% rename_with(~trimws(as.character(.)))
+
+# Check for columns to pivot
+if (ncol(df_raw) <= 1) {
+  stop("No year columns found in input data after cleaning. Check your input sheet and column names.")
+}
+
+# Reshape to long format and robustly parse years
+df_long <- df_raw %>%
+  rename(measure_raw = 1) %>%
+  pivot_longer(
+    cols = -measure_raw,
+    names_to = "year",
+    values_to = "value"
+  ) %>%
+  mutate(
+    year = as.integer(gsub("[^0-9]", "", year)),
+    measure = case_when(
+      str_detect(measure_raw, "Наіменувань") ~ "title_count",
+      str_detect(measure_raw, "Примірників") ~ "copy_count",
+      TRUE ~ NA_character_
+    ),
+    value = safe_numeric_convert(value)
+  ) %>%
+  filter(year %in% years_expected & measure %in% measures_expected) %>%
+  select(year, measure, value)
+
+# Create full grid and join, but only fill NA if truly missing
+df_year <- expand.grid(year = years_expected, measure = measures_expected, stringsAsFactors = FALSE) %>%
+  left_join(df_long, by = c("year", "measure")) %>%
+  arrange(year, measure)
+
+# Check for NA values in value column for present data
+na_rows <- df_year[is.na(df_year$value) & paste(df_year$year, df_year$measure) %in% paste(df_long$year, df_long$measure), ]
+if(nrow(na_rows) > 0) {
+  cat("Warning: NA values found for present year/measure combinations:\n")
+  print(na_rows)
+}
+
+
+
+# Preview cleaned data
+print(df_year)
+
+# ----- rm() cleaning ---------------------------------------------------
+rm(df_raw, df_long, na_rows)
+
+# ------ SAVE CSV ---------------------------------------------------
+csv_path <- file.path(data_private_derived_csv, "ds_year.csv")
+write.csv(df_year, csv_path, row.names = FALSE, fileEncoding = "UTF-8")
+cat("Saved CSV to:", csv_path, "\n")
+
+# ------ SAVE SQLite ---------------------------------------------------
+dbWriteTable(db_books_of_ukraine, "ds_year", df_year, overwrite = TRUE)
+cat("Saved table 'ds_year' to SQLite database.\n")
+
+# ------ SAVE RDS   ---------------------------------------------------
+rds_path <- file.path(data_private_derived, "ds_year.rds")
+saveRDS(df_year, rds_path)
+cat("Saved RDS to:", rds_path, "\n")
+
+# ------ SAVE Google Sheets ---------------------------------------------------
+gs_url_out <- "https://docs.google.com/spreadsheets/d/1OOKeZnMFEAzHyr_M51zaOe76uv1yuqNmveHXSKpeqpo/edit?usp=sharing"
+sheet_write(df_year, ss = gs_url_out, sheet = "ds_year")
+cat("Saved to Google Sheet (long):", gs_url_out, "\n")
+
+
+# ------------------------------------------------------------------ DS_LANGUAGE ----------------------------------------------------------------------------------------------------------------------------------------------
+
+
+
+## -- load-data ---------------------------------------------------------------
+df_raw <- import_selected_sheets(
+  sheet_url = "https://docs.google.com/spreadsheets/d/1nxMTUD9gRhaE_VIT6WPR4V-_7BWNVwsJu__qjtCtSF0",
+  sheets_to_import = "Мова"
+)
+## ------- data-cleaning-------------------------------------------------------------
+
+# Clean and reshape the raw data to match CACHE manifest (ds_language)
+years_expected <- 2005:2024
+measures_expected <- c("title_count", "copy_count")
+
+# Remove whitespace from column names and ensure all are character
+df_raw <- df_raw %>% rename_with(~trimws(as.character(.)))
+
+# Check for columns to pivot
+if (ncol(df_raw) <= 2) {
+  stop("No year columns found in input data after cleaning. Check your input sheet and column names.")
+}
+
+# Reshape to long format and robustly parse years
+df_long <- df_raw %>%
+  rename(measure_raw = 1, language = 2) %>%
+  pivot_longer(
+    cols = -c(measure_raw, language),
+    names_to = "year",
+    values_to = "value"
+  ) %>%
+  mutate(
+    year = as.integer(gsub("[^0-9]", "", year)),
+    measure = case_when(
+      str_detect(measure_raw, "Наіменувань") ~ "title_count",
+      str_detect(measure_raw, "Примірників") ~ "copy_count",
+      TRUE ~ NA_character_
+    ),
+    value = safe_numeric_convert(value),
+    language = as.character(language)
+  ) %>%
+  filter(year %in% years_expected & measure %in% measures_expected & !is.na(language) & language != "") %>%
+  select(year, measure, language, value)
+
+# Create full grid and join, but only fill NA if truly missing
+language_all <- unique(df_long$language)
+df_language <- expand.grid(year = years_expected, measure = measures_expected, language = language_all, stringsAsFactors = FALSE) %>%
+  left_join(df_long, by = c("year", "measure", "language")) %>%
+  arrange(year, measure, language)
+
+# Check for NA values in value column for present data
+na_rows <- df_language[is.na(df_language$value) & paste(df_language$year, df_language$measure, df_language$language) %in% paste(df_long$year, df_long$measure, df_long$language), ]
+if(nrow(na_rows) > 0) {
+  cat("Warning: NA values found for present year/measure/language combinations:\n")
+  print(na_rows)
+}
+
+# Preview cleaned data
+print(df_language)
+
+# ----- rm() cleaning ---------------------------------------------------
+rm(df_raw, df_long, na_rows)
+
+# ------ SAVE CSV ---------------------------------------------------
+csv_path <- file.path(data_private_derived_csv, "ds_language.csv")
+write.csv(df_language, csv_path, row.names = FALSE, fileEncoding = "UTF-8")
+cat("Saved CSV to:", csv_path, "\n")
+
+# ------ SAVE SQLite ---------------------------------------------------
+dbWriteTable(db_books_of_ukraine, "ds_language", df_language, overwrite = TRUE)
+cat("Saved table 'ds_language' to SQLite database.\n")
+
+# ------ SAVE RDS   ---------------------------------------------------
+rds_path <- file.path(data_private_derived, "ds_language.rds")
+saveRDS(df_language, rds_path)
+cat("Saved RDS to:", rds_path, "\n")
+
+# ------ SAVE Google Sheets ---------------------------------------------------
+gs_url_out <- "https://docs.google.com/spreadsheets/d/1OOKeZnMFEAzHyr_M51zaOe76uv1yuqNmveHXSKpeqpo/edit?usp=sharing"
+sheet_write(df_language, ss = gs_url_out, sheet = "ds_language")
+cat("Saved to Google Sheet (ds_language):", gs_url_out, "\n")
+
+# ------------------------------------------------------------------ DS_GENRE ----------------------------------------------------------------------------------------------------------------------------------------------
+
+# -- load-data ---------------------------------------------------------------
+df_raw <- import_selected_sheets(
+  sheet_url = "https://docs.google.com/spreadsheets/d/1nxMTUD9gRhaE_VIT6WPR4V-_7BWNVwsJu__qjtCtSF0",
+  sheets_to_import = "Тема"
+)
+
+# ------- data-cleaning-------------------------------------------------------------
+years_expected <- 2005:2024
+measures_expected <- c("title_count", "copy_count")
+
+# Remove whitespace from column names and ensure all are character
+df_raw <- df_raw %>% rename_with(~trimws(as.character(.)))
+
+# Check for columns to pivot
+if (ncol(df_raw) <= 2) {
+  stop("No year columns found in input data after cleaning. Check your input sheet and column names.")
+}
+
+# Reshape to long format and robustly parse years
+df_long <- df_raw %>%
+  rename(measure_raw = 1, genre = 2) %>%
+  pivot_longer(
+    cols = -c(measure_raw, genre),
+    names_to = "year",
+    values_to = "value"
+  ) %>%
+  mutate(
+    year = as.integer(gsub("[^0-9]", "", year)),
+    measure = case_when(
+      str_detect(measure_raw, "Наіменувань") ~ "title_count",
+      str_detect(measure_raw, "Примірників") ~ "copy_count",
+      TRUE ~ NA_character_
+    ),
+    value = safe_numeric_convert(value),
+    genre = as.character(genre)
+  ) %>%
+  filter(year %in% years_expected & measure %in% measures_expected & !is.na(genre) & genre != "") %>%
+  select(year, measure, genre, value)
+
+# Create full grid and join, but only fill NA if truly missing
+genre_all <- unique(df_long$genre)
+df_genre <- expand.grid(year = years_expected, measure = measures_expected, genre = genre_all, stringsAsFactors = FALSE) %>%
+  left_join(df_long, by = c("year", "measure", "genre")) %>%
+  arrange(year, measure, genre)
+
+# Check for NA values in value column for present data
+na_rows <- df_genre[is.na(df_genre$value) & paste(df_genre$year, df_genre$measure, df_genre$genre) %in% paste(df_long$year, df_long$measure, df_long$genre), ]
+if(nrow(na_rows) > 0) {
+  cat("Warning: NA values found for present year/measure/genre combinations:\n")
+  print(na_rows)
+}
+
+# Preview cleaned data
+print(df_genre)
+
+# ----- rm() cleaning ---------------------------------------------------
+rm(df_raw, df_long, na_rows)
+
+# ------ SAVE CSV ---------------------------------------------------
+csv_path <- file.path(data_private_derived_csv, "ds_genre.csv")
+write.csv(df_genre, csv_path, row.names = FALSE, fileEncoding = "UTF-8")
+cat("Saved CSV to:", csv_path, "\n")
+
+# ------ SAVE SQLite ---------------------------------------------------
+dbWriteTable(db_books_of_ukraine, "ds_genre", df_genre, overwrite = TRUE)
+cat("Saved table 'ds_genre' to SQLite database.\n")
+
+# ------ SAVE RDS   ---------------------------------------------------
+rds_path <- file.path(data_private_derived, "ds_genre.rds")
+saveRDS(df_genre, rds_path)
+cat("Saved RDS to:", rds_path, "\n")
+
+# ------ SAVE Google Sheets ---------------------------------------------------
+gs_url_out <- "https://docs.google.com/spreadsheets/d/1OOKeZnMFEAzHyr_M51zaOe76uv1yuqNmveHXSKpeqpo/edit?usp=sharing"
+sheet_write(df_genre, ss = gs_url_out, sheet = "ds_genre")
+cat("Saved to Google Sheet (ds_genre):", gs_url_out, "\n")
+
+# ------------------------------------------------------------------ DS_GEOGRAPHY ----------------------------------------------------------------------------------------------------------------------------------------------
+
+# -- load-data ---------------------------------------------------------------
+df_raw <- import_selected_sheets(
+  sheet_url = "https://docs.google.com/spreadsheets/d/1nxMTUD9gRhaE_VIT6WPR4V-_7BWNVwsJu__qjtCtSF0",
+  sheets_to_import = "Територія"
+)
+
+# ------- data-cleaning-------------------------------------------------------------
+years_expected <- 2005:2024
+measures_expected <- c("title_count", "copy_count")
+
+# Remove whitespace from column names and ensure all are character
+df_raw <- df_raw %>% rename_with(~trimws(as.character(.)))
+
+# Check for columns to pivot
+if (ncol(df_raw) <= 2) {
+  stop("No year columns found in input data after cleaning. Check your input sheet and column names.")
+}
+
+# Reshape to long format and robustly parse years
+df_long <- df_raw %>%
+  rename(measure_raw = 1, geography = 2) %>%
+  pivot_longer(
+    cols = -c(measure_raw, geography),
+    names_to = "year",
+    values_to = "value"
+  ) %>%
+  mutate(
+    year = as.integer(gsub("[^0-9]", "", year)),
+    measure = case_when(
+      str_detect(measure_raw, "Наіменувань") ~ "title_count",
+      str_detect(measure_raw, "Примірників") ~ "copy_count",
+      TRUE ~ NA_character_
+    ),
+    value = safe_numeric_convert(value),
+    geography = as.character(geography)
+  ) %>%
+  filter(year %in% years_expected & measure %in% measures_expected & !is.na(geography) & geography != "") %>%
+  select(year, measure, geography, value)
+
+# Create full grid and join, but only fill NA if truly missing
+geography_all <- unique(df_long$geography)
+df_geography <- expand.grid(year = years_expected, measure = measures_expected, geography = geography_all, stringsAsFactors = FALSE) %>%
+  left_join(df_long, by = c("year", "measure", "geography")) %>%
+  arrange(year, measure, geography)
+
+# Check for NA values in value column for present data
+na_rows <- df_geography[is.na(df_geography$value) & paste(df_geography$year, df_geography$measure, df_geography$geography) %in% paste(df_long$year, df_long$measure, df_long$geography), ]
+if(nrow(na_rows) > 0) {
+  cat("Warning: NA values found for present year/measure/geography combinations:\n")
+  print(na_rows)
+}
+
+# Preview cleaned data
+print(df_geography)
+
+# ----- rm() cleaning ---------------------------------------------------
+rm(df_raw, df_long, na_rows)
+
+# ------ SAVE CSV ---------------------------------------------------
+csv_path <- file.path(data_private_derived_csv, "ds_geography.csv")
+write.csv(df_geography, csv_path, row.names = FALSE, fileEncoding = "UTF-8")
+cat("Saved CSV to:", csv_path, "\n")
+
+# ------ SAVE SQLite ---------------------------------------------------
+dbWriteTable(db_books_of_ukraine, "ds_geography", df_geography, overwrite = TRUE)
+cat("Saved table 'ds_geography' to SQLite database.\n")
+
+# ------ SAVE RDS   ---------------------------------------------------
+rds_path <- file.path(data_private_derived, "ds_geography.rds")
+saveRDS(df_geography, rds_path)
+cat("Saved RDS to:", rds_path, "\n")
+
+# ------ SAVE Google Sheets ---------------------------------------------------
+gs_url_out <- "https://docs.google.com/spreadsheets/d/1OOKeZnMFEAzHyr_M51zaOe76uv1yuqNmveHXSKpeqpo/edit?usp=sharing"
+sheet_write(df_geography, ss = gs_url_out, sheet = "ds_geography")
+cat("Saved to Google Sheet (ds_geography):", gs_url_out, "\n")
+
+# ------------------------------------------------------------------ DS_PUBTYPE ----------------------------------------------------------------------------------------------------------------------------------------------
+
+# -- load-data ---------------------------------------------------------------
+df_raw <- import_selected_sheets(
+  sheet_url = "https://docs.google.com/spreadsheets/d/1nxMTUD9gRhaE_VIT6WPR4V-_7BWNVwsJu__qjtCtSF0",
+  sheets_to_import = "Призначення"
+)
+
+# ------- data-cleaning-------------------------------------------------------------
+years_expected <- 2005:2024
+measures_expected <- c("title_count", "copy_count")
+
+# Remove whitespace from column names and ensure all are character
+df_raw <- df_raw %>% rename_with(~trimws(as.character(.)))
+
+# Check for columns to pivot
+if (ncol(df_raw) <= 2) {
+  stop("No year columns found in input data after cleaning. Check your input sheet and column names.")
+}
+
+# Reshape to long format and robustly parse years
+df_long <- df_raw %>%
+  rename(measure_raw = 1, pubtype = 2) %>%
+  pivot_longer(
+    cols = -c(measure_raw, pubtype),
+    names_to = "year",
+    values_to = "value"
+  ) %>%
+  mutate(
+    year = as.integer(gsub("[^0-9]", "", year)),
+    measure = case_when(
+      str_detect(measure_raw, "Наіменувань") ~ "title_count",
+      str_detect(measure_raw, "Примірників") ~ "copy_count",
+      TRUE ~ NA_character_
+    ),
+    value = safe_numeric_convert(value),
+    pubtype = as.character(pubtype)
+  ) %>%
+  filter(year %in% years_expected & measure %in% measures_expected & !is.na(pubtype) & pubtype != "") %>%
+  select(year, measure, pubtype, value)
+
+# Create full grid and join, but only fill NA if truly missing
+pubtype_all <- unique(df_long$pubtype)
+df_pubtype <- expand.grid(year = years_expected, measure = measures_expected, pubtype = pubtype_all, stringsAsFactors = FALSE) %>%
+  left_join(df_long, by = c("year", "measure", "pubtype")) %>%
+  arrange(year, measure, pubtype)
+
+# Check for NA values in value column for present data
+na_rows <- df_pubtype[is.na(df_pubtype$value) & paste(df_pubtype$year, df_pubtype$measure, df_pubtype$pubtype) %in% paste(df_long$year, df_long$measure, df_long$pubtype), ]
+if(nrow(na_rows) > 0) {
+  cat("Warning: NA values found for present year/measure/pubtype combinations:\n")
+  print(na_rows)
+}
+
+# Preview cleaned data
+print(df_pubtype)
+
+# ----- rm() cleaning ---------------------------------------------------
+rm(df_raw, df_long, na_rows)
+
+# ------ SAVE CSV ---------------------------------------------------
+csv_path <- file.path(data_private_derived_csv, "ds_pubtype.csv")
+write.csv(df_pubtype, csv_path, row.names = FALSE, fileEncoding = "UTF-8")
+cat("Saved CSV to:", csv_path, "\n")
+
+# ------ SAVE SQLite ---------------------------------------------------
+dbWriteTable(db_books_of_ukraine, "ds_pubtype", df_pubtype, overwrite = TRUE)
+cat("Saved table 'ds_pubtype' to SQLite database.\n")
+
+# ------ SAVE RDS   ---------------------------------------------------
+rds_path <- file.path(data_private_derived, "ds_pubtype.rds")
+saveRDS(df_pubtype, rds_path)
+cat("Saved RDS to:", rds_path, "\n")
+
+# ------ SAVE Google Sheets ---------------------------------------------------
+gs_url_out <- "https://docs.google.com/spreadsheets/d/1OOKeZnMFEAzHyr_M51zaOe76uv1yuqNmveHXSKpeqpo/edit?usp=sharing"
+sheet_write(df_pubtype, ss = gs_url_out, sheet = "ds_pubtype")
+cat("Saved to Google Sheet (ds_pubtype):", gs_url_out, "\n")
+
+
+
+
 

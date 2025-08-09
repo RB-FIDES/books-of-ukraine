@@ -50,26 +50,20 @@ if (!fs::dir_exists(prints_folder)) {fs::dir_create(prints_folder)}
 
 # ---- load-data ---------------------------------------------------------------
 # Load existing ds_geography datasets instead of the national data
-if (file.exists("data-private/derived/manipulation/ds_geography_long.rds")) {
-  ds_geography_long <- readRDS("data-private/derived/manipulation/ds_geography_long.rds")
-  cat("Loaded ds_geography_long with", nrow(ds_geography_long), "rows\n")
+if (file.exists("data-private/derived/manipulation/ds_geography.rds")) {
+  ds_geography <- readRDS("data-private/derived/manipulation/ds_geography.rds")
+  cat("Loaded ds_geography with", nrow(ds_geography), "rows\n")
 } else {
-  stop("ds_geography_long.rds not found. Please run 0-ellis.R first.")
+  stop("ds_geography.rds not found. Please run 0-ellis.R first.")
 }
 
-if (file.exists("data-private/derived/manipulation/ds_geography_wide.rds")) {
-  ds_geography_wide <- readRDS("data-private/derived/manipulation/ds_geography_wide.rds")
-  cat("Loaded ds_geography_wide with", nrow(ds_geography_wide), "rows\n")
-} else {
-  stop("ds_geography_wide.rds not found. Please run 0-ellis.R first.")
-}
 
 # Check existing data structure
-cat("Existing measures:", paste(unique(ds_geography_long$measure), collapse = ", "), "\n")
-cat("Sample geographies:", paste(head(unique(ds_geography_long$geography), 5), collapse = ", "), "\n")
+cat("Existing measures:", paste(unique(ds_geography$measure), collapse = ", "), "\n")
+cat("Sample geographies:", paste(head(unique(ds_geography$geography), 5), collapse = ", "), "\n")
 
 # Check all geography names in the original data
-original_geographies <- unique(ds_geography_long$geography)
+original_geographies <- unique(ds_geography$geography)
 cat("Total original geographies:", length(original_geographies), "\n")
 cat("All original geographies:\n")
 print(original_geographies)
@@ -141,17 +135,17 @@ bookstore_data <- tibble(
 )
 
 # Create years range from existing data
-years_range <- unique(ds_geography_long$year)
+years_range <- unique(ds_geography$year)
 cat("Years available in data:", min(years_range), "to", max(years_range), "\n")
 
 # Check if bookstore data already exists and clean it first
-if ("bookstore_count" %in% unique(ds_geography_long$measure)) {
+if ("bookstore_count" %in% unique(ds_geography$measure)) {
   cat("Existing bookstore_count data found - cleaning before adding new data\n")
-  ds_geography_clean <- ds_geography_long %>%
+  ds_geography_clean <- ds_geography %>%
     filter(measure != "bookstore_count")
 } else {
   cat("No existing bookstore_count data found - proceeding with original data\n")
-  ds_geography_clean <- ds_geography_long
+  ds_geography_clean <- ds_geography
 }
 
 # Create bookstore data in long format for all years
@@ -178,13 +172,12 @@ ds_wide_enhanced <- ds_long_enhanced %>%
   arrange(year, measure)
 
 # ---- inspect-data-0 -------------------------------------
-cat("Original ds_geography_long dimensions:", dim(ds_geography_long), "\n")
-cat("Original ds_geography_wide dimensions:", dim(ds_geography_wide), "\n")
+cat("Original ds_geography dimensions:", dim(ds_geography), "\n")
 cat("Enhanced ds_long dimensions:", dim(ds_long_enhanced), "\n")
 cat("Enhanced ds_wide dimensions:", dim(ds_wide_enhanced), "\n")
 
 # Check measures in original and enhanced dataset
-measures_original <- unique(ds_geography_long$measure)
+measures_original <- unique(ds_geography$measure)
 measures_enhanced <- unique(ds_long_enhanced$measure)
 cat("Measures in original dataset:", paste(measures_original, collapse = ", "), "\n")
 cat("Measures in enhanced dataset:", paste(measures_enhanced, collapse = ", "), "\n")
@@ -270,26 +263,22 @@ books_of_ukraine <- DBI::dbConnect(RSQLite::SQLite(), "data-private/derived/mani
 books_of_ukraine_wide <- DBI::dbConnect(RSQLite::SQLite(), "data-private/derived/manipulation/SQLite/books-of-ukraine-wide.sqlite")
 
 ## -------- RDS saving (replace original versions) --------
-saveRDS(ds_long_enhanced, "data-private/derived/manipulation/ds_geography_long.rds")
-saveRDS(ds_wide_enhanced, "data-private/derived/manipulation/ds_geography_wide.rds")
+saveRDS(ds_long_enhanced, "data-private/derived/manipulation/ds_geography.rds")
 cat("✓ Saved enhanced RDS files (replaced original versions)\n")
 
 ## ------- SQLite saving (replace original versions) -------
-DBI::dbWriteTable(books_of_ukraine, "ds_geography_long", ds_long_enhanced, overwrite = TRUE)
-DBI::dbWriteTable(books_of_ukraine_wide, "ds_geography_wide", ds_wide_enhanced, overwrite = TRUE)
+DBI::dbWriteTable(books_of_ukraine, "ds_geography", ds_long_enhanced, overwrite = TRUE)
 cat("✓ Saved to SQLite databases (replaced original versions)\n")
 
 ## ------ CSV saving (replace original versions) ------
-write.csv(ds_long_enhanced, "data-private/derived/manipulation/CSV/ds_geography_long.csv", row.names = FALSE)
-write.csv(ds_wide_enhanced, "data-private/derived/manipulation/CSV/ds_geography_wide.csv", row.names = FALSE)
+write.csv(ds_long_enhanced, "data-private/derived/manipulation/CSV/ds_geography.csv", row.names = FALSE)
 cat("✓ Saved CSV files (replaced original versions)\n")
 
 ## ------- Google Sheets saving (replace original versions) -------
 sheet_url <- "https://docs.google.com/spreadsheets/d/1OOKeZnMFEAzHyr_M51zaOe76uv1yuqNmveHXSKpeqpo/edit?gid=2036395854#gid=2036395854"
 
 tryCatch({
-  googlesheets4::sheet_write(ds_long_enhanced, ss = sheet_url, sheet = "ds_geography_long")
-  googlesheets4::sheet_write(ds_wide_enhanced, ss = sheet_url, sheet = "ds_geography_wide")
+  googlesheets4::sheet_write(ds_long_enhanced, ss = sheet_url, sheet = "ds_geography")
   cat("✓ Saved to Google Sheets (replaced original versions)\n")
 }, error = function(e) {
   cat("⚠ Google Sheets saving failed:", e$message, "\n")
@@ -303,8 +292,7 @@ DBI::dbDisconnect(books_of_ukraine_wide)
 cat("\n", paste(rep("=", 50), collapse=""), "\n")
 cat("DATASETS UPDATED: All ds_geography versions now include bookstore_count measure\n")
 cat("Files updated:\n")
-cat("- ds_geography_long.rds (1,500 rows with 3 measures)\n")
-cat("- ds_geography_wide.rds (60 rows with 3 measures)\n") 
+cat("- ds_geography.rds (1,500 rows with 3 measures)\n")
 cat("- CSV versions\n")
 cat("- SQLite versions\n")
 cat("- Google Sheets versions\n")
