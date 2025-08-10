@@ -87,25 +87,6 @@ add_geography_extension <- function(db_connection) {
     return(invisible())
   }
   
-  # Process territorial data
-  raw_teritorii <- readRDS(territori_path)
-  
-  # Clean and transform territorial data
-  terir_cleaned <- raw_teritorii %>%
-    filter(!is.na(x) & x != "") %>%
-    # Handle mixed data types in year columns
-    mutate(across(starts_with("x") & !matches("^x$"), ~ {
-      if (is.list(.)) {
-        map_chr(., ~ {
-          if (is.null(.)) "0"
-          else if (is.character(.)) str_replace_all(., "[\\s,]", "")
-          else as.character(.)
-        })
-      } else {
-        as.character(.)
-      }
-    }))
-  
   # Transform to long format for star schema integration
   ds_geography_ext <- terir_cleaned %>%
     pivot_longer(
@@ -188,16 +169,15 @@ generate_enhanced_manifest <- function(db_connection, output_path = "ai/CACHE-MA
     "│ dim_years              │ → │ ext_geography_*         │",
     "│ dim_categories         │    │ ext_future_*            │",
     "│ dim_measures           │    │ (preserves core intact) │",
-    "│ raw_*                  │    └─────────────────────────┘",
+  "└─────────────────────┘",
     "└─────────────────────┘",
     "```",
     "",
     "### 🔗 Integration Strategy",
     "",
-    "**CORE TABLES** (unchanged from 0-ellis.R):",
-    "- `fact_book_publications`: Original publication data",
-    "- `dim_*`: Core dimension tables",
-    "- `raw_*`: Original source data",
+  "**CORE TABLES** (unchanged from 0-ellis.R):",
+  "- `fact_book_publications`: Original publication data",
+  "- `dim_*`: Core dimension tables",
     "",
     "**EXTENSION TABLES** (added by 1-ellis.R):",
     "- `ext_geography_publications`: Geographic/territorial data",
@@ -215,9 +195,7 @@ generate_enhanced_manifest <- function(db_connection, output_path = "ai/CACHE-MA
   fact_tables <- grep("^fact_", tables, value = TRUE)
   dim_tables <- grep("^dim_", tables, value = TRUE)
   ext_tables <- grep("^ext_", tables, value = TRUE)
-  raw_tables <- grep("^raw_", tables, value = TRUE)
-  
-  table_order <- c(sort(fact_tables), sort(dim_tables), sort(ext_tables), sort(raw_tables))
+  table_order <- c(sort(fact_tables), sort(dim_tables), sort(ext_tables))
   
   for(table_name in table_order) {
     structure <- dbGetQuery(db_connection, paste("PRAGMA table_info(", table_name, ")"))
@@ -228,7 +206,7 @@ generate_enhanced_manifest <- function(db_connection, output_path = "ai/CACHE-MA
       str_starts(table_name, "fact_") ~ "**FACT TABLE**",
       str_starts(table_name, "dim_") ~ "**DIMENSION TABLE**",
       str_starts(table_name, "ext_") ~ "**EXTENSION TABLE**",
-      str_starts(table_name, "raw_") ~ "**RAW DATA TABLE**",
+  FALSE ~ "**DATA TABLE**",
       TRUE ~ "**DATA TABLE**"
     )
     
@@ -237,7 +215,7 @@ generate_enhanced_manifest <- function(db_connection, output_path = "ai/CACHE-MA
       table_name == "fact_book_publications" ~ "Core fact table from 0-ellis.R (publications only)",
       table_name == "ext_geography_publications" ~ "Geographic extension: publication counts by territory",
       str_starts(table_name, "dim_") ~ paste("Dimension table:", str_remove(table_name, "dim_")),
-      str_starts(table_name, "raw_") ~ paste("Original source data:", str_remove(table_name, "raw_")),
+  FALSE ~ "Supporting data table",
       TRUE ~ "Supporting data table"
     )
     
@@ -501,28 +479,7 @@ rds_path <- "data-private/derived/manipulation/fact_book_publications.rds"
 write.csv(fact_book_publications, csv_path, row.names = FALSE)
 saveRDS(fact_book_publications, rds_path)
 cat("  ✓ Updated CSV and RDS versions of fact_book_publications\n")
-# ---- update-raw-territory-with-bookstores-num-2023 --------------------------
-cat("\n🏪 Updating raw_territory with Bookstores_num for 2023\n")
-all_tables <- dbListTables(db_enhanced)
-if ("raw_territory" %in% all_tables) {
-  raw_territory <- dbReadTable(db_enhanced, "raw_territory")
-  # Remove any existing Bookstores_num rows
-  raw_territory <- raw_territory[raw_territory$pokaznik != "Bookstores_num" | is.na(raw_territory$pokaznik), ]
-  # Prepare new rows
-  needed_cols <- colnames(raw_territory)
-  new_rows <- as.data.frame(matrix(NA, nrow=length(bookstore_regions), ncol=length(needed_cols)), stringsAsFactors=FALSE)
-  colnames(new_rows) <- needed_cols
-  new_rows$pokaznik <- "Bookstores_num"
-  new_rows$teritoria <- bookstore_regions
-  if ("x2023" %in% needed_cols) new_rows$x2023 <- bookstore_count
-  # Bind and write
-  raw_territory <- dplyr::bind_rows(raw_territory, new_rows)
-  dbWriteTable(db_enhanced, "raw_territory", raw_territory, overwrite = TRUE)
-  cat("  ✓ Added Bookstores_num 2023 data to raw_territory\n")
-  cat("  → Bookstores_num 2023 rows in raw_territory:", sum(raw_territory$pokaznik == "Bookstores_num" & !is.na(raw_territory$x2023)), "\n")
-} else {
-  cat("  ⚠️ Table raw_territory not found, skipping.\n")
-}
+# (raw_territory update removed)
 # Future extensions can be added here:
 # add_economic_extension(db_enhanced)
 # add_cultural_extension(db_enhanced)
