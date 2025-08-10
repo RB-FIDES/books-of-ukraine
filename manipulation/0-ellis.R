@@ -87,7 +87,7 @@ data_private_derived_csv <- "data-private/derived/manipulation/CSV/"
 if (!fs::dir_exists(data_private_derived_csv)) {fs::dir_create(data_private_derived_csv)}
 
 # ---- establish-database-connection -------------------------------------------
-db_books_of_ukraine <- dbConnect(RSQLite::SQLite(), "data-private/derived/manipulation/SQLite/books-of-ukraine.sqlite")
+db_books_of_ukraine <- dbConnect(RSQLite::SQLite(), "data-private/derived/manipulation/SQLite/books-of-ukraine-long.sqlite")
 
 
 
@@ -305,10 +305,18 @@ dim_years <- fact_book_publications %>%
     )
   )
 
+# Build dim_categories with new 'measure' column and grouped category_id
 dim_categories <- fact_book_publications %>%
-  distinct(category_type, category_value) %>%
-  arrange(category_type, category_value) %>%
-  mutate(category_id = row_number())
+  distinct(category_type, category_value, measure_type) %>%
+  arrange(category_type, category_value, measure_type) %>%
+  group_by(category_type) %>%
+  mutate(category_id = row_number()) %>%
+  ungroup() %>%
+  select(category_type, category_value, measure_type, category_id)
+
+# Reorder columns: category_type, category_value, measure, category_id
+colnames(dim_categories)[3] <- "measure"
+dim_categories <- dim_categories %>% select(category_type, category_value, measure, category_id)
 
 dim_measures <- fact_book_publications %>%
   distinct(measure_type) %>%
@@ -370,6 +378,7 @@ saveRDS(dim_measures, paste0(data_private_derived, "dim_measures.rds"))
 cat("   ✓ Saved to SQLite database\n")
 cat("   ✓ Saved to CSV files\n")
 cat("   ✓ Saved to RDS files\n")
+
 
 # Close database connection
 dbDisconnect(db_books_of_ukraine)

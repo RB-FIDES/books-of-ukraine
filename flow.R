@@ -157,7 +157,7 @@ ds_rail  <- tibble::tribble(
   # ===============================
   
   # Primary analysis reports (Quarto format) - WITH IMPROVED ERROR HANDLING
-  "run_qmd"   , "analysis/eda-1/eda-1.qmd",            # Main exploratory data analysis report
+  #"run_qmd"   , "analysis/eda-1/eda-1.qmd",            # Main exploratory data analysis report
   #"run_qmd"   , "analysis/Data-visualization/Data-visual.qmd", # Data visualization report
   # "run_qmd"   , "analysis/report-example-2/eda-1.qmd", # Analysis report example
   
