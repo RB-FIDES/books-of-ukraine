@@ -1,3 +1,4 @@
+
 # VS Code Tasks Reference
 
 > **Purpose**: Track all VS Code tasks, their triggers, and functionality for team reference and maintenance.
@@ -233,6 +234,17 @@ This document maintains a comprehensive list of all custom VS Code tasks created
 - **When to Use**: Learning new commands, troubleshooting, or onboarding.
 - **Access Method**: Tasks: Run Task → "Get Command Help"
 - **Expected Output**: Terminal output with command help
+- **Status**: ✅ Active
+
+### 23. Create Next Ellis
+- **Task ID**: `create-next-ellis`
+- **Trigger Prompt**: "create next ellis"
+- **Command**: `Rscript -e "source('scripts/update-copilot-context.R'); create_next_ellis()"`
+- **Description**: Generates a new ellis-phase script (e.g., 11-ellis.R) based on the current project state and naming convention. Useful for extending the ETL pipeline in a standardized way.
+- **When to Use**: When you need to add a new ellis-phase script for additional data processing or transformation.
+- **Access Method**: Tasks: Run Task → "Create Next Ellis"
+- **Expected Output**: New ellis-phase script scaffolded in the manipulation/ directory, ready for editing.
+- **Created**: August 10, 2025
 - **Status**: ✅ Active
 
 ## Task Categories

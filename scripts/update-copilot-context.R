@@ -2454,12 +2454,14 @@ extract_files_from_content <- function(content) {
 
 create_next_ellis <- function() {
   manip_dir <- "manipulation"
-  # List all files matching N-ellis.R
+  # List all files matching N-ellis.R, but ignore 10-ellis.R
   ellis_files <- list.files(manip_dir, pattern = "^[0-9]+-ellis\\.R$", full.names = TRUE)
+  # Exclude 10-ellis.R from consideration
+  ellis_files <- ellis_files[!grepl("(^|/)10-ellis\\.R$", ellis_files)]
   if (length(ellis_files) == 0) {
     stop("No ellis scripts found in manipulation/. At least 0-ellis.R or 1-ellis.R required.")
   }
-  # Find the highest N
+  # Find the highest N (excluding 10)
   ellis_nums <- as.integer(gsub("-ellis\\.R$", "", basename(ellis_files)))
   last_n <- max(ellis_nums, na.rm = TRUE)
   last_file <- file.path(manip_dir, paste0(last_n, "-ellis.R"))
