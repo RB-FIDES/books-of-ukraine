@@ -1,4 +1,5 @@
 
+
 # VS Code Tasks Reference
 
 > **Purpose**: Track all VS Code tasks, their triggers, and functionality for team reference and maintenance.
@@ -9,6 +10,16 @@ This document maintains a comprehensive list of all custom VS Code tasks created
 
 
 ## Available Tasks
+
+### 0. Comprehensive Project Diagnostics
+- **Task ID**: `comprehensive-project-diagnostics`
+- **Trigger Prompt**: "comprehensive project diagnostics" or "environment diagnostics"
+- **Command**: `Rscript -e "source('scripts/update-copilot-context.R'); comprehensive_project_diagnostics()"`
+- **Description**: Full environment, dependency, and workflow readiness check for new devices. Checks R version, Quarto CLI, Google Sheets authentication, required files/directories, and R packages.
+- **When to Use**: New device setup, troubleshooting, or before running the full workflow.
+- **Access Method**: Tasks: Run Task → "Comprehensive Project Diagnostics"
+- **Expected Output**: Terminal output with diagnostics and readiness summary
+- **Status**: ✅ Active
 
 ### 1. Load Core Context
 - **Task ID**: `load-core-context`
