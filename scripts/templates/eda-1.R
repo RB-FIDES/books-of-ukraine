@@ -30,12 +30,12 @@ base::source("./scripts/operational-functions.R") # project-level
 
 # ---- declare-globals ---------------------------------------------------------
 
-local_root <- "./manipulation/"
+local_root <- "./analysis/eda-1/"
 local_data <- paste0(local_root, "data-local/") # for local outputs
 
 if (!fs::dir_exists(local_data)) {fs::dir_create(local_data)}
 
-data_private_derived <- "./data-private/derived/manipulation/"
+data_private_derived <- "./data-private/derived/eda-1/"
 if (!fs::dir_exists(data_private_derived)) {fs::dir_create(data_private_derived)}
 
 prints_folder <- paste0(local_root, "prints/")
