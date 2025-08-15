@@ -58,6 +58,7 @@ Desktop.ini
 <<<<<<< Updated upstream
 # ---- Visual Studio Code (text editor) ----------------------
 .vscode/
+!.vscode/tasks.json
 !.vscode/settings.json
 !.vscode/launch.json
 # ---- Locks ----------------------
