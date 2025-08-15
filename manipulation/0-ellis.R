@@ -1,5 +1,5 @@
 # Ellis Script - Long and Wide Format Version
-# This script creates CACHE tables and to be described in CACHE-manifest.md
+# This script creates CACHE tables and to be described in CACHE-manifest-0.md
 # Format schema: year + measure + [category] + value
 
 rm(list = ls(all.names = TRUE)) # Clear the memory of variables from previous run. This is not called by knitr, because it's above the first chunk.

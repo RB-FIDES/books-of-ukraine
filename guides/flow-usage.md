@@ -168,7 +168,7 @@ safe_run_script("flow.R")
 ## 🆕 CACHE Manifest Management
 
 ### What is the CACHE Manifest?
-The CACHE manifest (`ai/CACHE-manifest.md`) is an automatically generated documentation file that describes all datasets created by the 0-ellis data processing script. It provides:
+The CACHE manifest (`ai/CACHE-manifest-0.md`) is an automatically generated documentation file that describes all datasets created by the 0-ellis data processing script. It provides:
 - Complete dataset inventory with descriptions
 - File sizes and modification dates  
 - Primary key structures and data sources
