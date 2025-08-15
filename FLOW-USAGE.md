@@ -187,7 +187,7 @@ update_cache_manifest()  # Always updates regardless of status
 ```
 
 #### What happens during updates:
-- Scans all `ds_*_long.rds` files in manipulation folder
+- Scans all `ds_*.rds` files in manipulation folder
 - Compares file timestamps with manifest timestamp
 - Documents new datasets with 🆕 markers
 - Updates logbook with change summary

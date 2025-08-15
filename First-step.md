@@ -17,13 +17,13 @@ This guide will help you set up your environment and get started with this repos
 
 ### 2. Clone the Repository
 
-Open a terminal and run:
+Open a terminal and run: 
 
 ```sh
 git clone <REPO_URL>
 cd books-of-ukraine
 ```
-
+### Or download the repository as a ZIP file from GitHub and extract it to your desired location. **(recomended for beginners)**
 ---
 
 ### 3. Install Required R Packages
@@ -41,7 +41,52 @@ install.packages(c(
 ### 4. Add Required Files
 
 - Place your Google Sheets authentication file as `.secrets` in the project root (see `docs/google-auth-setup.md` for help).
-- Ensure the following directories exist: `manipulation`, `analysis`, `scripts`, `ai`, `data-private`, `data-public` (these should be present if you cloned the repo).
+## Here some instructions on how to do it:
+
+### Set Up Google Sheets Authentication
+
+To access project data in Google Sheets, you must authenticate your R environment. There are two supported methods:
+
+#### Method 1: Service Account (Recommended for automation and teams)
+
+1. **Obtain the service account JSON file** from your project admin, or follow the guide in `guides/setup-google-access.md` or `docs/service-account-setup.md` to create your own.
+2. **Rename** the file to `google-service-account.json`.
+3. **Place** it in the project root directory:
+
+  ```
+  books-of-ukraine/
+  ├── google-service-account.json  ← Place here
+  ├── manipulation/
+  ├── scripts/
+  └── ...
+  ```
+4. **Share the Google Sheet** with the service account email (see the `client_email` field in your JSON file) as an Editor.
+5. **Test your setup** by running:
+  ```bash
+  Rscript scripts/test-service-account.R
+  ```
+  You should see a success message if authentication is working.
+
+**Security:** Never commit `google-service-account.json` to Git. This file contains private keys and is already in `.gitignore`.
+
+#### Method 2: One-Time Interactive Authentication (Quick start for individuals)
+
+1. Open R and run:
+  ```r
+  library(googlesheets4)
+  gs4_auth(cache = ".secrets", email = TRUE)
+  ```
+  This will open a browser window for you to sign in and grant access.
+2. A `.secrets` folder will be created in your project root. This stores your authentication token.
+3. All subsequent runs will use this cached token automatically.
+
+**Troubleshooting:**
+- If you get permission errors, make sure your Google account has access to the sheet.
+- For more help, see `docs/google-auth-setup.md` and `docs/service-account-setup.md`.
+
+---
+
+**Also ensure the following directories exist:** `manipulation`, `analysis`, `scripts`, `ai`, `data-private`, `data-public` (these should be present if you cloned the repo).
 
 ---
 
@@ -51,6 +96,15 @@ install.packages(c(
 - **Structure:** Modular scripts, reproducible reports, and robust context/memory management for collaborative analysis.
 - **Documentation:** See `README.md`, `COMMAND-REFERENCE.md`, and `docs/` for detailed guides.
 
+
+## The best documetns to visuit:
+
+- `README.md` - Project overview and setup instructions
+- `COMMAND-REFERENCE.md` - Detailed command usage and options
+- `Flow-Usage.md` - How to use the flow system for project management
+- `COMMNAD-GUIDE.md` - Comprehensive command guide for all available functions
+- `pipeline.md` - Detailed pipeline steps and outputs
+
 ---
 
 ## 🚦 First Commands to Run
@@ -59,16 +113,16 @@ Open R or RStudio, set your working directory to the project root, and run these
 
 ```r
 # 1. Comprehensive environment and workflow check
-comprehensive_project_diagnostics()
+comprehensive_project_diagnostics() # Checks your R environment, required packages, project structure, and reports any missing dependencies or setup issues. Does NOT install packages automatically.
 
 # 2. Analyze overall project status
-analyze_project_status()
+analyze_project_status() # Summarizes project health, recent changes, and provides recommendations for next steps in your workflow.
 
 # 3. Check flow.R status
-check_flow_status()
+check_flow_status() # Validates the flow.R pipeline, checks for missing or outdated steps, and reports on the status of data and report generation.
 
 # 4. Check current AI context
-context_refresh()
+context_refresh() # Scans and summarizes the current AI/project memory context, showing which components are loaded and available for analysis.
 ```
 
 These commands will:

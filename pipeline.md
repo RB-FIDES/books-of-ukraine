@@ -17,7 +17,6 @@ Sequence of scripts that capture data assembly, modeling and reporting.
   - `ds_genre`: Publications by thematic categories/genres
   - `ds_pubtype`: Publications by target audience and purpose
   - `ds_geography`: Regional publication distribution
-  - `ds_ukr_rus`: Detailed Ukrainian vs Russian language analysis with percentages
 
 **Outputs**: 
 - **SQLite database**: `data-private/derived/manipulation/SQLite/books-of-ukraine.sqlite` (primary analytical database)
@@ -71,7 +70,7 @@ source("flow.R")
 **Purpose**: Automatically maintain comprehensive documentation of all datasets created by the data processing pipeline.
 
 **Features**:
-- **Automatic detection**: Scans for all `ds_*_long.rds` files created by 0-ellis script
+- **Automatic detection**: Scans for all `ds_*.rds` files created by 0-ellis script
 - **Timestamp tracking**: Compares file modification times with manifest updates
 - **New dataset highlighting**: Marks recently created/updated datasets with 🆕 indicators
 - **Comprehensive documentation**: Includes file sizes, primary keys, source sheets, and purposes
