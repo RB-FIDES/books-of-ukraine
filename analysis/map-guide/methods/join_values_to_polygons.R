@@ -51,7 +51,3 @@ print(values, n = nrow(values))
 map_data <- left_join(oblasts, values, by = "oblast_name_en")
 
 map_data %>% print(n = nrow(.)) # Print the joined data for verification
-
-
-
-
