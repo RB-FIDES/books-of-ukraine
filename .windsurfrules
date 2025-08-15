@@ -1,3 +1,0 @@
-[[calls]]
-match = "when the user requests code examples, setup or configuration steps, library/API documentation, R programming help, data analysis guidance, Quarto documentation, tidyverse usage, or reproducible research workflows"
-tool  = "context7"
