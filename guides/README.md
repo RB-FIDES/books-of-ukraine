@@ -1,0 +1,1 @@
+folder `./guides/` contains instructional materials reflecting the current state of the project. They help the analyst learn how to use this informational system. These files comprise live documentation, so they must be updated if processes or asset change.

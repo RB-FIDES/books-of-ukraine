@@ -49,7 +49,7 @@ entry <- paste0(
 ### Documentation Integration
 
 **Files Updated**:
-1. **COMMAND-REFERENCE.md** (~40 lines added)
+1. **guides/command-reference.md** (~40 lines added)
    - Complete "📝 File Change Tracking Commands" section
    - Usage examples and output format samples
    - Integration with workflow patterns

@@ -58,6 +58,9 @@ This project uses Google Sheets as the primary data source. To access the data a
 ```
 books-of-ukraine/
 ├── google-service-account.json  ← Place here
+├── guides/
+│   ├── google-service-account-template.json  ← Template reference
+│   └── setup-google-access.md
 ├── manipulation/
 ├── scripts/
 ├── README.md
@@ -175,7 +178,7 @@ Future runs will use the cached token automatically.
 
 1. **Test your setup**: Run `Rscript scripts/test-service-account.R`
 2. **Check authentication status**: Run `Rscript -e "source('scripts/service-account-auth.R'); check_auth_status()"`
-3. **Review detailed documentation**: See `docs/service-account-setup.md`
+3. **Review detailed documentation**: This comprehensive guide covers both authentication methods
 4. **Contact project maintainers** with specific error messages
 
 ---

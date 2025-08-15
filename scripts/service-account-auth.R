@@ -22,7 +22,7 @@ setup_service_account_auth <- function(service_account_path = "google-service-ac
     cat("Expected file:", service_account_path, "\n")
     cat("\n")
     cat("To set up service account authentication:\n")
-    cat("1. Follow the guide in docs/service-account-setup.md\n")
+    cat("1. Follow the guide in guides/setup-google-access.md\n")
     cat("2. Place your service account JSON file at:", service_account_path, "\n")
     cat("3. Ensure the service account has access to your Google Sheets\n")
     cat("\n")
@@ -56,7 +56,7 @@ setup_service_account_auth <- function(service_account_path = "google-service-ac
     cat("- Service account doesn't have access to the Google Sheets\n")
     cat("- Google Sheets API is not enabled in your Google Cloud project\n")
     cat("\n")
-    cat("Please check docs/service-account-setup.md for troubleshooting\n")
+    cat("Please check guides/setup-google-access.md for troubleshooting\n")
     cat("==================================================\n")
     
     stop("Service account authentication failed. Please check your setup.")
@@ -104,7 +104,7 @@ setup_fallback_auth <- function() {
   cat("After this one-time setup, authentication will be automatic.\n")
   cat("\n")
   cat("To avoid browser authentication in the future:\n")
-  cat("- Set up a service account (see docs/service-account-setup.md)\n")
+  cat("- Set up a service account (see guides/setup-google-access.md)\n")
   cat("==================================================\n")
   
   tryCatch({

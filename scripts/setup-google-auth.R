@@ -28,12 +28,12 @@ tryCatch({
   cat("\n")
   cat("✓ Authentication setup complete!\n")
   cat("✓ Token cached in .secrets folder\n")
-  cat("✓ You can now run 0-ellis-long.R without manual authentication\n")
+  cat("✓ You can now run 0-ellis.R without manual authentication\n")
   cat("\n")
   cat("To test the setup, you can run:\n")
-  cat("  source('manipulation/0-ellis-long.R')\n")
+  cat("  source('manipulation/0-ellis.R')\n")
   cat("or\n")
-  cat("  Rscript manipulation/0-ellis-long.R\n")
+  cat("  Rscript manipulation/0-ellis.R\n")
   
 }, error = function(e) {
   cat("\n")

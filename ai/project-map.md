@@ -14,7 +14,6 @@ books-of-ukraine/  🏠 Project config & docs
 ├── analysis/
 ├── data-private/
 ├── data-public/
-├── docs/
 ├── guides/
 ├── libs/
 ├── manipulation/
@@ -22,8 +21,6 @@ books-of-ukraine/  🏠 Project config & docs
 ├── scripts/
 ├── utility/
 ├── books-of-ukraine.Rproj  🔧 RStudio project
-├── COMMAND-GUIDE.md  📖 Command guide
-├── COMMAND-REFERENCE.md  📚 Reference manual
 ├── config.yml  ⚙️ Configuration
 ├── context7.json  🗂️ Context data
 ├── flow.R  ⚡ Main workflow
@@ -32,6 +29,8 @@ books-of-ukraine/  🏠 Project config & docs
 ├── guides/  📚 Setup & usage guides
 │   ├── getting-started.md  🚀 New device setup
 │   ├── flow-usage.md  🔄 Flow usage guide
+│   ├── command-guide.md  📖 Command guide
+│   ├── command-reference.md  📚 Reference manual
 │   └── setup-google-access.md  🔑 Google auth setup
 ├── ai/  🧠 Context mgmt & AI memory
 │   ├── CACHE-manifest-example.md  📋 Template
@@ -70,11 +69,13 @@ books-of-ukraine/  🏠 Project config & docs
 │   ├── metadata/
 │   ├── raw/
 │   └── README.md  📄 Project overview
-├── docs/  📚 Setup guides
-│   ├── google-auth-setup.md  🔐 Google auth setup
-│   └── service-account-setup.md  🔑 Service account setup
-├── guides/  📖 User workflows
-│   └── setup-google-access.md  🌐 Google access guide
+├── guides/  📚 Setup & usage guides
+│   ├── getting-started.md  � New device setup
+│   ├── flow-usage.md  � Flow usage guide
+│   ├── command-guide.md  📖 Command guide
+│   ├── command-reference.md  📚 Reference manual
+│   ├── setup-google-access.md  🔑 Google auth setup
+│   └── google-service-account-template.json  📋 Template
 ├── libs/  📦 Shared libraries
 │   ├── docs/
 │   └── images/
@@ -101,10 +102,8 @@ books-of-ukraine/  🏠 Project config & docs
 │   ├── templates/
 │   ├── ai-memory-functions.R  🧠 Memory system
 │   ├── check-setup.R  ✅ Setup check
-│   ├── clean-and-load-core-context.R  � Context clean
 │   ├── common-chunks.R  📄 Common chunks
 │   ├── common-functions.R  🛠️ Shared utils
-│   ├── context-refresh.R  � Context refresh
 │   ├── google-auth-helper.R  � Google auth
 │   ├── load-core-context.R  📚 Context loader
 │   ├── operational-functions.R  ⚙️ Operations
