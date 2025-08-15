@@ -1,0 +1,70 @@
+{
+  "Memory Update": {
+    "prefix": "memory-update",
+    "body": [
+      "**AI Implementation Note (${CURRENT_YEAR}-${CURRENT_MONTH}-${CURRENT_DATE})**: ✅ **${1:TASK}** - ${2:Description}:",
+      "",
+      "**${3:Category}**: ${4:Details}",
+      "",
+      "**Status**: ${5:Status description}."
+    ],
+    "description": "Quick memory update template"
+  },
+  
+  "Logbook Entry": {
+    "prefix": "logbook-entry", 
+    "body": [
+      "## ${CURRENT_YEAR}-${CURRENT_MONTH}-${CURRENT_DATE}: ${1:Entry Title}",
+      "",
+      "**Context**: ${2:What prompted this entry?}",
+      "",
+      "**Decision/Observation**: ${3:What was decided or observed?}",
+      "",
+      "**Rationale**: ${4:Why was this the right choice?}",
+      "",
+      "**Next Steps**: ${5:What should happen next?}",
+      ""
+    ],
+    "description": "Human memory entry template"
+  },
+  
+  "Wiki Link": {
+    "prefix": "wl",
+    "body": [
+      "[[${1:document-name}]]"
+    ],
+    "description": "Quick wiki-link insertion"
+  },
+  
+  "Cross Reference": {
+    "prefix": "cross-ref",
+    "body": [
+      "See [[${1:document}]] for ${2:related information}"
+    ],
+    "description": "Quick cross-reference"
+  },
+  
+  "Memory Hub Link": {
+    "prefix": "hub-link",
+    "body": [
+      "*📍 Navigate to [[memory-hub]] for central navigation between all project memory components.*"
+    ],
+    "description": "Standard memory hub navigation link"
+  },
+  
+  "AI Memory Entry": {
+    "prefix": "ai-entry",
+    "body": [
+      "## ${CURRENT_YEAR}-${CURRENT_MONTH}-${CURRENT_DATE}: ${1:Technical Change/Status}",
+      "",
+      "**Context**: ${2:Brief explanation of what prompted this update}",
+      "**Implementation**: ${3:What was actually done/changed}",
+      "**Impact**: ${4:How this affects the project}",
+      "**Status**: ${5:Complete/In Progress/Blocked}",
+      "**Files**: ${6:List of specific files modified}",
+      "**Dependencies**: ${7:What other components are affected}",
+      ""
+    ],
+    "description": "AI memory entry template"
+  }
+}
