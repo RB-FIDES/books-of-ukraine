@@ -54,7 +54,7 @@ entry <- paste0(
    - Usage examples and output format samples
    - Integration with workflow patterns
 
-2. **FLOW-USAGE.md** (~45 lines added)
+2. **guides/flow-usage.md** (~45 lines added)
    - "📝 File Change Tracking" section
    - Workflow integration explanation
    - Team collaboration aspects and best practices

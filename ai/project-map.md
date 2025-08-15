@@ -26,10 +26,13 @@ books-of-ukraine/  🏠 Project config & docs
 ├── COMMAND-REFERENCE.md  📚 Reference manual
 ├── config.yml  ⚙️ Configuration
 ├── context7.json  🗂️ Context data
-├── FLOW-USAGE.md  🔄 Flow usage guide
 ├── flow.R  ⚡ Main workflow
 ├── pipeline.md  📋 Data pipeline docs
 └── README.md  📄 Project overview
+├── guides/  📚 Setup & usage guides
+│   ├── getting-started.md  🚀 New device setup
+│   ├── flow-usage.md  🔄 Flow usage guide
+│   └── setup-google-access.md  🔑 Google auth setup
 ├── ai/  🧠 Context mgmt & AI memory
 │   ├── CACHE-manifest-example.md  📋 Template
 │   ├── CACHE-manifest.md  📊 Dataset docs

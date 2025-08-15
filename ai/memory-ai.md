@@ -95,7 +95,7 @@
 
 **Status**: Complete - System operational and documented
 **Files**: scripts/update-copilot-context.R, multiple documentation files updated
-**Dependencies**: Integrated across COMMAND-REFERENCE.md, FLOW-USAGE.md, ai/README.md
+**Dependencies**: Integrated across COMMAND-REFERENCE.md, guides/flow-usage.md, ai/README.md
 
 **Detailed Report**: [[ai/log/2025-08-08-file-tracking-implementation]]
 

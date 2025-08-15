@@ -1,4 +1,4 @@
-# First-step.md
+# Getting Started Guide
 
 ## Welcome to the Project: First Steps for New Device Setup
 
@@ -101,7 +101,7 @@ To access project data in Google Sheets, you must authenticate your R environmen
 
 - `README.md` - Project overview and setup instructions
 - `COMMAND-REFERENCE.md` - Detailed command usage and options
-- `Flow-Usage.md` - How to use the flow system for project management
+- `guides/flow-usage.md` - How to use the flow system for project management
 - `COMMNAD-GUIDE.md` - Comprehensive command guide for all available functions
 - `pipeline.md` - Detailed pipeline steps and outputs
 
