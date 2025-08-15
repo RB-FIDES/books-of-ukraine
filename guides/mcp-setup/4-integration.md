@@ -22,7 +22,7 @@
 
 **Traditional `./ai/` Approach**:
 ```markdown
-# ./ai/logbook.md
+# ./ai/memory-human.md
 2025-08-11: Explored MCP integration options
 - Decided on filesystem + memory + sequential thinking
 - Need to document security considerations
@@ -30,7 +30,7 @@
 
 **Enhanced with Memory MCP**:
 ```markdown
-# ./ai/logbook.md (static decisions)
+# ./ai/memory-human.md (static decisions)
 2025-08-11: Explored MCP integration options
 
 # Plus dynamic knowledge graph (via Memory MCP)
@@ -46,7 +46,7 @@ Relations: ["MCP Integration" → "requires" → "Node.js Setup"]
 2. **Sequential Thinking MCP** → Break down analysis steps  
 3. **Context7 MCP** → Get current R/Python documentation
 4. **Memory MCP** → Track insights and decisions
-5. **Update Logbook** (`./ai/logbook.md`) → Document conclusions
+5. **Update Human Memory** (`./ai/memory-human.md`) → Document conclusions
 
 ### Pattern 3: Technical Documentation Access
 
@@ -81,7 +81,7 @@ Relations: ["Workforce Development NIA" → "uses" → "Employment Data"]
 
 **Step 3**: Update static documentation
 ```markdown
-# ./ai/logbook.md
+# ./ai/memory-human.md
 2025-08-11: Started workforce development NIA
 - Used sequential thinking to structure approach
 - Key insight: Need 2-year follow-up data for meaningful impact assessment
@@ -166,7 +166,7 @@ Memory MCP: Add entity "DBT Implementation"
 **Solution**:
 - Context7 MCP provides current documentation
 - Practice implementations in `./analysis/` (MCP accessible)
-- Document learning in `./ai/logbook.md`
+- Document learning in `./ai/memory-human.md`
 - Build technical knowledge graph in Memory MCP
 
 ## Next Steps

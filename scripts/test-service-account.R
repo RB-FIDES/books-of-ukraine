@@ -46,6 +46,6 @@ tryCatch({
   cat("2. Add service account email to the Google Sheet with Editor access\n")
   cat("3. Check that Google Sheets API is enabled in Google Cloud\n")
   cat("\n")
-  cat("See docs/service-account-setup.md for detailed instructions\n")
+  cat("See guides/setup-google-access.md for detailed instructions\n")
   cat("==================================================\n")
 })

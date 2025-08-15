@@ -1,4 +1,4 @@
-# Command Guide
+# Command Usage Guide
 
 A human-friendly guide to the main commands in this project, organized by how often you'll use them.
 

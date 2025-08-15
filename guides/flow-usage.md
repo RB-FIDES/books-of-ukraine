@@ -1,4 +1,4 @@
-# Flow.R Usage Guide
+# Flow System Usage Guide
 
 ## Overview
 

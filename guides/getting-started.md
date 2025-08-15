@@ -1,4 +1,4 @@
-# First-step.md
+# Getting Started Guide
 
 ## Welcome to the Project: First Steps for New Device Setup
 
@@ -40,7 +40,7 @@ install.packages(c(
 
 ### 4. Add Required Files
 
-- Place your Google Sheets authentication file as `.secrets` in the project root (see `docs/google-auth-setup.md` for help).
+- Place your Google Sheets authentication file as `.secrets` in the project root (see `guides/setup-google-access.md` for help).
 ## Here some instructions on how to do it:
 
 ### Set Up Google Sheets Authentication
@@ -49,7 +49,7 @@ To access project data in Google Sheets, you must authenticate your R environmen
 
 #### Method 1: Service Account (Recommended for automation and teams)
 
-1. **Obtain the service account JSON file** from your project admin, or follow the guide in `guides/setup-google-access.md` or `docs/service-account-setup.md` to create your own.
+1. **Obtain the service account JSON file** from your project admin, or follow the guide in `guides/setup-google-access.md` to create your own.
 2. **Rename** the file to `google-service-account.json`.
 3. **Place** it in the project root directory:
 
@@ -82,7 +82,7 @@ To access project data in Google Sheets, you must authenticate your R environmen
 
 **Troubleshooting:**
 - If you get permission errors, make sure your Google account has access to the sheet.
-- For more help, see `docs/google-auth-setup.md` and `docs/service-account-setup.md`.
+- For more help, see `guides/setup-google-access.md` for comprehensive authentication setup.
 
 ---
 
@@ -94,15 +94,15 @@ To access project data in Google Sheets, you must authenticate your R environmen
 
 - **Purpose:** Investigate publishing trends in Ukraine since 2005, with a focus on regional differences and the use of Russian language in books.
 - **Structure:** Modular scripts, reproducible reports, and robust context/memory management for collaborative analysis.
-- **Documentation:** See `README.md`, `COMMAND-REFERENCE.md`, and `docs/` for detailed guides.
+- **Documentation:** See `README.md`, `guides/command-reference.md`, and `guides/` for detailed guides.
 
 
 ## The best documetns to visuit:
 
 - `README.md` - Project overview and setup instructions
-- `COMMAND-REFERENCE.md` - Detailed command usage and options
-- `Flow-Usage.md` - How to use the flow system for project management
-- `COMMNAD-GUIDE.md` - Comprehensive command guide for all available functions
+- `guides/command-reference.md` - Detailed command usage and options
+- `guides/flow-usage.md` - How to use the flow system for project management
+- `guides/command-guide.md` - Comprehensive command guide for all available functions
 - `pipeline.md` - Detailed pipeline steps and outputs
 
 ---
@@ -134,9 +134,9 @@ These commands will:
 ---
 
 ## Need Help?
-- See `COMMAND-REFERENCE.md` for all available commands and their usage
+- See `guides/command-reference.md` for all available commands and their usage
 - Review `README.md` for project background and structure
-- For authentication issues, see `docs/google-auth-setup.md`
+- For authentication issues, see `guides/setup-google-access.md`
 - For further assistance, contact the project maintainer
 
 ---

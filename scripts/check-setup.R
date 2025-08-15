@@ -50,7 +50,7 @@ required_files <- c(
   "config.yml",
   "scripts/google-auth-helper.R",
   "scripts/setup-google-auth.R",
-  "manipulation/0-ellis-long.R"
+  "manipulation/0-ellis.R"
 )
 
 for(file in required_files) {
@@ -157,7 +157,7 @@ if(length(setup_errors) == 0 && length(setup_warnings) == 0) {
   cat("🎉 PERFECT! Your environment is fully configured!\n")
   cat("\n✅ You can now run:\n")
   cat("   • Rscript flow.R\n")
-  cat("   • Rscript manipulation/0-ellis-long.R\n")
+  cat("   • Rscript manipulation/0-ellis.R\n")
   cat("   • Any analysis scripts in the analysis/ folder\n")
   
 } else if(length(setup_errors) == 0) {

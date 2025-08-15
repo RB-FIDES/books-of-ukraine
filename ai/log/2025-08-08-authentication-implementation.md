@@ -77,11 +77,11 @@ setup_google_auth <- function(interactive = TRUE, use_service_account = TRUE) {
 google-service-account.json
 .secrets/
 *.json
-!google-service-account.json.template
+!guides/google-service-account-template.json
 ```
 
 **Template System**:
-- `google-service-account.json.template` provides structure guidance
+- `guides/google-service-account-template.json` provides structure guidance
 - Actual credential files protected from version control
 - Clear instructions for credential file placement
 
@@ -108,7 +108,7 @@ google-service-account.json
 
 ## Documentation System
 
-**`docs/service-account-setup.md`** - Complete setup guide:
+**`guides/setup-google-access.md`** - Complete setup guide:
 - Step-by-step Google Cloud Console instructions
 - Service account creation and key generation
 - Permission configuration guidance
@@ -126,10 +126,10 @@ google-service-account.json
 ### Files Created/Modified
 
 **New Files**:
-- `docs/service-account-setup.md` - Setup documentation
+- `guides/setup-google-access.md` - Setup documentation
 - `scripts/service-account-auth.R` - Authentication logic
 - `scripts/test-service-account.R` - Verification tool
-- `google-service-account.json.template` - Credential template
+- `guides/google-service-account-template.json` - Credential template
 
 **Modified Files**:
 - `manipulation/0-ellis.R` - Updated with new authentication

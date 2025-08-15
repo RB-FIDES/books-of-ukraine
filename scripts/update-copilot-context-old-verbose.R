@@ -2275,9 +2275,9 @@ get_brief_file_description <- function(filename) {
     "config.yml" = "⚙️ Configuration", 
     "books-of-ukraine.Rproj" = "🔧 RStudio project",
     "pipeline.md" = "📋 Data pipeline docs",
-    "COMMAND-GUIDE.md" = "📖 Command guide",
-    "COMMAND-REFERENCE.md" = "📚 Reference manual",
-    "FLOW-USAGE.md" = "🔄 Flow usage guide",
+    "guides/command-guide.md" = "📖 Command guide",
+    "guides/command-reference.md" = "📚 Reference manual",
+    "guides/flow-usage.md" = "🔄 Flow usage guide",
     "context7.json" = "🗂️ Context data",
     "LICENSE" = "⚖️ License",
     
