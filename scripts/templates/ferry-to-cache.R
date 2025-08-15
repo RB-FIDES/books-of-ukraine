@@ -1,341 +1,317 @@
 #' ---
-#' title: "Ferry to Cache"
-#' author: "Andriy Koval"
+#' title: "Ferry Pattern: Source to Cache"
+#' author: "Generic Template"
 #' date: "Last Updated: `r Sys.Date()`"
+#' description: "Minimal example of ferry pattern: import, process, write to database"
 #' ---
 #+ echo=F
 
-# rmarkdown::render(input = "./manipulation/0-ferry-to-cache.R")
+# The Ferry Pattern: A data transport mechanism that brings data from various 
+# sources into a unified database destination with minimal transformation.
+#
+# Key Principles:
+# 1. Import from diverse sources (APIs, files, databases)
+# 2. Apply minimal, essential processing only
+# 3. Write to standardized destination database
+# 4. Maintain data lineage and reproducibility
 
-#+ echo=F ----------------------------------------------------------------------
-# Ingest ./ai/RDB-manifest.md to understand the structure of the data sources.
 rm(list = ls(all.names = TRUE)) # Clear the memory of variables from previous run.
 cat("\014") # Clear the console
 
 #+ mission -------------------------------------------------------------
-# Bring over several tables into the P20250625 schema.
-# Tables: research cohort, assessments (EA_EVENTS), EA_Barriers, ERA_Barriers, ES_EVENTS.
-# Filter data to PERSON_OID in the research cohort.
+# Ferry Pattern Implementation:
+# 1. Extract data from source systems (files, APIs, databases)
+# 2. Apply minimal transformations (cleaning, standardization)
+# 3. Load into destination database (MSSQL Server or SQLite)
+# 
+# This template demonstrates both MSSQL and SQLite destinations
 
 #+ load-packages -----------------------------------------------------------
-library(magrittr)
-library(dplyr)
-library(DBI)
-library(odbc)
-library(arrow)
-library(janitor)
-library(OuhscMunge)
+# Core packages for ferry pattern implementation
+library(magrittr)    # For pipe operations
+library(dplyr)       # For data manipulation
+library(DBI)         # Database interface
+library(odbc)        # MSSQL connectivity
+library(RSQLite)     # SQLite connectivity
+library(readr)       # File reading (CSV, etc.)
+library(httr)        # API calls
+library(jsonlite)    # JSON processing
+library(janitor)     # Data cleaning utilities
 
 #+ load-sources ------------------------------------------------------------
-base::source("./scripts/common-functions.R")
-base::source("./scripts/operational-functions.R")
-
-#+ declare-globals ---------------------------------------------------------
-target_window_opens  <- as.Date("2015-01-01")
-target_window_closes <- as.Date("2025-06-25")
-target_window <- c(target_window_opens, target_window_closes)
-
-#+ declare-functions -------------------------------------------------------
-truncate_strings <- function(df, max_length = 255) {
-  # Truncate string columns to a maximum length
-  string_cols <- sapply(df, is.character)
-  df[string_cols] <- lapply(df[string_cols], function(x) {
-    ifelse(nchar(x) > max_length, substr(x, 1, max_length), x)
-  })
-  return(df)
+# Load helper functions if available
+if(file.exists("./scripts/common-functions.R")) {
+  base::source("./scripts/common-functions.R")
 }
 
-#+ define-queries ----------------------------------------------------------
-# Research cohort: anyone who had IS episode OR assessment since 2015
-sql_research_cohort <- "
-WITH research_cohort AS (
-  -- People with IS spells since 2015
-  SELECT PERSON_OID
-  FROM [C-GOA-SQL-10477].[CAO_PROD].[dbo].[TC2_IS_SPELLS]
-  WHERE PERIOD_START >= '2015-01-01'
-  
-  UNION
-  
-  -- People with assessments since 2015
-  SELECT PERSON_OID
-  FROM [C-GOA-SQL-10477].[CAO_PROD].[dbo].[TC_EA_EVENTS]
-  WHERE ASSESSMENT_DATE >= '2015-01-01'
-),
-research_cohort_sub AS (
-  SELECT DISTINCT TOP 1000 PERSON_OID
-FROM research_cohort
-)
+#+ declare-globals ---------------------------------------------------------
+# Configuration for data sources and destinations
+SOURCE_DATABASE_DSN <- "source_db"           # ODBC DSN for source database
+CACHE_DATABASE_DSN  <- "cache_db"            # ODBC DSN for MSSQL cache
+SQLITE_PATH         <- "./data/cache.sqlite" # SQLite cache file path
+TARGET_SCHEMA       <- "ferry_cache"         # Target schema name
 
-SELECT person_oid 
-FROM research_cohort;
--- FROM research_cohort_sub;
-"
-# the definition of the cohort in the lines immediately above must be the same
-# in all other subsequent queries, so that the cohort is consistent across all tables.
-# When deviations are detected, refer to above as the source of truth and update the query accordingly.
+# Date boundaries for data extraction
+extract_date_start <- as.Date("2020-01-01")
+extract_date_end   <- as.Date(Sys.Date())
 
-# let's select episodes of financial support (defined as SPELL_BITS)
-sql_fs_episodes <- "
-WITH research_cohort AS (
-  -- People with IS spells since 2015
-  SELECT PERSON_OID
-  FROM [C-GOA-SQL-10477].[CAO_PROD].[dbo].[TC2_IS_SPELLS]
-  WHERE PERIOD_START >= '2015-01-01'
-  
-  UNION
-  
-  -- People with assessments since 2015
-  SELECT PERSON_OID
-  FROM [C-GOA-SQL-10477].[CAO_PROD].[dbo].[TC_EA_EVENTS]
-  WHERE ASSESSMENT_DATE >= '2015-01-01'
-),
-research_cohort_sub AS (
-  SELECT DISTINCT TOP 1000 PERSON_OID
-FROM research_cohort
-)
+#+ declare-functions -------------------------------------------------------
+# Standardize column names and handle common data quality issues
+clean_ferry_data <- function(df, max_string_length = 255) {
+  df %>%
+    janitor::clean_names() %>%                    # Standardize column names
+    mutate(
+      across(where(is.character), ~trimws(.)),    # Trim whitespace
+      across(where(is.character), ~ifelse(       # Truncate long strings
+        nchar(.) > max_string_length, 
+        substr(., 1, max_string_length), 
+        .
+      ))
+    )
+}
 
-SELECT *
-FROM [C-GOA-SQL-10477].[CAO_PROD].[dbo].[TC2_IS_SPELL_BITS]
-WHERE PERSON_OID IN (
-SELECT PERSON_OID FROM research_cohort
--- SELECT PERSON_OID FROM research_cohort_sub
-)
-;
-"
-
-sql_es_events <- "
-WITH research_cohort AS (
-  -- People with IS spells since 2015
-  SELECT PERSON_OID
-  FROM [C-GOA-SQL-10477].[CAO_PROD].[dbo].[TC2_IS_SPELLS]
-  WHERE PERIOD_START >= '2015-01-01'
-  
-  UNION
-  
-  -- People with assessments since 2015
-  SELECT PERSON_OID
-  FROM [C-GOA-SQL-10477].[CAO_PROD].[dbo].[TC_EA_EVENTS]
-  WHERE ASSESSMENT_DATE >= '2015-01-01'
-),
-research_cohort_sub AS (
-  SELECT DISTINCT TOP 1000 PERSON_OID
-FROM research_cohort
-)
-
-SELECT *
-FROM [C-GOA-SQL-10477].[CAO_PROD].[dbo].[TC_ES_SERVICES]
-WHERE PERSON_OID IN (
-SELECT PERSON_OID FROM research_cohort
--- SELECT PERSON_OID FROM research_cohort_sub
-)
-;
-"
-
-sql_assessments <- "
-WITH research_cohort AS (
-  -- People with IS spells since 2015
-  SELECT PERSON_OID
-  FROM [C-GOA-SQL-10477].[CAO_PROD].[dbo].[TC2_IS_SPELLS]
-  WHERE PERIOD_START >= '2015-01-01'
-  
-  UNION
-  
-  -- People with assessments since 2015
-  SELECT PERSON_OID
-  FROM [C-GOA-SQL-10477].[CAO_PROD].[dbo].[TC_EA_EVENTS]
-  WHERE ASSESSMENT_DATE >= '2015-01-01'
-),
-research_cohort_sub AS (
-   SELECT DISTINCT TOP 1000 PERSON_OID
-FROM research_cohort
-)
-
-SELECT *
-FROM [C-GOA-SQL-10477].[CAO_PROD].[dbo].[TC_EA_EVENTS]
-WHERE PERSON_OID IN (
-SELECT PERSON_OID FROM research_cohort
--- SELECT PERSON_OID FROM research_cohort_sub
-)
-;
-"
-
-sql_ea_barriers <- "
-WITH research_cohort AS (
-  -- People with IS spells since 2015
-  SELECT PERSON_OID
-  FROM [C-GOA-SQL-10477].[CAO_PROD].[dbo].[TC2_IS_SPELLS]
-  WHERE PERIOD_START >= '2015-01-01'
-  
-  UNION
-  
-  -- People with assessments since 2015
-  SELECT PERSON_OID
-  FROM [C-GOA-SQL-10477].[CAO_PROD].[dbo].[TC_EA_EVENTS]
-  WHERE ASSESSMENT_DATE >= '2015-01-01'
-),
-research_cohort_sub AS (
-  SELECT DISTINCT TOP 1000 PERSON_OID
-FROM research_cohort
-)
-
-SELECT *
-FROM [C-GOA-SQL-10477].[CAO_PROD].[dbo].[TC_EA_BARRIERS]
-WHERE PERSON_OID IN (
-SELECT PERSON_OID FROM research_cohort
--- SELECT PERSON_OID FROM research_cohort_sub
-)
-;
-"
-
-sql_era_barriers <- "
-WITH research_cohort AS (
-  -- People with IS spells since 2015
-  SELECT PERSON_OID
-  FROM [C-GOA-SQL-10477].[CAO_PROD].[dbo].[TC2_IS_SPELLS]
-  WHERE PERIOD_START >= '2015-01-01'
-  
-  UNION
-  
-  -- People with assessments since 2015
-  SELECT PERSON_OID
-  FROM [C-GOA-SQL-10477].[CAO_PROD].[dbo].[TC_EA_EVENTS]
-  WHERE ASSESSMENT_DATE >= '2015-01-01'
-),
-research_cohort_sub AS (
-  SELECT DISTINCT TOP 1000 PERSON_OID
-FROM research_cohort
-)
-
-SELECT erb.*
-FROM [C-GOA-SQL-10477].[CAO_PROD].[dbo].[TC_ERA_BARRIERS] erb
-WHERE EDB_SERVICE_ID IN (
-  SELECT EDB_SERVICE_ID
-  FROM [C-GOA-SQL-10477].[CAO_PROD].[dbo].[TC_EA_EVENTS]
-  WHERE PERSON_OID IN (
-  SELECT PERSON_OID FROM research_cohort
-  -- SELECT PERSON_OID FROM research_cohort_sub
+# Generic database connection helper
+get_db_connection <- function(type = "mssql", dsn = NULL, path = NULL) {
+  switch(type,
+    "mssql" = DBI::dbConnect(odbc::odbc(), dsn = dsn),
+    "sqlite" = DBI::dbConnect(RSQLite::SQLite(), dbname = path),
+    stop("Unsupported database type. Use 'mssql' or 'sqlite'")
   )
-)
+}
+
+# Generic table writer with error handling
+write_to_cache <- function(data, table_name, connection, schema = NULL, overwrite = TRUE) {
+  tryCatch({
+    # For MSSQL with schema
+    if(!is.null(schema) && inherits(connection, "Microsoft SQL Server")) {
+      full_table_name <- paste(schema, table_name, sep = ".")
+    } else {
+      full_table_name <- table_name
+    }
+    
+    DBI::dbWriteTable(
+      conn = connection,
+      name = full_table_name,
+      value = data,
+      overwrite = overwrite,
+      append = !overwrite
+    )
+    
+    cat("✓ Successfully wrote", nrow(data), "rows to", full_table_name, "\n")
+    return(TRUE)
+    
+  }, error = function(e) {
+    cat("✗ Error writing to", table_name, ":", e$message, "\n")
+    return(FALSE)
+  })
+}
+
+#+ define-data-sources ------------------------------------------------------
+# Example 1: Source Database Query
+sql_customers <- "
+  SELECT 
+    customer_id,
+    customer_name,
+    registration_date,
+    last_activity_date,
+    customer_type
+  FROM customers 
+  WHERE registration_date >= ?
+    AND registration_date <= ?
 "
 
-#+ load-data ---------------------------------------------------------------
-dsn <- "CAO_PROD" # one per database, typically in config file
-cnn <- DBI::dbConnect(odbc::odbc(), dsn = dsn) # open the connection
+# Example 2: API Endpoint (hypothetical)
+api_endpoint_transactions <- "https://api.example.com/v1/transactions"
 
-# Load research cohort
-ds_research_cohort <- DBI::dbGetQuery(cnn, sql_research_cohort)
-ds_research_cohort <- ds_research_cohort 
+# Example 3: File path (CSV/Excel)
+file_path_products <- "./data-raw/products.csv"
 
-# Load financial support episodes
-ds_fs_episodes <- DBI::dbGetQuery(cnn, sql_fs_episodes)
-ds_fs_episodes <- ds_fs_episodes %>%
-  # janitor::clean_names() %>%
-  truncate_strings(max_length = 253)
+#+ extract-data ------------------------------------------------------------
+cat("🚢 Starting Ferry Operation: Extract Phase\n")
 
-# Load ES events/services
-ds_es_events <- DBI::dbGetQuery(cnn, sql_es_events)
-ds_es_events <- ds_es_events %>%
-  # janitor::clean_names() %>%
-  truncate_strings(max_length = 253)
+# SOURCE 1: Database extraction
+cat("📊 Extracting from source database...\n")
+if(file.exists("odbc.ini") || !is.null(getOption("odbc.dsn"))) {
+  tryCatch({
+    source_conn <- get_db_connection("mssql", dsn = SOURCE_DATABASE_DSN)
+    
+    ds_customers <- DBI::dbGetQuery(
+      source_conn, 
+      sql_customers, 
+      params = list(extract_date_start, extract_date_end)
+    )
+    
+    DBI::dbDisconnect(source_conn)
+    cat("✓ Extracted", nrow(ds_customers), "customer records\n")
+    
+  }, error = function(e) {
+    cat("⚠ Database source unavailable, using sample data\n")
+    # Fallback to sample data for demonstration
+    ds_customers <- data.frame(
+      customer_id = 1:100,
+      customer_name = paste("Customer", 1:100),
+      registration_date = seq(extract_date_start, extract_date_end, length.out = 100),
+      last_activity_date = Sys.Date() - sample(1:365, 100, replace = TRUE),
+      customer_type = sample(c("Individual", "Business"), 100, replace = TRUE)
+    )
+  })
+} else {
+  # Sample data when no database connection available
+  ds_customers <- data.frame(
+    customer_id = 1:100,
+    customer_name = paste("Customer", 1:100),
+    registration_date = seq(extract_date_start, extract_date_end, length.out = 100),
+    last_activity_date = Sys.Date() - sample(1:365, 100, replace = TRUE),
+    customer_type = sample(c("Individual", "Business"), 100, replace = TRUE)
+  )
+}
+
+# SOURCE 2: API extraction (example)
+cat("🌐 Extracting from API...\n")
+tryCatch({
+  # Example API call (would need real endpoint)
+  # response <- httr::GET(api_endpoint_transactions, 
+  #                      query = list(start_date = extract_date_start))
+  # ds_transactions <- jsonlite::fromJSON(httr::content(response, "text"))
+  
+  # Sample data for demonstration
+  ds_transactions <- data.frame(
+    transaction_id = 1:200,
+    customer_id = sample(1:100, 200, replace = TRUE),
+    transaction_date = sample(seq(extract_date_start, extract_date_end, by = "day"), 200, replace = TRUE),
+    amount = round(runif(200, 10, 1000), 2),
+    transaction_type = sample(c("Purchase", "Refund", "Payment"), 200, replace = TRUE)
+  )
+  cat("✓ Extracted", nrow(ds_transactions), "transaction records\n")
+  
+}, error = function(e) {
+  cat("⚠ API unavailable, using sample data\n")
+  ds_transactions <- data.frame(
+    transaction_id = 1:200,
+    customer_id = sample(1:100, 200, replace = TRUE),
+    transaction_date = sample(seq(extract_date_start, extract_date_end, by = "day"), 200, replace = TRUE),
+    amount = round(runif(200, 10, 1000), 2),
+    transaction_type = sample(c("Purchase", "Refund", "Payment"), 200, replace = TRUE)
+  )
+})
+
+# SOURCE 3: File extraction
+cat("📁 Extracting from files...\n")
+if(file.exists(file_path_products)) {
+  ds_products <- readr::read_csv(file_path_products)
+  cat("✓ Extracted", nrow(ds_products), "product records\n")
+} else {
+  # Sample data when file doesn't exist
+  ds_products <- data.frame(
+    product_id = 1:50,
+    product_name = paste("Product", 1:50),
+    category = sample(c("Electronics", "Clothing", "Books", "Home"), 50, replace = TRUE),
+    price = round(runif(50, 5, 500), 2),
+    in_stock = sample(c(TRUE, FALSE), 50, replace = TRUE)
+  )
+  cat("✓ Generated", nrow(ds_products), "sample product records\n")
+}
 
 
-# Load assessments  
-ds_assessments <- DBI::dbGetQuery(cnn, sql_assessments)
-ds_assessments <- ds_assessments %>%
-   # janitor::clean_names() %>%
-  # let's enforce unicode strings
-  # mutate(across(where(is.character), ~ iconv(., to = "UTF-8", sub = "byte"))) %>%
-   truncate_strings(max_length = 253)
+#+ transform-data ----------------------------------------------------------
+cat("🔄 Transform Phase: Minimal processing\n")
 
-# Load EA barriers
-ds_ea_barriers <- DBI::dbGetQuery(cnn, sql_ea_barriers)
-ds_ea_barriers <- ds_ea_barriers %>%
-  # janitor::clean_names() %>%
-  truncate_strings(max_length = 253)
+# Apply consistent cleaning to all datasets
+ds_customers_clean <- ds_customers %>% 
+  clean_ferry_data() %>%
+  # Add ferry metadata
+  mutate(
+    ferry_load_timestamp = Sys.time(),
+    ferry_source = "source_database"
+  )
 
-# Load ERA barriers
-ds_era_barriers <- DBI::dbGetQuery(cnn, sql_era_barriers)
-ds_era_barriers <- ds_era_barriers %>%
-  # janitor::clean_names() %>%
-  truncate_strings(max_length = 253)
+ds_transactions_clean <- ds_transactions %>% 
+  clean_ferry_data() %>%
+  # Add ferry metadata  
+  mutate(
+    ferry_load_timestamp = Sys.time(),
+    ferry_source = "api_endpoint"
+  )
 
-DBI::dbDisconnect(cnn) # hang up the phone
+ds_products_clean <- ds_products %>% 
+  clean_ferry_data() %>%
+  # Add ferry metadata
+  mutate(
+    ferry_load_timestamp = Sys.time(),
+    ferry_source = "file_system"
+  )
 
+cat("✓ Applied standard transformations to all datasets\n")
 
-# # count maximum num of characters in each columns
-# ds_assessments %>% 
-#   select(-PERSON_OID) %>% # remove PERSON_OID, as it is not a variable
-#   summarise(across(everything(), ~ max(nchar(as.character(.)), na.rm = TRUE))) %>%
-#   pivot_longer(cols = everything(), names_to = "variable", values_to = "max_length") %>%
-#   arrange(desc(max_length)) %>% 
-#   print_all()
-# # Upload assessments events (EA,SND,NI,ERA)
-# OuhscMunge::upload_sqls_odbc(
-#   d = ds_assessments,
-#   schema_name = "P20250625",
-#   table_name = "EA_EVENTS",
-#   dsn_name = "RESEARCH_PROJECT_CACHE_UAT",
-#   clear_table = TRUE,
-#   create_table = TRUE
-# )
+#+ load-to-cache ----------------------------------------------------------
+cat("🚢 Load Phase: Writing to cache databases\n")
 
+# OPTION 1: MSSQL Server Cache
+cat("\n📊 Loading to MSSQL Cache...\n")
+tryCatch({
+  mssql_conn <- get_db_connection("mssql", dsn = CACHE_DATABASE_DSN)
+  
+  # Write all tables to MSSQL cache
+  write_to_cache(ds_customers_clean, "customers", mssql_conn, TARGET_SCHEMA)
+  write_to_cache(ds_transactions_clean, "transactions", mssql_conn, TARGET_SCHEMA)
+  write_to_cache(ds_products_clean, "products", mssql_conn, TARGET_SCHEMA)
+  
+  DBI::dbDisconnect(mssql_conn)
+  cat("✅ MSSQL cache update complete\n")
+  
+}, error = function(e) {
+  cat("⚠ MSSQL unavailable:", e$message, "\n")
+})
 
-#+ write-to-db -------------------------------------------------------------
-# Upload research cohort
-OuhscMunge::upload_sqls_odbc(
-  d = ds_research_cohort,
-  schema_name = "P20250625",
-  table_name = "RESEARCH_COHORT",
-  dsn_name = "RESEARCH_PROJECT_CACHE_UAT",
-  clear_table = TRUE,
-  create_table = TRUE
+# OPTION 2: SQLite Cache (Always available)
+cat("\n💾 Loading to SQLite Cache...\n")
+# Ensure directory exists
+if(!dir.exists(dirname(SQLITE_PATH))) {
+  dir.create(dirname(SQLITE_PATH), recursive = TRUE)
+}
+
+sqlite_conn <- get_db_connection("sqlite", path = SQLITE_PATH)
+
+# Write all tables to SQLite cache
+write_to_cache(ds_customers_clean, "customers", sqlite_conn, overwrite = TRUE)
+write_to_cache(ds_transactions_clean, "transactions", sqlite_conn, overwrite = TRUE)
+write_to_cache(ds_products_clean, "products", sqlite_conn, overwrite = TRUE)
+
+# Create a ferry log table for tracking loads
+ferry_log <- data.frame(
+  load_timestamp = Sys.time(),
+  tables_loaded = paste(c("customers", "transactions", "products"), collapse = ", "),
+  records_total = nrow(ds_customers_clean) + nrow(ds_transactions_clean) + nrow(ds_products_clean),
+  extract_date_range = paste(extract_date_start, "to", extract_date_end)
 )
 
-# Upload financial support episodes
-OuhscMunge::upload_sqls_odbc(
-  d = ds_fs_episodes,
-  schema_name = "P20250625",
-  table_name = "FS_EPISODES",
-  dsn_name = "RESEARCH_PROJECT_CACHE_UAT",
-  clear_table = TRUE,
-  create_table = TRUE
-)
-# Upload ES events/services
-OuhscMunge::upload_sqls_odbc(
-  d = ds_es_events,
-  schema_name = "P20250625",
-  table_name = "ES_SERVICES",
-  dsn_name = "RESEARCH_PROJECT_CACHE_UAT",
-  clear_table = TRUE,
-  create_table = TRUE
-)
+write_to_cache(ferry_log, "ferry_log", sqlite_conn, overwrite = FALSE)
 
-# Upload assessments events (EA,SND,NI,ERA)
-OuhscMunge::upload_sqls_odbc(
-  d = ds_assessments,
-  schema_name = "P20250625",
-  table_name = "EA_EVENTS",
-  dsn_name = "RESEARCH_PROJECT_CACHE_UAT",
-  clear_table = TRUE,
-  create_table = TRUE
-)
+DBI::dbDisconnect(sqlite_conn)
+cat("✅ SQLite cache update complete\n")
 
-# Upload Barriers Questionnaires from EA, SND, and NI surveys
-OuhscMunge::upload_sqls_odbc(
-  d = ds_ea_barriers,
-  schema_name = "P20250625",
-  table_name = "EA_BARRIERS",
-  dsn_name = "RESEARCH_PROJECT_CACHE_UAT",
-  clear_table = TRUE,
-  create_table = TRUE
-)
-# Upload Barriers Questionnaires from ERA survey
-OuhscMunge::upload_sqls_odbc(
-  d = ds_era_barriers,
-  schema_name = "P20250625",
-  table_name = "ERA_BARRIERS",
-  dsn_name = "RESEARCH_PROJECT_CACHE_UAT",
-  clear_table = TRUE,
-  create_table = TRUE
-)
+#+ validate-results --------------------------------------------------------
+cat("\n🔍 Validation Phase\n")
+
+# Quick validation - reconnect and check record counts
+sqlite_conn <- get_db_connection("sqlite", path = SQLITE_PATH)
+
+tables <- DBI::dbListTables(sqlite_conn)
+cat("📋 Tables in cache:", paste(tables, collapse = ", "), "\n")
+
+for(table in tables) {
+  count <- DBI::dbGetQuery(sqlite_conn, paste("SELECT COUNT(*) as count FROM", table))$count
+  cat("📊", table, ":", count, "records\n")
+}
+
+DBI::dbDisconnect(sqlite_conn)
+
+cat("\n🎉 Ferry operation completed successfully!\n")
+cat("📍 Cache locations:\n")
+cat("   - MSSQL:", TARGET_SCHEMA, "schema on", CACHE_DATABASE_DSN, "\n")
+cat("   - SQLite:", SQLITE_PATH, "\n")
+
+#+ session-info -----------------------------------------------------------
+cat("\n📋 Session Information:\n")
+print(sessionInfo())
 

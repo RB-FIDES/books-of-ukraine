@@ -1,601 +1,517 @@
-rm(list = ls(all.names = TRUE)) # Clear the memory of variables from previous run. This is not called by knitr, because it's above the first chunk.
+#' ---
+#' title: "Ellis Pattern: Transform Ferry Data for Analysis"
+#' author: "Generic Template"
+#' date: "Last Updated: `r Sys.Date()`"
+#' description: "Transform raw ferry data into analysis-ready datasets with cleaned variables"
+#' ---
+#+ echo=F
+
+# The Ellis Pattern: A data transformation mechanism that takes ferry data
+# and prepares it for analysis through systematic cleaning and standardization.
+#
+# Key Principles:
+# 1. Load data from ferry cache (standardized intermediate storage)
+# 2. Apply business logic and domain-specific transformations
+# 3. Create analysis-ready variables with consistent coding
+# 4. Generate summary statistics and validation checks
+# 5. Output clean datasets for downstream analysis
+
+rm(list = ls(all.names = TRUE)) # Clear the memory of variables from previous run.
 cat("\014") # Clear the console
-# verify root location
-cat("Working directory: ", getwd()) # Must be set to Project Directory
-# Project Directory should be the root by default unless overwritten
-# rmarkdown::render(input = "./manipulation/2-ellis.R") # run to knit, don't uncomment
+
+cat("Working directory: ", getwd()) # Verify root location
+
+#+ mission -------------------------------------------------------------
+# Ellis Pattern Implementation:
+# 1. Extract data from ferry cache database
+# 2. Apply domain-specific business logic and transformations
+# 3. Create standardized analysis variables (demographics, categories, etc.)
+# 4. Validate data quality and generate summary statistics
+# 5. Export clean datasets for analysis pipelines
+#
+# This template demonstrates transformation of customer/transaction data
+# from ferry cache into analysis-ready format
 # ---- load-packages -----------------------------------------------------------
-# Choose to be greedy: load only what's needed
-# Three ways, from least (1) to most(3) greedy:
-# -- 1.Attach these packages so their functions don't need to be qualified: 
-# http://r-pkgs.had.co.nz/namespace.html#search-path
-library(magrittr)
-library(ggplot2)   # graphs
-library(forcats)   # factors
-library(stringr)   # strings
-library(lubridate) # dates
-library(labelled)  # labels
-library(dplyr)     # data wrangling
-library(tidyr)     # data wrangling
-library(scales)    # format
-library(broom)     # for model
-library(emmeans)   # for interpreting model results
-library(ggalluvial)
-# -- 2.Import only certain functions of a package into the search path.
-# import::from("magrittr", "%>%")
-# -- 3. Verify these packages are available on the machine, but their functions need to be qualified
-requireNamespace("readr"    )# data import/export
-requireNamespace("readxl"   )# data import/export
-requireNamespace("janitor"  )# tidy data
-requireNamespace("testit"   )# For asserting conditions meet expected patterns.
+# Core packages for ellis pattern implementation
+library(magrittr)    # For pipe operations
+library(ggplot2)     # Visualization
+library(forcats)     # Factor manipulation
+library(stringr)     # String processing
+library(lubridate)   # Date handling
+library(labelled)    # Variable labels
+library(dplyr)       # Data manipulation
+library(tidyr)       # Data reshaping
+library(scales)      # Formatting
+library(DBI)         # Database interface
+library(RSQLite)     # SQLite connectivity
+library(odbc)        # MSSQL connectivity (if available)
+
+# Import specific functions to avoid namespace conflicts
+requireNamespace("readr")      # Data import/export
+requireNamespace("janitor")    # Data cleaning
+requireNamespace("tableone")   # Summary tables
 
 # ---- load-sources ------------------------------------------------------------
-base::source("./scripts/common-functions.R") # project-level
-base::source("./scripts/operational-functions.R") # project-level
+# Load helper functions if available
+if(file.exists("./scripts/common-functions.R")) {
+  base::source("./scripts/common-functions.R")
+}
 
 # ---- declare-globals ---------------------------------------------------------
-target_window_opens  <- as.Date("2013-04-01")
-target_window_closes <- as.Date("2024-03-31")
-target_window <- c(target_window_opens, target_window_closes)
+# Configuration for Ellis transformation
+CACHE_DATABASE_DSN  <- "cache_db"            # ODBC DSN for cache database
+SQLITE_PATH         <- "./data/cache.sqlite" # SQLite cache file path
+TARGET_SCHEMA       <- "ferry_cache"         # Source schema from ferry
+
+# Analysis parameters
+analysis_window_start <- as.Date("2020-01-01")
+analysis_window_end   <- as.Date(Sys.Date())
+
+# Output directories
 local_root <- "./manipulation/"
-local_data <- paste0(local_root, "data-local/") # for local outputs
+local_data <- paste0(local_root, "data-local/")
+output_data <- "./data-public/derived/"
 
-if (!fs::dir_exists(local_data)) {fs::dir_create(local_data)}
-
-data_private_derived <- "./data-private/derived/manipulation/"
-if (!fs::dir_exists(data_private_derived)) {fs::dir_create(data_private_derived)}
-
-prints_folder <- paste0(local_root, "prints/2-ellis")
-if (!fs::dir_exists(prints_folder)) {fs::dir_create(prints_folder)}
-
-sample_of_interest1 <- 4734747 # real id in focus
-# sample_of_interest1 <- 179820 # scramble id in focus
-sample_of_interest <- c(
-  1017460
-  ,1411830
-  ,3777415
-  ,4812318
-  ,4734747
-  ,2099597
-)
-sample_of_interest1 <- sample_of_interest[6]
+# Create directories if they don't exist
+if (!dir.exists(local_data)) {dir.create(local_data, recursive = TRUE)}
+if (!dir.exists(output_data)) {dir.create(output_data, recursive = TRUE)}
 # ---- declare-functions -------------------------------------------------------
-# base::source(paste0(local_root,"local-functions.R")) # project-level
+# Generic database connection helper
+get_db_connection <- function(type = "sqlite", dsn = NULL, path = "./data/cache.sqlite") {
+  switch(type,
+    "mssql" = DBI::dbConnect(odbc::odbc(), dsn = dsn),
+    "sqlite" = DBI::dbConnect(RSQLite::SQLite(), dbname = path),
+    stop("Unsupported database type. Use 'mssql' or 'sqlite'")
+  )
+}
 
-# ---- define-queries ----------------------------------------------------------
-# Bring in the query from ./manipulation/1-assemble-flat.sql
-sql_fs_episodes <- "
-SELECT --top 10000
-    fs.[PERSON_OID] -- Unique identifier for the person
-    ,fs.[HSID] --Househould ID
-    ,fs.[PERIOD_START] AS date_start -- Start date of the financial support period
-    ,fs.[PERIOD_END]   AS date_end -- End date of the financial support period
-    ,fs.[SPELL_NUMBER] -- Identifier for the spell of financial support
-    ,fs.[SPELL_BIT_NUMBER] -- Subdivision of the spell for finer granularity
-    ,fs.[SPELL_BIT_DURATION] -- Duration of the spell bit in months
-    ,fs.[BENEFIT_BIT_DURATION] -- Duration of the benefit bit in months
-    ,fs.[IS_SPELL_BIT_BENEFIT] -- Total benefit amount received in this spell bit
-    ,fs.[ROLE_TYPE_START] -- Role type at the start of the period
-    ,fs.[CLIENT_TYPE_CODE] -- Code representing the type of client
-    -- Demographic data from FINANCIAL SUPPORT
-    ,fs.AGE_AS_OF_IS_START_IN_YEARS as age -- Age of the person at the start of the period
-    ,fs.GENDER -- Gender of the person
-    ,fs.MARITAL_STATUS -- Marital status of the person
-    ,fs.TOTAL_DEPENDENT_COUNT -- Total number of dependents
-    ,fs.VISIBLE_MINORITY_FLAG -- Flag indicating visible minority status
-    ,fs.VISIBLE_MINORITY_SELF_DECLARED_FLAG -- Self-declared visible minority status
-    ,fs.IMMIGRANT_FLAG -- Flag indicating immigrant status
-    ,fs.IMMIGRANT_SELF_DECLARED_FLAG -- Self-declared immigrant status
-    ,fs.ABORIGINAL_FLAG -- Flag indicating aboriginal status
-    ,fs.ABORIGINAL_STATUS_SELF_DECLARED_FLAG -- Self-declared aboriginal status
-    ,fs.DISABILITY_FLAG -- Flag indicating disability status
-    ,fs.DISABILITY_SELF_DECLARED_FLAG -- Self-declared disability status
-    ,fs.HIGHEST_EDUCATION_LEVEL_START as HIGHEST_EDUCATION_LEVEL -- Highest education level at the start of the period
-    -- Taxonomy data from PROGRAM_CLASS
-    ,pc.program_class0 -- Top-level classification (Financial Support, Assessment, Training)
-    ,pc.program_class1 -- Second-level classification (Income Support, AISH, DRES, etc.)
-    ,pc.program_class2 -- Third-level classification (ETW, BFE, OTI, etc.)
-    ,pc.client_type -- Client type description
-    ,pc.pc0 -- Abbreviated program_class0 (FS, AS, TR)
-    ,pc.pc1 -- Abbreviated program_class1 (OTI, IS, AISH, DRES, etc.)
-    ,pc.pc2 -- Abbreviated program_class2 (OTI, BFE, ETW, etc.)
-    ,pc.fs_type -- Financial support type (OTI, ETW, BFE, AISH)
-    ,pc.program_group -- Custom research grouping for analysis with ordered factor levels
-FROM [RESEARCH_PROJECT_CACHE_UAT].[P20250625].[FS_EPISODES] fs
-LEFT JOIN [RESEARCH_PROJECT_CACHE_UAT].[TAXONOMY].[PROGRAM_CLASS] pc
-    ON fs.[CLIENT_TYPE_CODE] = pc.[client_type_code] -- Link using client_type_code as per RDB-manifest
-;
-"
+# Standardize demographic variables
+wrangle_customer_demographics <- function(d_in) {
+  d_out <- d_in %>%
+    mutate(
+      # Age categories
+      age_group_3 = case_when(
+        age >= 18 & age <= 34 ~ "18-34",
+        age >= 35 & age <= 54 ~ "35-54", 
+        age >= 55 ~ "55+",
+        TRUE ~ "(Missing)"
+      ) %>% factor(levels = c("(Missing)", "18-34", "35-54", "55+")),
+      
+      age_group_5 = case_when(
+        age >= 18 & age <= 29 ~ "18-29",
+        age >= 30 & age <= 39 ~ "30-39",
+        age >= 40 & age <= 49 ~ "40-49",
+        age >= 50 & age <= 59 ~ "50-59",
+        age >= 60 ~ "60+",
+        TRUE ~ "(Missing)"
+      ) %>% factor(levels = c("(Missing)", "18-29", "30-39", "40-49", "50-59", "60+")),
+      
+      # Clean age values (remove outliers)
+      age_clean = case_when(
+        age >= 18 & age <= 100 ~ age,
+        TRUE ~ NA_integer_
+      )
+    )
+  return(d_out)
+}
 
+# Standardize transaction patterns
+wrangle_transaction_patterns <- function(d_in) {
+  d_out <- d_in %>%
+    group_by(customer_id) %>%
+    mutate(
+      # Transaction sequence
+      transaction_order = row_number(transaction_date),
+      first_transaction_date = min(transaction_date, na.rm = TRUE),
+      days_since_first = as.numeric(transaction_date - first_transaction_date),
+      
+      # Amount categories
+      amount_category = case_when(
+        amount <= 50 ~ "Low (≤$50)",
+        amount <= 200 ~ "Medium ($51-$200)",
+        amount <= 500 ~ "High ($201-$500)",
+        amount > 500 ~ "Very High (>$500)",
+        TRUE ~ "(Missing)"
+      ) %>% factor(levels = c("(Missing)", "Low (≤$50)", "Medium ($51-$200)", 
+                             "High ($201-$500)", "Very High (>$500)")),
+      
+      # Customer activity level
+      total_transactions = n(),
+      activity_level = case_when(
+        total_transactions == 1 ~ "One-time",
+        total_transactions <= 5 ~ "Low activity",
+        total_transactions <= 20 ~ "Medium activity", 
+        total_transactions > 20 ~ "High activity"
+      ) %>% factor(levels = c("One-time", "Low activity", "Medium activity", "High activity"))
+    ) %>%
+    ungroup()
+  
+  return(d_out)
+}
 
+# Create customer summary metrics
+create_customer_summary <- function(transactions_df, customers_df) {
+  customer_metrics <- transactions_df %>%
+    group_by(customer_id) %>%
+    summarise(
+      total_amount = sum(amount, na.rm = TRUE),
+      transaction_count = n(),
+      avg_transaction_amount = mean(amount, na.rm = TRUE),
+      first_transaction = min(transaction_date, na.rm = TRUE),
+      last_transaction = max(transaction_date, na.rm = TRUE),
+      customer_lifetime_days = as.numeric(last_transaction - first_transaction) + 1,
+      purchase_count = sum(transaction_type == "Purchase", na.rm = TRUE),
+      refund_count = sum(transaction_type == "Refund", na.rm = TRUE),
+      .groups = "drop"
+    ) %>%
+    mutate(
+      # Customer value segments
+      value_segment = case_when(
+        total_amount <= 100 ~ "Low Value",
+        total_amount <= 500 ~ "Medium Value",
+        total_amount <= 2000 ~ "High Value", 
+        total_amount > 2000 ~ "Premium Value"
+      ) %>% factor(levels = c("Low Value", "Medium Value", "High Value", "Premium Value")),
+      
+      # Activity recency
+      days_since_last = as.numeric(Sys.Date() - last_transaction),
+      recency_category = case_when(
+        days_since_last <= 30 ~ "Recent (≤30 days)",
+        days_since_last <= 90 ~ "Moderate (31-90 days)", 
+        days_since_last <= 365 ~ "Distant (91-365 days)",
+        days_since_last > 365 ~ "Inactive (>365 days)"
+      ) %>% factor(levels = c("Recent (≤30 days)", "Moderate (31-90 days)", 
+                             "Distant (91-365 days)", "Inactive (>365 days)"))
+    )
+  
+  # Join with customer demographics
+  customer_summary <- customers_df %>%
+    left_join(customer_metrics, by = "customer_id") %>%
+    mutate(
+      # Handle customers with no transactions
+      transaction_count = coalesce(transaction_count, 0L),
+      total_amount = coalesce(total_amount, 0),
+      value_segment = coalesce(value_segment, factor("Low Value", levels = levels(customer_metrics$value_segment)))
+    )
+  
+  return(customer_summary)
+}
 
-#+ load-data ---------------------------------------------------------------
-dsn <- "RESEARCH_PROJECT_CACHE_UAT" # one per database, typically in config file
-cnn <- DBI::dbConnect(odbc::odbc(), dsn = dsn) # open the connection
-# Load financial support episodes
-ds_fs_episodes <- DBI::dbGetQuery(cnn, sql_fs_episodes)
-DBI::dbDisconnect(cnn) # hang up the phone
+# ---- load-ferry-data ---------------------------------------------------------
+cat("🏗️ Ellis Pattern: Loading ferry data for transformation\n")
 
-#+ tweak-data-0 --------------------------------------------------------------
-ds0 <-
-  ds_fs_episodes %>%
-  # slice(1:1000) %>% # for testing, remove later
+# Try SQLite first (most likely to be available)
+cache_conn <- get_db_connection("sqlite", path = SQLITE_PATH)
+
+# Load core datasets from ferry cache
+cat("📊 Loading customers...\n")
+ds_customers_raw <- DBI::dbReadTable(cache_conn, "customers")
+
+cat("📊 Loading transactions...\n") 
+ds_transactions_raw <- DBI::dbReadTable(cache_conn, "transactions")
+
+cat("📊 Loading products...\n")
+ds_products_raw <- DBI::dbReadTable(cache_conn, "products")
+
+DBI::dbDisconnect(cache_conn)
+
+# Data quality checks
+cat("✅ Data loaded successfully:\n")
+cat("   - Customers:", nrow(ds_customers_raw), "records\n")
+cat("   - Transactions:", nrow(ds_transactions_raw), "records\n") 
+cat("   - Products:", nrow(ds_products_raw), "records\n")
+
+# ---- transform-step-1 --------------------------------------------------------
+cat("\n🔄 Step 1: Basic data cleaning and standardization\n")
+
+# Clean and standardize base datasets
+ds_customers_clean <- ds_customers_raw %>%
   janitor::clean_names() %>%
-  mutate_at(
-    .vars = c("date_start", "date_end"),
-    .funs = ~lubridate::ymd(.)
-  ) %>% # convert to date
-  mutate_at(
-    .vars = c("spell_number", "spell_bit_number", "spell_bit_duration")
-    ,.funs = ~as.integer(.)
-  )
-
-ds0 %>% glimpse()  
-
-#+ tweak-data-1 --------------------------------------------------------------
-
-  # Not every episode in this table is a financial support episode.
-ds0 %>% count(program_class1,pc2)
-
-# let's keep only the individuals who did not have any episodes of Income Support prior to 2015
-# and whose first Income Support episode started after 2015
-
-
-#  The meaning of "episode duration" differs for these groups:
-# OTI are single day events and AISH is a life-long support.
-# let's isolate financial support episodes that started after 2015
-ds1 <- ds0 %>%
-  # filter(person_oid == 3503052) %>% # test
-  filter(program_class0 == "Financial Support") %>% # only financial support episodes
-  filter(program_class1 == "Income Support") %>% # OTI are single day events, not financial support episodes 
-  filter(!is.na(spell_bit_duration)) %>% # only those with spell bit duration
-  filter(spell_bit_duration > 0) %>% # only those with positive spell bit duration
-  group_by(person_oid) %>%
   mutate(
-    spell_bit_order = row_number(), # order of spells for each person
-    first_is_after_2015 = case_when(
-      date_start >= as.Date("2015-01-01") & date_start == min(date_start[date_start >= as.Date("2015-01-01")], na.rm = TRUE) ~ TRUE,
-      TRUE ~ FALSE
-    ) # first spell of IS after 2015
+    # Standardize dates
+    registration_date = ymd(registration_date),
+    last_activity_date = ymd(last_activity_date),
+    
+    # Clean text fields
+    customer_name = str_trim(customer_name),
+    customer_type = str_trim(customer_type),
+    
+    # Add analysis metadata
+    ellis_processed_date = Sys.Date(),
+    analysis_cohort = case_when(
+      registration_date >= analysis_window_start ~ "Analysis Period",
+      TRUE ~ "Pre-Analysis"
+    )
   ) %>%
-  ungroup()  
-  # now we can keep only those FIRST TIME SPELLS OF IS that started after our target year - 2015
-  # ds1 %>% group_by(fs_type, spell_number, spell_bit_number, spell_bit_order) %>% count()
+  # Apply demographic transformations
+  wrangle_customer_demographics()
 
-# target <- 3503052 # we found and put to testing
-target <- 3680085  # we found and put to testing
-cat("\014")
-t1 <- ds0 %>% 
-  select(pc2,client_type_code, 1:5) %>% 
-  keep_random_id() %>% # find
-  # filter(person_oid == target) %>% # test
-  arrange(date_start) %>% print()
-ds1 %>% 
-  select(pc2,client_type_code, 1:5,spell_bit_order, first_is_after_2015) %>% 
-  filter(person_oid == unique(t1$person_oid)) %>% # find
-  # filter(person_oid == target) %>% # test
-  arrange(date_start)
-# So we only want to accept individuals with 
-# spell_bit_order==1L & first_is_after_2015==TRUE
-ds1 %>% 
-  select(pc2,client_type_code, 1:5,spell_bit_order, first_is_after_2015) %>% 
-  filter(person_oid == unique(t1$person_oid)) %>% # find
+ds_transactions_clean <- ds_transactions_raw %>%
+  janitor::clean_names() %>%
+  mutate(
+    # Standardize dates  
+    transaction_date = ymd(transaction_date),
+    
+    # Clean transaction types
+    transaction_type = str_trim(transaction_type),
+    
+    # Add analysis metadata
+    ellis_processed_date = Sys.Date(),
+    in_analysis_window = transaction_date >= analysis_window_start & 
+                        transaction_date <= analysis_window_end
+  ) %>%
+  # Apply transaction pattern transformations
+  wrangle_transaction_patterns()
+
+ds_products_clean <- ds_products_raw %>%
+  janitor::clean_names() %>%
+  mutate(
+    # Clean text fields
+    product_name = str_trim(product_name),
+    category = str_trim(category),
+    
+    # Price categories
+    price_tier = case_when(
+      price <= 25 ~ "Budget",
+      price <= 100 ~ "Standard", 
+      price <= 300 ~ "Premium",
+      price > 300 ~ "Luxury",
+      TRUE ~ "(Missing)"
+    ) %>% factor(levels = c("(Missing)", "Budget", "Standard", "Premium", "Luxury")),
+    
+    # Add analysis metadata
+    ellis_processed_date = Sys.Date()
+  )
+
+cat("✅ Basic cleaning completed\n")  
+
+# ---- transform-step-2 --------------------------------------------------------
+cat("\n🔄 Step 2: Business logic and cohort definition\n")
+
+# Define analysis cohort with specific business rules
+# Example: Focus on customers who registered during analysis period 
+# and had meaningful engagement (multiple transactions)
+
+analysis_cohort_customers <- ds_customers_clean %>%
   filter(
-     spell_bit_order == 1L
-    ,first_is_after_2015 == TRUE
-  )
-  
-# LINES BELOW RECORD THE OUTPUT OF THE ABOVE COMMANDS
-# > t1 <- ds0 %>% 
-#   +   select(pc2,client_type_code, 1:5) %>% 
-#   +   # keep_random_id() %>% # find
-#   +   filter(person_oid == target) %>% # test
-#   +   arrange(date_start) %>% print()
-# pc2 client_type_code person_oid date_start   date_end spell_number spell_bit_number
-# 1   ETW               23    3503052 2001-03-01 2001-05-31            1                1
-# 2   OTI               82    3503052 2005-01-01 2005-01-31            2                1
-# 3   ETW               14    3503052 2005-02-01 2005-04-30            2                2
-# 4   ETW               13    3503052 2005-12-01 2006-10-31            3                1
-# 5   ETW               14    3503052 2011-06-01 2011-06-30            4                1
-# 6   ETW               14    3503052 2011-09-01 2011-09-30            5                1
-# 7   ETW               17    3503052 2013-06-01 2013-07-31            6                1
-# 8   ETW               17    3503052 2013-10-01 2013-12-31            7                1
-# 9   ETW               17    3503052 2015-11-01 2016-01-31            8                1
-# 10  OTI               82    3503052 2016-07-01 2016-07-31            9                1
-# 11  OTI               82    3503052 2017-01-01 2017-01-31           10                1
-# 12  ETW               17    3503052 2017-02-01 2017-05-31           10                2
-# 13  OTI               82    3503052 2018-06-01 2018-06-30           11                1
-# 14 AISH               91    3503052 2019-05-01 2022-07-31           12                1
-# > ds1 %>% 
-#   +   select(pc2,client_type_code, 1:5,spell_bit_order, first_is_after_2015) %>% 
-#   +   # filter(person_oid == unique(t1$person_oid)) %>% # find
-#   +   filter(person_oid == target) %>% # test
-#   +   arrange(date_start)
-# # A tibble: 9 × 9
-# pc2   client_type_code person_oid date_start date_end   spell_number spell_bit_number spell_bit_order first_is_after_2015
-# <chr> <chr>                 <int> <chr>      <chr>      <chr>        <chr>                      <int> <lgl>              
-# 1 ETW   23                  3503052 2001-03-01 2001-05-31 1            1                          1   FALSE              
-# 2 ETW   14                  3503052 2005-02-01 2005-04-30 2            2                          2   FALSE              
-# 3 ETW   13                  3503052 2005-12-01 2006-10-31 3            1                          3   FALSE              
-# 4 ETW   14                  3503052 2011-06-01 2011-06-30 4            1                          4   FALSE              
-# 5 ETW   14                  3503052 2011-09-01 2011-09-30 5            1                          5   FALSE              
-# 6 ETW   17                  3503052 2013-06-01 2013-07-31 6            1                          6   FALSE              
-# 7 ETW   17                  3503052 2013-10-01 2013-12-31 7            1                          7   FALSE              
-# 8 ETW   17                  3503052 2015-11-01 2016-01-31 8            1                          8   TRUE               
-# 9 ETW   17                  3503052 2017-02-01 2017-05-31 10           2                          9   FALSE  
+    analysis_cohort == "Analysis Period",
+    !is.na(age_clean),
+    age_clean >= 18  # Adult customers only
+  ) %>%
+  # Add customer sequence number within registration month
+  group_by(year(registration_date), month(registration_date)) %>%
+  mutate(
+    registration_month = floor_date(registration_date, "month"),
+    customer_sequence = row_number()
+  ) %>%
+  ungroup()
 
-# Now we can filter out the first spell of IS that started after 2015
-# This allows us to finetune the definition of our research cohort to
-# enhance the interpretability of results. The first time an individual
-# qualifies for Income Support represents a significant life event, which
-# can be used to homogenize the cohort and reduce the noise in the data.
-# We have to draw the line somewhere, so let it be 2015-01-01  
-# Our research cohort will include individuals who have received their first ever
-# month on Income Support on or after 2015-01-01.
-# Individuals for who received Income Support prior to 2015-01-01 are excluded from this sample. 
-# Theirs is a different story.
-# let's store the list of these individuals for future reference
-first_is_was_after_2015 <-
-  ds1 %>%
+# Filter transactions to analysis cohort and time window
+analysis_transactions <- ds_transactions_clean %>%
   filter(
-    spell_bit_order == 1L
-    ,first_is_after_2015 == TRUE
-  ) %>% 
-  select(person_oid, date_start, spell_bit_order) %>%
-  arrange(person_oid, date_start)
-# let's verify that person_ois is a unique identifier
-first_is_was_after_2015 %>%
-  group_by(person_oid) %>%
-  summarise(n = n()) %>%
-  filter(n > 1) # should be empty
-
-# now let's remove negative values of person_oid(training cases)
-# and select ALL episodes for these individuals
-ds2 <- ds1 %>% # remember that ds0-to-ds1 only filtered. 
-  filter(program_class0 == "Financial Support") %>% # only financial support episodes
-  filter(program_class1 == "Income Support") %>% # OTI are single day events, not fs episodes 
-  filter(person_oid > 0L) %>%  # remove training cases
-  filter(person_oid %in% first_is_was_after_2015$person_oid) %>% # first IS on and after 2025-01-01
-  filter(!is.na(spell_bit_duration)) %>% # only those with spell bit duration
-  filter(spell_bit_duration > 0) # only those with positive spell bit duration
-  
-
-# let's verify that we selected the right individuals
-cat("\014")
-t1 <- ds0 %>% 
-  select(pc2,client_type_code, 1:5) %>% 
-  keep_random_id() %>% # find
-  # filter(person_oid == target) %>% # test
-  arrange(date_start) %>% print()
-ds1 %>% 
-  select(pc2,client_type_code, 1:5,spell_bit_order, first_is_after_2015) %>% 
-  filter(person_oid == unique(t1$person_oid)) %>% # find
-  # filter(person_oid == target) %>% # test
-  arrange(date_start)
-# we should  only see cases that had first ever IS on or after 2015-01-01
-ds2 %>% 
-  select(pc2,client_type_code, 1:5,spell_bit_order, first_is_after_2015,) %>% 
-  filter(person_oid == unique(t1$person_oid)) %>% # find
-  arrange(date_start)
-
-
-
-#+ tweak-data-3-functions ---------------------------------------------------
-# Now that the cohort is operationalized with precise language and 
-# Individuals in the first month of their first Income Support episode
-# have a lot in common, and a shared timeline, relative to individuals
-# where time=0 is the first month of their first in income support episode,
-# (if this episode occured on or after 2015-01-01)
-wrangle_age <- function(d_in){
-  # d_out <- is_source
-  d_out <-
-    d_in %>%
-    mutate(
-      age_category3 = case_when(
-        ((age  >= 15) & (age <= 24)) ~ "15-24"
-        ,((age >= 25) & (age <= 54)) ~ "25-54"
-        ,(age >= 55)                 ~ "55+"
-        ,TRUE ~ "(Missing)"
-      ) %>% factor(levels = c("(Missing)", "15-24", "25-54", "55+"))
-      
-      ,age_category5 = case_when(
-        ((age  >= 15) & (age <= 24)) ~ "15-24"
-        ,((age >= 25) & (age <= 34)) ~ "25-34"
-        ,((age >= 35) & (age <= 44)) ~ "35-44"
-        ,((age >= 45) & (age <= 54)) ~ "45-54"
-        ,(age  >= 55)                ~ "55+"
-        ,TRUE ~ "(Missing)"
-      ) %>% factor(levels = c("(Missing)", "15-24", "25-34", "35-44", "45-54", "55+"))
-      
-      ,age_in_years = case_when(
-        age > 14 & age < 81 ~ age # ages outside of this range are considered suspicous
-        ,TRUE                              ~ NA_integer_
-      )
-    )
-  return(d_out)
-}
-
-wrangle_sex <- function(d_in){
-  # d_out <- is_source
-  d_out <-
-    d_in %>%
-    mutate(
-      gender = str_trim(gender)
-    ) %>% 
-    mutate(
-      sex3 = case_when(
-        gender  %in% c("Male")    ~ "Male"
-        ,gender %in% c("Female")  ~ "Female"
-        ,gender %in% c("X")       ~ "X"   # !!!
-        ,gender %in% c("Unknown") ~ "(Missing)"
-        ,TRUE ~ NA_character_
-      ) %>% as_factor() %>% relevel(ref = "Male")
-      ,sex2 = case_when(
-        gender  %in% c("Male")        ~ "Male"
-        ,gender %in% c("Female")      ~ "Female"
-        ,gender %in% c("Unknown","X") ~ "(Missing)"
-        ,TRUE ~ NA_character_
-      ) %>% as_factor() %>% relevel(ref = "Male")
-    )
-  return(d_out)
-}
-
-wrangle_marital <- function(d_in){
-  d_out <-
-    d_in %>%
-    mutate(
-      marital2 = case_when(
-        marital_status %in% c("Married", "Common Law") ~ "married"
-        ,marital_status %in% c("Separated", "Single", "Divorced", "Widowed") ~ "single"
-        ,TRUE ~ "(Missing)"
-      ) %>% as_factor() %>% relevel(ref = "single")
-      ,marital3 = case_when(
-        marital_status %in% c("Married", "Common Law") ~ "together"
-        ,marital_status %in% c("Separated", "Divorced", "Widowed") ~ "apart"
-        ,marital_status == "Single" ~ "never married"
-        ,TRUE ~ "(Missing)"
-      ) %>% as_factor() %>% relevel(ref = "never married")
-    )
-  
-  return(d_out)
-}
-
-wrangle_dependents <- function(d_in){
-  # NOTE: First trust survey, if missing, reach for admin 
-  
-  # d_out <- is_source
-  # browser
-  d_out <-
-    d_in %>%
-    mutate(
-      dependent4 = case_when(
-        total_dependent_count == 0L ~  "0 dependents"
-        ,total_dependent_count == 1L ~  "1 dependent"
-        ,total_dependent_count == 2L ~  "2 dependents"
-        ,total_dependent_count >= 3L ~  "3+ dependents"
-        ,TRUE ~ "(Missing)"
-      ) %>% as_factor() %>% relevel(ref = "0 dependents")
-      ,dependent2 = case_when(
-        total_dependent_count == 0L ~ "0 dependents"
-        ,total_dependent_count >= 1L ~  "1+ dependents"
-        ,TRUE ~ "(Missing)"
-      ) %>% as_factor() %>% relevel(ref = "0 dependents")
-    )
-  return(d_out)
-}
-
-wrangle_ethnicity <- function(d_in){
-  # d_out <- is_source
-  # browser()
-  d_out <-
-    d_in %>%
-    mutate(
-      ethnicity = case_when(
-        (aboriginal_flag == "Y") | (aboriginal_status_self_declared_flag == "Y") ~ "Indigenous"
-        ,(visible_minority_flag == "Y") | (visible_minority_self_declared_flag == "Y") ~ "Visible Minority"
-        ,(visible_minority_flag == "N") | (visible_minority_self_declared_flag == "N") ~ "Caucasian"
-        ,TRUE ~ "(Missing)"
-      ) %>% as.factor() %>% relevel(ref = "Caucasian")
-    )
-  return(d_out)
-}
-
-wrangle_disability <- function(d_in){
-  # d_out <- is_source
-  # browser()
-  d_out <-
-    d_in %>%
-    mutate(
-      disability2 = case_when(
-        disability_flag == "Y" ~ TRUE
-        ,disability_self_declared_flag == "Y" ~ TRUE
-        ,TRUE ~ FALSE
-      )
-      ,disability3 = case_when(
-        disability2 ~ "With Disability"
-        ,disability_flag == "N" ~ "No Disability"
-        ,disability_self_declared_flag == "N" ~ "No Disability"
-        ,TRUE ~ "(Missing)"
-      ) %>% as_factor() %>% relevel(ref = "(Missing)")
-    )
-  # There is no disability type variable to wrangle
-  return(d_out)
-}
-
-wrangle_immigration <- function(d_in){
-  d_out <- 
-    d_in %>% 
-    mutate(
-      immigration = case_when(
-        (immigrant_flag == "Y") | (immigrant_self_declared_flag == "Y") ~ "immigrant"
-        ,(immigrant_flag == "N") | (immigrant_self_declared_flag == "N") ~ "born in Canada"
-        ,TRUE ~ "(Missing)"
-      ) %>% as.factor() %>% relevel(ref = "born in Canada")
-    )
-  return(d_out)
-}
-
-wrangle_education <- function(d_in){
-  less_high_school <- c(
-    "Grade 1"
-    ,"Grade 2"
-    ,"Grade 3"
-    ,"Grade 4"
-    ,"Grade 5"
-    ,"Grade 6"
-    ,"Grade 7"
-    ,"Grade 8"
-    ,"Grade 9"
-    ,"Grade 10"
-    ,"Grade 11"
+    customer_id %in% analysis_cohort_customers$customer_id,
+    in_analysis_window == TRUE,
+    !is.na(amount),
+    amount > 0  # Positive transaction amounts only
   )
-  high_school <- c(
-    "Grade 12"
-    ,"Grade 13"
-    ,"General Equivalency Diploma"
-    ,"High School Diploma"
-  )
-  more_high_school <- c(
-    "Certificate"
-    ,"Journeyman"
-    ,"Journeyperson Certificate"
-    ,"College Ent"
-    ,"2 Yr Diploma"
-    ,"1 Yr Diploma"
-    ,"Bachelor Degree"
-    ,"1 Year"
-    ,"2 Years"
-    ,"1st Year Apprentice"
-    ,"Applied Degree"
-    ,"Community Adult Learning Course(s)"
-    ,"2nd Year Apprentice"
-    ,"Master Degree"
-    ,"4th Year Apprentice"
-    ,"Some Post Secondary"
-    ,"3rd Year Apprentice"
-    ,"Doctorate Degree"
-    ,"Apprenticing"
-    ,"Tech Cert / College D"
-    ,"University"
-  )
-  university <- c(
-    "Bachelor Degree"
-    ,"Master Degree"
-    ,"Doctorate Degree"
-    ,"Applied Degree"
-    ,"University"
-  )
-  d0 <-
-    d_in %>%
-    mutate(
-      education3 = case_when(
-        highest_education_level %in% less_high_school  ~ "Less HS"
-        ,highest_education_level %in% high_school      ~ "High School"
-        ,highest_education_level %in% more_high_school ~ "More HS"
-        ,TRUE ~ "(Missing)"
-      ) %>% factor(levels = c("(Missing)", "Less HS", "High School", "More HS"))
-    )
-  d_out <- d0 %>% 
-    mutate(
-      education4 = case_when(
-        highest_education_level %in% university        ~ "University Degree"
-        ,highest_education_level %in% less_high_school ~ "Less HS"
-        ,highest_education_level %in% high_school      ~ "High School"
-        ,highest_education_level %in% more_high_school ~ "Post HS"
-        ,TRUE ~ "(Missing)"
-      ) %>% factor(levels = c("(Missing)", "Less HS", "High School", "Post HS", "University Degree"))
-    )
-  return(d_out)
-}
 
-#+ tweak-data-3 --------------------------------------------------------------
-# Let's wrangle them into a typical format we use for demographic variables.
-
-ds3 <- 
-  ds2 %>% 
-  wrangle_age() %>% 
-  wrangle_sex() %>% 
-  wrangle_marital() %>% 
-  wrangle_dependents() %>% 
-  wrangle_ethnicity() %>% 
-  wrangle_disability %>% 
-  wrangle_immigration() %>% 
-  wrangle_education()
-
-ds3 %>% glimpse()
-# New variables:
-# $ age_category3 <fct>
-# $ age_category5 <fct>
-# $ age_in_years  <int>
-# $ sex3          <fct>
-# $ sex2          <fct>
-# $ marital2      <fct>
-# $ marital3      <fct>
-# $ dependent4    <fct>
-# $ dependent2    <fct>
-# $ ethnicity     <fct>
-# $ disability2   <lgl>
-# $ disability3   <fct>
-# $ immigration   <fct>
-# $ education3    <fct>
-# $ education4    <fct>
-
-#+ inspect-data-2 ------------------------------------------------------------
-
-# Let's create for each demographic variable created in ds2-to-ds3 step
-# a table with counts and percentages of each level
-cat("\014")
-d2 <- ds3 %>% 
-  # mutate(
-  #   client_type_code = paste0(client_type_code," - ", client_type) %>% as.factor()
-  # ) %>% 
-  select(
-    spell_bit_order 
-    ,spell_number 
-    ,spell_bit_number
-    ,spell_bit_duration
-    ,program_class2
-    ,client_type_code
-    # demographic variables
-    ,sex2
-    ,age_category3
-    ,marital2
-    ,marital3
-    ,dependent2
-    ,dependent4
-    ,disability2
-    ,disability3
-    ,education3
-    ,education4
-    ,ethnicity
-    ,immigration
-  ) %>% glimpse() %>% 
-  mutate_at(c("spell_bit_order", "spell_number", "spell_bit_number", "spell_bit_duration")
-            # function that turns every number greater than 10 into 11
-            , ~ ifelse(. > 10, 11L, .) %>% as.integer
-            ) %>%
-  mutate_at(c("spell_bit_order", "spell_number", "spell_bit_number", "spell_bit_duration"), as.factor) %>%
-  mutate_at(c("program_class2"), as.factor)
-
-d2 %>% tableone::CreateTableOne(data = .)
-d2 %>% 
-  select(-spell_number, -spell_bit_number) %>% 
-  filter(spell_bit_order %in% as.character(c(1:5))) %>% 
-  tableone::CreateTableOne(data = ., strata = "spell_bit_order")
-
-
-
-#+ write-to-db -------------------------------------------------------------
-# Upload research cohort
-OuhscMunge::upload_sqls_odbc(
-  d = ds3,
-  schema_name = "P20250625",
-  table_name = "ds_ellis",
-  dsn_name = "RESEARCH_PROJECT_CACHE_UAT",
-  clear_table = TRUE,
-  create_table = TRUE
+# Create customer summary with business metrics
+customer_analysis_summary <- create_customer_summary(
+  transactions_df = analysis_transactions,
+  customers_df = analysis_cohort_customers
 )
 
-ds3 %>% arrow::write_parquet(
-  sink = paste0(data_private_derived, "2-ellis-ds3.parquet")
+cat("✅ Analysis cohort defined:\n")
+cat("   - Cohort customers:", nrow(analysis_cohort_customers), "\n")
+cat("   - Analysis transactions:", nrow(analysis_transactions), "\n")
+cat("   - Customers with transactions:", sum(customer_analysis_summary$transaction_count > 0), "\n")
+
+
+
+# ---- transform-step-3 --------------------------------------------------------
+cat("\n🔄 Step 3: Advanced analytics variables and validation\n")
+
+# Create final analysis-ready dataset with comprehensive variables
+ds_final_customers <- customer_analysis_summary %>%
+  mutate(
+    # Customer lifecycle stage
+    lifecycle_stage = case_when(
+      transaction_count == 0 ~ "Registered Only",
+      transaction_count == 1 ~ "Trial Customer", 
+      transaction_count <= 5 & days_since_last <= 90 ~ "New Active",
+      transaction_count > 5 & days_since_last <= 30 ~ "Loyal Active",
+      transaction_count > 5 & days_since_last > 90 ~ "At Risk",
+      TRUE ~ "Other"
+    ) %>% factor(levels = c("Registered Only", "Trial Customer", "New Active", 
+                           "Loyal Active", "At Risk", "Other")),
+    
+    # Engagement score (composite metric)
+    engagement_score = case_when(
+      transaction_count == 0 ~ 0,
+      TRUE ~ pmin(100, 
+        (transaction_count * 10) + 
+        (total_amount / 10) + 
+        pmax(0, 30 - days_since_last)
+      )
+    ),
+    
+    # Analysis flags
+    high_value_customer = total_amount >= 1000,
+    recent_customer = days_since_last <= 30,
+    analysis_ready = !is.na(age_clean) & transaction_count > 0
+  )
+
+# Create enhanced transaction dataset with customer context
+ds_final_transactions <- analysis_transactions %>%
+  left_join(
+    ds_final_customers %>% select(customer_id, value_segment, lifecycle_stage, engagement_score),
+    by = "customer_id"
+  ) %>%
+  mutate(
+    # Transaction context variables
+    transaction_month = floor_date(transaction_date, "month"),
+    transaction_quarter = quarter(transaction_date, with_year = TRUE),
+    
+    # Seasonal patterns
+    season = case_when(
+      month(transaction_date) %in% c(12, 1, 2) ~ "Winter",
+      month(transaction_date) %in% c(3, 4, 5) ~ "Spring", 
+      month(transaction_date) %in% c(6, 7, 8) ~ "Summer",
+      month(transaction_date) %in% c(9, 10, 11) ~ "Fall"
+    ) %>% factor(levels = c("Spring", "Summer", "Fall", "Winter"))
+  )
+
+# ---- validate-data -----------------------------------------------------------
+cat("\n🔍 Step 4: Data validation and quality checks\n")
+
+# Create summary table for analysis-ready customers
+if(requireNamespace("tableone", quietly = TRUE)) {
+  cat("📊 Customer Demographics Summary:\n")
+  
+  customer_summary_vars <- ds_final_customers %>%
+    filter(analysis_ready == TRUE) %>%
+    select(
+      customer_type,
+      age_group_3,
+      age_group_5,
+      lifecycle_stage,
+      value_segment,
+      recency_category,
+      high_value_customer,
+      recent_customer
+    )
+  
+  summary_table <- tableone::CreateTableOne(data = customer_summary_vars)
+  print(summary_table)
+  
+  # Stratified analysis by customer type
+  if(nrow(customer_summary_vars) > 10) {
+    cat("\n📊 Summary by Customer Type:\n")
+    stratified_table <- tableone::CreateTableOne(
+      data = customer_summary_vars, 
+      strata = "customer_type"
+    )
+    print(stratified_table)
+  }
+}
+
+# Transaction patterns validation
+cat("\n📈 Transaction Patterns Summary:\n")
+transaction_summary <- ds_final_transactions %>%
+  summarise(
+    total_transactions = n(),
+    unique_customers = n_distinct(customer_id),
+    avg_transaction_amount = round(mean(amount, na.rm = TRUE), 2),
+    median_transaction_amount = round(median(amount, na.rm = TRUE), 2),
+    date_range_start = min(transaction_date, na.rm = TRUE),
+    date_range_end = max(transaction_date, na.rm = TRUE),
+    .groups = "drop"
+  )
+
+print(transaction_summary)
+
+# Data quality flags
+cat("\n⚠️ Data Quality Checks:\n")
+quality_checks <- list(
+  missing_customer_ages = sum(is.na(ds_final_customers$age_clean)),
+  zero_amount_transactions = sum(ds_final_transactions$amount == 0, na.rm = TRUE),
+  future_transactions = sum(ds_final_transactions$transaction_date > Sys.Date(), na.rm = TRUE),
+  customers_no_transactions = sum(ds_final_customers$transaction_count == 0),
+  negative_amounts = sum(ds_final_transactions$amount < 0, na.rm = TRUE)
 )
+
+for(check_name in names(quality_checks)) {
+  cat("   -", check_name, ":", quality_checks[[check_name]], "\n")
+}
+
+# ---- export-results ----------------------------------------------------------
+cat("\n💾 Step 5: Export analysis-ready datasets\n")
+
+# Export to multiple formats for different use cases
+
+# 1. CSV files for general use
+readr::write_csv(ds_final_customers, file.path(output_data, "customers_analysis_ready.csv"))
+readr::write_csv(ds_final_transactions, file.path(output_data, "transactions_analysis_ready.csv"))
+
+# 2. Parquet files for efficient storage and R/Python interop
+if(requireNamespace("arrow", quietly = TRUE)) {
+  arrow::write_parquet(ds_final_customers, file.path(output_data, "customers_analysis_ready.parquet"))
+  arrow::write_parquet(ds_final_transactions, file.path(output_data, "transactions_analysis_ready.parquet"))
+}
+
+# 3. Write back to cache database for other processes
+tryCatch({
+  cache_conn <- get_db_connection("sqlite", path = SQLITE_PATH)
+  
+  # Write analysis-ready tables
+  DBI::dbWriteTable(cache_conn, "customers_analysis_ready", ds_final_customers, overwrite = TRUE)
+  DBI::dbWriteTable(cache_conn, "transactions_analysis_ready", ds_final_transactions, overwrite = TRUE)
+  
+  # Create an ellis processing log
+  ellis_log <- data.frame(
+    processing_timestamp = Sys.time(),
+    customers_processed = nrow(ds_final_customers),
+    transactions_processed = nrow(ds_final_transactions),
+    analysis_window_start = analysis_window_start,
+    analysis_window_end = analysis_window_end,
+    quality_checks_passed = all(unlist(quality_checks) == 0)
+  )
+  
+  DBI::dbWriteTable(cache_conn, "ellis_processing_log", ellis_log, append = TRUE)
+  DBI::dbDisconnect(cache_conn)
+  
+  cat("✅ Data written to cache database\n")
+  
+}, error = function(e) {
+  cat("⚠ Cache database write failed:", e$message, "\n")
+})
+
+# 4. Summary report
+cat("\n📋 Ellis Processing Summary:\n")
+cat("=====================================\n")
+cat("📊 Final Datasets:\n")
+cat("   - Analysis-ready customers:", nrow(ds_final_customers), "\n")
+cat("   - Analysis-ready transactions:", nrow(ds_final_transactions), "\n")
+cat("   - Date range:", analysis_window_start, "to", analysis_window_end, "\n")
+
+cat("\n📁 Output Files Created:\n")
+cat("   - CSV files:", output_data, "\n")
+if(requireNamespace("arrow", quietly = TRUE)) {
+  cat("   - Parquet files:", output_data, "\n")
+}
+cat("   - Cache database:", SQLITE_PATH, "\n")
+
+cat("\n🎯 Key Analysis Variables Created:\n")
+cat("   - Customer lifecycle stages\n")
+cat("   - Value segments\n") 
+cat("   - Engagement scores\n")
+cat("   - Demographic categories\n")
+cat("   - Transaction patterns\n")
+cat("   - Seasonal indicators\n")
+
+cat("\n✅ Ellis pattern processing completed successfully!\n")
+cat("🚀 Data is now ready for downstream analysis pipelines.\n")
+
+# ---- session-info -----------------------------------------------------------
+cat("\n📋 Session Information:\n")
+print(sessionInfo())
