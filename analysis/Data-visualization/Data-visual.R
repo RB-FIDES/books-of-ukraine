@@ -1,11 +1,55 @@
-# Introduction to the project books-of-ukraine
-# in this folder I want to do a review to the given tables 
+
+
+
+library(tidyr)
 library(dplyr)
 library(ggplot2)
+library(tidyverse)
+
+fact_book_publications <- read.csv("data-private/derived/manipulation/CSV/fact_book_publications.csv")
+
+# ds_year_wide: year x measure (wide)
+ds_year_wide <- fact_book_publications %>%
+  rename(measure = measure_type) %>%
+  group_by(year, measure) %>%
+  summarise(value = sum(value, na.rm = TRUE), .groups = "drop") %>%
+  tidyr::pivot_wider(names_from = measure, values_from = value)
+
+# ds_pubtype_wide: year x pubtype (wide by purpose)
+ds_pubtype_wide <- fact_book_publications %>%
+  filter(category_type == "purpose") %>%
+  rename(measure = measure_type) %>%
+  group_by(year, pubtype = category_value, measure) %>%
+  summarise(value = sum(value, na.rm = TRUE), .groups = "drop") %>%
+  tidyr::pivot_wider(names_from = pubtype, values_from = value)
+
+# ds_language_wide: year x language (wide by language)
+ds_language_wide <- fact_book_publications %>%
+  filter(category_type == "language") %>%
+  rename(measure = measure_type) %>%
+  group_by(year, language = category_value, measure) %>%
+  summarise(value = sum(value, na.rm = TRUE), .groups = "drop") %>%
+  tidyr::pivot_wider(names_from = language, values_from = value)
+
+# ds_genre_wide: year x genre (wide by theme)
+ds_genre_wide <- fact_book_publications %>%
+  filter(category_type == "theme") %>%
+  rename(measure = measure_type) %>%
+  group_by(year, genre = category_value, measure) %>%
+  summarise(value = sum(value, na.rm = TRUE), .groups = "drop") %>%
+  tidyr::pivot_wider(names_from = genre, values_from = value)
+
+# ds_geography_wide: year x territory (wide by territory)
+ds_geography_wide <- fact_book_publications %>%
+  filter(category_type == "territory") %>%
+  rename(measure = measure_type) %>%
+  group_by(year, territory = category_value, measure) %>%
+  summarise(value = sum(value, na.rm = TRUE), .groups = "drop") %>%
+  tidyr::pivot_wider(names_from = territory, values_from = value)
 
 # ----------------------------------------- DS_YEAR -------------------------------------------------------------
 # in this table we can observe the number of titles and the number of copies for each year from 2005
-ds1 <- readRDS("data-private/derived/manipulation/ds_year_wide.rds")
+ds1 <-  ds_year_wide 
 
 years_all <- seq(min(ds1$year), max(ds1$year))
 
@@ -40,7 +84,7 @@ g_year_title <- ds1 %>%
 rm(ds1, years_all)
 # ----------------------------------------- DS_GENRE -------------------------------------------------------------
  
-ds2 <- readRDS("data-private/derived/manipulation/ds_genre_wide.rds")
+ds2 <- ds_genre_wide
 
 ds_genre_copy <- 
   ds2 %>% 
@@ -100,7 +144,7 @@ g_genre_title <- ds_genre_title %>%
 
 rm( ds2)
 # ----------------------------------------- DS_GEOGRAPHY -------------------------------------------------------------
-ds3 <- readRDS("data-private/derived/manipulation/ds_geography_wide.rds")
+ds3 <- ds_geography_wide
 
 region_groups <- list(
   "Західна Україна" = c("Львівська", "Івано-Франківська", "Закарпатська", "Тернопільська", "Чернівецька", "Волинська", "Рівненська"),
@@ -369,7 +413,7 @@ g_geography_krym_title <-
 
 # ----------------------------------------- DS_LANGUAGE -------------------------------------------------------------
 
-g_lanugae <- readRDS("data-private/derived/manipulation/ds_language_wide.rds")
+g_lanugae <- ds_language_wide
 
 g_language <- g_lanugae %>%
   pivot_longer(
@@ -527,7 +571,7 @@ g_language_2024 <-
 
 # ----------------------------------------- DS_PUBTYPE -------------------------------------------------------------
 
-ds5 <- readRDS("data-private/derived/manipulation/ds_pubtype_wide.rds") 
+ds5 <- ds_pubtype_wide
 
 
 ds_pubtype_l <- ds5 %>%
@@ -581,48 +625,3 @@ g_pubtype_title <- ds_pubtype_title %>%
     axis.title.x = element_blank()
   )
 
-
-# ----------------------------------------- DS_UKR_RUS -------------------------------------------------------------
-
-ds6 <- readRDS("data-private/derived/manipulation/ds_ukr_rus_wide.rds")
-
-g_ukrrus_copies <- 
-  ds6 %>%
-  filter(measure == "copy_count") %>%
-  select(year, ukr, rus) %>%
-  pivot_longer(
-    cols = c(ukr, rus),
-    names_to = "language",
-    values_to = "value"
-  ) %>% 
-ggplot( aes(x = factor(year), y = value, fill = language)) +
-  geom_col(position = "dodge") +
-  scale_x_discrete(expand = expansion(mult = c(0))) +
-  labs(
-    title = "Number of Copies: Ukrainian vs Russian by Year",
-    x = "Year",
-    y = "Number of Copies (ths.)",
-    fill = "Language"
-  ) +
-  theme_minimal()
-
-g_ukrrus_title <- 
-  ds6 %>%
-  filter(measure == "title_count") %>%
-  select(year, ukr, rus) %>%
-  pivot_longer(
-    cols = c(ukr, rus),
-    names_to = "language",
-    values_to = "value"
-  ) %>% 
-ggplot( aes(x = factor(year), y = value, fill = language)) +
-  geom_col(position = "dodge") +
-  scale_x_discrete(expand = expansion(mult = c(0))) +
-  scale_y_continuous(breaks = seq(0, 20000, by = 5000), limits = c(0, 20000)) +
-  labs(
-    title = "Number of Titles: Ukrainian vs Russian by Year",
-    x = "Year",
-    y = "Number of Titles",
-    fill = "Language"
-  ) +
-  theme_minimal()

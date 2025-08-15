@@ -6,11 +6,15 @@ suppressPackageStartupMessages({
 })
 
 # Input and output paths
-in_geojson <- file.path("..", "data", "terhromad_fin.geojson")
-out_rds <- file.path("..", "data", "ua_oblast_polygons.rds")
-out_geojson <- file.path("..", "data", "ua_oblast_polygons.geojson")
+in_geojson <- file.path("analysis", 'map-guide', "data", "terhromad_fin.geojson")
+out_rds <- file.path("analysis", 'map-guide', "data", "ua_oblast_polygons.rds")
+out_geojson <- file.path("analysis", 'map-guide',"data", "ua_oblast_polygons.geojson")
 
 hromadas <- st_read(in_geojson, quiet = TRUE) %>% clean_names()
+## Repair invalid geometries before grouping
+hromadas <- hromadas %>%
+  mutate(geometry = sf::st_make_valid(geometry))
+
 oblasts <- hromadas %>%
   group_by(admin_1) %>%
   summarise(geometry = sf::st_union(geometry), .groups = "drop") %>%

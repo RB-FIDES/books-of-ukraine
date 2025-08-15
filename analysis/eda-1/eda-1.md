@@ -74,7 +74,7 @@ This report operates with the following data objects:
 -   **`ds_genre`** - Distribution across 13 genre categories
 -   **`ds_pubtype`** - Distribution across 14 publication types
 -   **`ds_geography`** - Regional distribution across Ukrainian oblasts
--   **`ds_ukr_rus`** - Focused comparison between Ukrainian and Russian publications
+
 
 
 
@@ -95,67 +95,36 @@ Dataset dimensions:
 cat("ds_year:", dim(ds_year)[1], "rows x", dim(ds_year)[2], "columns\n")
 ```
 
-```
-Error: object 'ds_year' not found
-```
 
 ``` r
 cat("ds_language:", dim(ds_language)[1], "rows x", dim(ds_language)[2], "columns\n") 
-```
-
-```
-Error: object 'ds_language' not found
 ```
 
 ``` r
 cat("ds_genre:", dim(ds_genre)[1], "rows x", dim(ds_genre)[2], "columns\n")
 ```
 
-```
-Error: object 'ds_genre' not found
-```
-
 ``` r
 cat("ds_pubtype:", dim(ds_pubtype)[1], "rows x", dim(ds_pubtype)[2], "columns\n")
 ```
 
-```
-Error: object 'ds_pubtype' not found
-```
 
 ``` r
 cat("ds_geography:", dim(ds_geography)[1], "rows x", dim(ds_geography)[2], "columns\n")
 ```
 
-```
-Error: object 'ds_geography' not found
-```
-
-``` r
-cat("ds_ukr_rus:", dim(ds_ukr_rus)[1], "rows x", dim(ds_ukr_rus)[2], "columns\n")
-```
-
-```
-Error: object 'ds_ukr_rus' not found
-```
 
 ``` r
 # Show year range
 cat("\nYear range in data:", min(ds_year$year), "-", max(ds_year$year), "\n")
 ```
 
-```
-Error: object 'ds_year' not found
-```
 
 ``` r
 # Show measure types
 cat("\nMeasure types available:", paste(unique(ds_year$measure), collapse = ", "), "\n")
 ```
 
-```
-Error: object 'ds_year' not found
-```
 
 ## Data Structure Overview
 
@@ -190,16 +159,6 @@ Error in ds_language %>% select(1:6) %>% head(6) %>% knitr::kable(caption = "Sam
 
 ### Ukrainian-Russian Focus Data
 
-
-``` r
-ds_ukr_rus %>%
-  head(8) %>%
-  knitr::kable(caption = "Ukrainian vs Russian Publications Data")
-```
-
-```
-Error in ds_ukr_rus %>% head(8) %>% knitr::kable(caption = "Ukrainian vs Russian Publications Data"): could not find function "%>%"
-```
 
 # Ready for Analysis
 

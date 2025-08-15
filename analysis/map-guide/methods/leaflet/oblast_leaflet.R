@@ -7,8 +7,8 @@ suppressPackageStartupMessages({
   library(janitor)
 })
 
-geojson_path <- file.path("..", "..", "data", "terhromad_fin.geojson")
-example_data_path <- file.path("..", "..", "data", "example_oblast_values.csv")
+geojson_path <- file.path("analysis", "map-guide", "data", "terhromad_fin.geojson")
+example_data_path <- file.path("analysis", "map-guide", "data", "example_oblast_values.csv")
 
 hromadas <- st_read(geojson_path, quiet = TRUE) %>% clean_names()
 oblasts <- hromadas %>%

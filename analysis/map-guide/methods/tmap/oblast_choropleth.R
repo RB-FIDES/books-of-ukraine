@@ -8,9 +8,9 @@ suppressPackageStartupMessages({
 })
 
 # Paths within map-guide
-geojson_path <- file.path("..", "..", "data", "terhromad_fin.geojson")
+geojson_path <- file.path("analysis", "map-guide", "data", "terhromad_fin.geojson")
 # Example data placeholder: expects a CSV with columns: oblast_name_en, value
-example_data_path <- file.path("..", "..", "data", "example_oblast_values.csv")
+example_data_path <- file.path("analysis", "map-guide", "data", "example_oblast_values.csv")
 
 # Load polygons (hromada geometries) and build oblast polygons
 hromadas <- st_read(geojson_path, quiet = TRUE) %>% clean_names()

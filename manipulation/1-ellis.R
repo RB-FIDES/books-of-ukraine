@@ -5,7 +5,12 @@
 # 3. Creating integrated views for analysis
 # 4. Generating comprehensive documentation
 
-rm(list = ls(all.names = TRUE)) # Clear memory
+# Clear memory but preserve db_enhanced if it exists (prevents accidental removal)
+if (exists("db_enhanced")) {
+  rm(list = setdiff(ls(all.names = TRUE), "db_enhanced"))
+} else {
+  rm(list = ls(all.names = TRUE))
+}
 cat("\014") # Clear console
 cat("Working directory: ", getwd()) # Must be set to Project Directory
 
@@ -82,25 +87,6 @@ add_geography_extension <- function(db_connection) {
     return(invisible())
   }
   
-  # Process territorial data
-  raw_teritorii <- readRDS(territori_path)
-  
-  # Clean and transform territorial data
-  terir_cleaned <- raw_teritorii %>%
-    filter(!is.na(x) & x != "") %>%
-    # Handle mixed data types in year columns
-    mutate(across(starts_with("x") & !matches("^x$"), ~ {
-      if (is.list(.)) {
-        map_chr(., ~ {
-          if (is.null(.)) "0"
-          else if (is.character(.)) str_replace_all(., "[\\s,]", "")
-          else as.character(.)
-        })
-      } else {
-        as.character(.)
-      }
-    }))
-  
   # Transform to long format for star schema integration
   ds_geography_ext <- terir_cleaned %>%
     pivot_longer(
@@ -156,9 +142,10 @@ add_geography_extension <- function(db_connection) {
   invisible()
 }
 
+  # ---------------------------------------------------------------------------- CASHE-MANIFEST-1.md ---------------------------------------------------------------------------------------------
 # Function to generate enhanced CACHE manifest
-generate_enhanced_manifest <- function(db_connection, output_path = "ai/CACHE-manifest.md") {
-  cat("📝 Generating enhanced CACHE-manifest.md...\n")
+generate_enhanced_manifest <- function(db_connection, output_path = "ai/CACHE-MANIFEST-1.md") {
+  cat("📝 Generating enhanced CACHE-MANIFEST-1.md...\n")
   
   tables <- dbListTables(db_connection)
   
@@ -182,16 +169,15 @@ generate_enhanced_manifest <- function(db_connection, output_path = "ai/CACHE-ma
     "│ dim_years              │ → │ ext_geography_*         │",
     "│ dim_categories         │    │ ext_future_*            │",
     "│ dim_measures           │    │ (preserves core intact) │",
-    "│ raw_*                  │    └─────────────────────────┘",
+  "└─────────────────────┘",
     "└─────────────────────┘",
     "```",
     "",
     "### 🔗 Integration Strategy",
     "",
-    "**CORE TABLES** (unchanged from 0-ellis.R):",
-    "- `fact_book_publications`: Original publication data",
-    "- `dim_*`: Core dimension tables",
-    "- `raw_*`: Original source data",
+  "**CORE TABLES** (unchanged from 0-ellis.R):",
+  "- `fact_book_publications`: Original publication data",
+  "- `dim_*`: Core dimension tables",
     "",
     "**EXTENSION TABLES** (added by 1-ellis.R):",
     "- `ext_geography_publications`: Geographic/territorial data",
@@ -209,9 +195,7 @@ generate_enhanced_manifest <- function(db_connection, output_path = "ai/CACHE-ma
   fact_tables <- grep("^fact_", tables, value = TRUE)
   dim_tables <- grep("^dim_", tables, value = TRUE)
   ext_tables <- grep("^ext_", tables, value = TRUE)
-  raw_tables <- grep("^raw_", tables, value = TRUE)
-  
-  table_order <- c(sort(fact_tables), sort(dim_tables), sort(ext_tables), sort(raw_tables))
+  table_order <- c(sort(fact_tables), sort(dim_tables), sort(ext_tables))
   
   for(table_name in table_order) {
     structure <- dbGetQuery(db_connection, paste("PRAGMA table_info(", table_name, ")"))
@@ -222,7 +206,7 @@ generate_enhanced_manifest <- function(db_connection, output_path = "ai/CACHE-ma
       str_starts(table_name, "fact_") ~ "**FACT TABLE**",
       str_starts(table_name, "dim_") ~ "**DIMENSION TABLE**",
       str_starts(table_name, "ext_") ~ "**EXTENSION TABLE**",
-      str_starts(table_name, "raw_") ~ "**RAW DATA TABLE**",
+  FALSE ~ "**DATA TABLE**",
       TRUE ~ "**DATA TABLE**"
     )
     
@@ -231,7 +215,7 @@ generate_enhanced_manifest <- function(db_connection, output_path = "ai/CACHE-ma
       table_name == "fact_book_publications" ~ "Core fact table from 0-ellis.R (publications only)",
       table_name == "ext_geography_publications" ~ "Geographic extension: publication counts by territory",
       str_starts(table_name, "dim_") ~ paste("Dimension table:", str_remove(table_name, "dim_")),
-      str_starts(table_name, "raw_") ~ paste("Original source data:", str_remove(table_name, "raw_")),
+  FALSE ~ "Supporting data table",
       TRUE ~ "Supporting data table"
     )
     
@@ -356,10 +340,149 @@ cat(paste(rep("=", 30), collapse = ""), "\n")
 # Add geography extension
 add_geography_extension(db_enhanced)
 
+# --------------------------------------------------------------------------------------- Bookstore Count 2023 Extension -------------------------------------------------
+
+# ---- add-bookstore-count-2023-extension --------------------------------------
+cat("\n📚 ADDING BOOKSTORE COUNT 2023 DATA\n")
+cat(paste(rep("-", 30), collapse = ""), "\n")
+
+# Define bookstore data for 2023
+bookstore_regions <- c(
+  "Київ", "Львівська", "Харківська", "Дніпропетровська", "Одеська",
+  "Івано-Франківська", "Запорізька", "Тернопільська", "Вінницька", "Хмельницька",
+  "Черкаська", "Полтавська", "Київська", "Чернігівська", "Сумська",
+  "Житомирська", "Рівненська", "Волинська", "Кіровоградська", "Миколаївська",
+  "Херсонська", "Закарпатська", "Чернівецька"
+)
+bookstore_count <- c(
+  99, 50, 17, 21, 17,
+  19, 4, 23, 17, 15,
+  12, 15, 18, 6, 13,
+  10, 18, 17, 4, 2,
+  2, 14, 8
+)
+bookstore_2023 <- data.frame(
+  year = 2023,
+  category_type = "territory",
+  category_value = bookstore_regions,
+  measure_type = "bookstore_count",
+  value = bookstore_count
+)
+
+# Add to dim_measures if not present
+
+# Add to dim_measures if not present, and add measure_description
+dim_measures <- dbReadTable(db_enhanced, "dim_measures")
+# Add measure_description column if not present
+if (!"measure_description" %in% colnames(dim_measures)) {
+  dim_measures$measure_description <- NA_character_
+}
+# Remove any existing bookstore_count measure to avoid duplicates
+dim_measures <- dim_measures[dim_measures$measure_type != "bookstore_count", ]
+new_measure_id <- max(dim_measures$measure_id, na.rm = TRUE) + 1
+new_measure <- data.frame(measure_id = new_measure_id, measure_type = "bookstore_count", measure_description = "Number of bookstores in Ukraine in 2023", stringsAsFactors = FALSE)
+dim_measures <- dplyr::bind_rows(dim_measures, new_measure)
+dbWriteTable(db_enhanced, "dim_measures", dim_measures, overwrite = TRUE)
+cat("  ✓ Added bookstore_count to dim_measures\n")
+# Verification
+cat("  → bookstore_count in dim_measures: ", sum(dim_measures$measure_type == 'bookstore_count'), "\n")
+# Also update CSV and RDS versions for dim_measures
+csv_meas_path <- "data-private/derived/manipulation/CSV/dim_measures.csv"
+rds_meas_path <- "data-private/derived/manipulation/dim_measures.rds"
+write.csv(dim_measures, csv_meas_path, row.names = FALSE)
+saveRDS(dim_measures, rds_meas_path)
+cat("  ✓ Updated CSV and RDS versions of dim_measures\n")
+
+# Add to dim_categories if not present
+
+dim_categories <- dbReadTable(db_enhanced, "dim_categories")
+# Remove any existing bookstore_count territories to avoid duplicates
+dim_categories <- dim_categories[!(dim_categories$category_type == "territory" & dim_categories$category_value %in% bookstore_regions), ]
+max_cat_id <- max(dim_categories$category_id, na.rm = TRUE)
+# For each new territory, add a row for each measure (including bookstore_count)
+all_measures <- unique(dim_measures$measure_type)
+new_cats <- expand.grid(
+  category_type = "territory",
+  category_value = bookstore_regions,
+  measure = all_measures,
+  stringsAsFactors = FALSE
+)
+new_cats$category_id <- seq(max_cat_id + 1, by = 1, length.out = nrow(new_cats))
+new_cats <- new_cats[, c("category_id", "category_type", "category_value", "measure")]
+dim_categories <- dplyr::bind_rows(dim_categories, new_cats)
+dbWriteTable(db_enhanced, "dim_categories", dim_categories, overwrite = TRUE)
+cat("  ✓ Added new territories × measures to dim_categories\n")
+# Also update CSV and RDS versions for dim_categories
+csv_cat_path <- "data-private/derived/manipulation/CSV/dim_categories.csv"
+rds_cat_path <- "data-private/derived/manipulation/dim_categories.rds"
+write.csv(dim_categories, csv_cat_path, row.names = FALSE)
+saveRDS(dim_categories, rds_cat_path)
+cat("  ✓ Updated CSV and RDS versions of dim_categories\n")
+# Verification
+cat("  → bookstore_count territories in dim_categories: ", sum(dim_categories$category_type == 'territory' & dim_categories$category_value %in% bookstore_regions & dim_categories$measure == 'bookstore_count'), "\n")
+
+# Add to fact_book_publications
+
+# Add to fact_book_publications (must match structure: year, category_type, category_value, measure_type, value)
+
+# Remove any existing bookstore_count 2023 rows to avoid duplicates
+fact_book_publications <- dbReadTable(db_enhanced, "fact_book_publications")
+fact_book_publications <- fact_book_publications[!(fact_book_publications$measure_type == "bookstore_count" & fact_book_publications$year == 2023), ]
+
+bookstore_2023_rows <- data.frame(
+  year = as.integer(2023),
+  category_type = as.character("territory"),
+  category_value = as.character(bookstore_regions),
+  measure_type = as.character("bookstore_count"),
+  value = as.numeric(bookstore_count),
+  stringsAsFactors = FALSE
+)
+# Remove row names if present
+rownames(bookstore_2023_rows) <- NULL
+# Ensure column order and types match exactly
+bookstore_2023_rows <- bookstore_2023_rows[, c("year", "category_type", "category_value", "measure_type", "value")]
+# Use dplyr::bind_rows for robust row binding
+
+# Bind and arrange so 2023 bookstore_count rows are in order with other 2023 rows
+fact_book_publications <- dplyr::bind_rows(fact_book_publications, bookstore_2023_rows)
+fact_book_publications <- fact_book_publications %>%
+  arrange(year, category_type, category_value, measure_type)
+dbWriteTable(db_enhanced, "fact_book_publications", fact_book_publications, overwrite = TRUE)
+cat("  ✓ Added bookstore_count 2023 data to fact_book_publications\n")
+# Verification: print number of bookstore_count 2023 rows
+added_rows <- sum(fact_book_publications$measure_type == "bookstore_count" & fact_book_publications$year == 2023)
+cat("  → bookstore_count 2023 rows in fact_book_publications:", added_rows, "\n")
+
+# Also update fact_enhanced if it exists
+all_tables <- dbListTables(db_enhanced)
+if ("fact_enhanced" %in% all_tables) {
+  fact_enhanced <- dbReadTable(db_enhanced, "fact_enhanced")
+  # Remove any existing bookstore_count 2023 rows
+  fact_enhanced <- fact_enhanced[!(fact_enhanced$measure_type == "bookstore_count" & fact_enhanced$year == 2023), ]
+  fact_enhanced <- dplyr::bind_rows(fact_enhanced, bookstore_2023_rows)
+  dbWriteTable(db_enhanced, "fact_enhanced", fact_enhanced, overwrite = TRUE)
+  cat("  ✓ Added bookstore_count 2023 data to fact_enhanced\n")
+  # Verification
+  added_rows_enh <- sum(fact_enhanced$measure_type == "bookstore_count" & fact_enhanced$year == 2023)
+  cat("  → bookstore_count 2023 rows in fact_enhanced:", added_rows_enh, "\n")
+  # Also update CSV and RDS versions for fact_enhanced
+  csv_enh_path <- "data-private/derived/manipulation/CSV/fact_enhanced.csv"
+  rds_enh_path <- "data-private/derived/manipulation/fact_enhanced.rds"
+  write.csv(fact_enhanced, csv_enh_path, row.names = FALSE)
+  saveRDS(fact_enhanced, rds_enh_path)
+  cat("  ✓ Updated CSV and RDS versions of fact_enhanced\n")
+}
+
+# Also update CSV and RDS versions
+csv_path <- "data-private/derived/manipulation/CSV/fact_book_publications.csv"
+rds_path <- "data-private/derived/manipulation/fact_book_publications.rds"
+write.csv(fact_book_publications, csv_path, row.names = FALSE)
+saveRDS(fact_book_publications, rds_path)
+cat("  ✓ Updated CSV and RDS versions of fact_book_publications\n")
+# (raw_territory update removed)
 # Future extensions can be added here:
 # add_economic_extension(db_enhanced)
 # add_cultural_extension(db_enhanced)
-
 # ---- validate-enhanced-database ----------------------------------------------
 cat("\n📊 VALIDATING ENHANCED DATABASE\n")
 cat(paste(rep("=", 35), collapse = ""), "\n")
@@ -398,8 +521,29 @@ if ("fact_enhanced" %in% all_tables) {
 cat("\n📝 GENERATING DOCUMENTATION\n")
 cat(paste(rep("=", 30), collapse = ""), "\n")
 
-# Generate enhanced manifest
-generate_enhanced_manifest(db_enhanced)
+# Generate enhanced manifest (write to new file, do not overwrite original)
+generate_enhanced_manifest(db_enhanced, output_path = "ai/CACHE-MANIFEST-1.md")
+
+# Add bookstore_count info to manifest
+manifest_path <- "ai/CACHE-MANIFEST-1.md"
+manifest_lines <- readLines(manifest_path)
+insert_idx <- grep("^## \\📋 Table Catalog", manifest_lines)
+if (length(insert_idx) == 1) {
+  extra_info <- c(
+    "",
+    "### 🏪 Bookstore Count 2023 Extension",
+    "",
+    "- **Measure:** `bookstore_count` (number of bookstores by region, 2023)",
+    "- **Regions:** Kyiv, Lvivska, Kharkivska, Dnipropetrovska, Odeska, etc.",
+    "- **Source:** Screenshot + Forbes data, provided August 2025",
+    "- **Integration:** Added to `dim_measures`, `dim_categories`, and `fact_book_publications`",
+    "- **CSV/RDS:** Updated in `fact_book_publications.csv` and `.rds`",
+    ""
+  )
+  manifest_lines <- append(manifest_lines, extra_info, after = insert_idx)
+  writeLines(manifest_lines, manifest_path)
+  cat("  ✓ Documented bookstore_count 2023 extension in manifest\n")
+}
 
 # ---- cleanup -----------------------------------------------------------------
 # Close database connection
