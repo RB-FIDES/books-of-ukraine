@@ -13,7 +13,7 @@ Carefully read the instructions below in their entirety.
 - **Uncertainty**: "consider", "maybe", "perhaps", "not sure", "thinking", "wondering"
 - **Future Work**: "later", "eventually", "after this", "once we", "then we'll"
 
-**When You Detect These**: Ask "Should I capture this intention/decision in the project memory?" and offer to run `ai_memory_check()` or update `ai/project-memory.md`.
+**When You Detect These**: Ask "Should I capture this intention/decision in the project memory?" and offer to run `ai_memory_check()` or update the memory system via [[memory-hub]].
 
 ## 🤖 Automation & Context Management
 

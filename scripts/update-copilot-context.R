@@ -21,7 +21,9 @@ update_copilot_instructions <- function(file_list) {
     "semiology" = "./ai/semiology.md",
     "pipeline" = "./pipeline.md",
     "fides" = "./ai/FIDES.md",
-    "logbook" = "./ai/logbook.md",
+    "memory-hub" = "./ai/memory-hub.md",
+    "memory-human" = "./ai/memory-human.md",
+    "memory-ai" = "./ai/memory-ai.md",
     "cache-manifest" = "./ai/CACHE-manifest.md"
   )
   
