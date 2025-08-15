@@ -92,8 +92,9 @@ generate_project_briefing <- function(project_root = ".") {
   
   # Detect intentions in key files
   key_files <- c(
-    file.path(project_root, "manipulation", "3-ellis-era.R"),
-    file.path(project_root, "manipulation", "2-ellis.R"),
+    file.path(project_root, "manipulation", "2-ellis-ua-admin.R"),
+    file.path(project_root, "manipulation", "1-ellis.R"),
+    file.path(project_root, "manipulation", "0-ellis.R"),
     file.path(project_root, "flow.R")
   )
   
