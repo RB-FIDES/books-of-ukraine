@@ -55,12 +55,8 @@ Thumbs.db
 Desktop.ini
 # ---- OS X --------------------------------------------------
 .DS_Store
-<<<<<<< Updated upstream
 # ---- Visual Studio Code (text editor) ----------------------
-.vscode/
-!.vscode/tasks.json
-!.vscode/settings.json
-!.vscode/launch.json
+.vscode/keybindings.json
 # ---- Locks ----------------------
 # Do not commit lock files.
 #   Programs like Microsoft Word create temporary files that don't contain info useful to the repo.
