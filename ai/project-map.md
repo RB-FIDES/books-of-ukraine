@@ -1,6 +1,9 @@
 # Project Map
 
-**Generated**:  2025-08-08 11:02:35
+**Generated**:  2├── ai/  🧠 Context mgmt & AI memory
+│   ├── CACHE-manifest-0.md  📊 Core star schema (0-ellis.R)
+│   ├── CACHE-MANIFEST-1.md  📊 Enhanced DB (1-ellis.R)
+│   ├── CACHE-manifest-analytical.md  📊 Analysis tables (last-ellis.R)08-08 11:02:35
 
 ## 🗂️ Books of Ukraine - Project Structure Tree
 
@@ -33,8 +36,9 @@ books-of-ukraine/  🏠 Project config & docs
 │   ├── command-reference.md  📚 Reference manual
 │   └── setup-google-access.md  🔑 Google auth setup
 ├── ai/  🧠 Context mgmt & AI memory
-│   ├── CACHE-manifest-example.md  📋 Template
-│   ├── CACHE-manifest.md  📊 Dataset docs
+│   ├── CACHE-MANIFEST-1.md  📊 Enhanced DB
+│   ├── CACHE-manifest-analytical.md  � Analysis tables
+│   ├── CACHE-manifest-0.md  📊 Core star schema (0-ellis.R)
 │   ├── FIDES.md  🔬 Research framework
 │   ├── glossary.md  📖 Terms
 │   ├── INPUT-manifest.md  📥 Input data docs

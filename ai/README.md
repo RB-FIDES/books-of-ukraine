@@ -15,8 +15,9 @@ This folder provides a minimal, rigorous, and extensible framework for **human�
 | `onboarding-ai.md` | Guides how AI should behave and support the human |
 | `logbook.md` | Captures all major analytic decisions over time |
 | `FIDES.md` | Validation tests and epistemic safeguards |
-| **🆕 `CACHE-manifest.md`** | **Automatically maintained documentation of all processed datasets** |
-| `CACHE-manifest-example.md` | Template for CACHE manifest structure |
+| `CACHE-manifest-0.md` | Core star schema documentation (0-ellis.R) |
+| `CACHE-MANIFEST-1.md` | Enhanced database schema documentation (1-ellis.R) |
+| `CACHE-manifest-analytical.md` | Analytical tables documentation (last-ellis.R) |
 
 ## 🆕 Automated Documentation System
 

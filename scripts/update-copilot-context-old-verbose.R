@@ -20,7 +20,9 @@ update_copilot_instructions <- function(file_list) {
     "semiology" = "./ai/semiology.md",
     "pipeline" = "./pipeline.md",
     "fides" = "./ai/FIDES.md",
-    "cache-manifest" = "./ai/CACHE-manifest.md",
+    "cache-manifest" = "./ai/CACHE-manifest-0.md",
+    "cache-manifest-enhanced" = "./ai/CACHE-MANIFEST-1.md",
+    "cache-manifest-analytical" = "./ai/CACHE-manifest-analytical.md",
     "memory-hub" = "./ai/memory-hub.md",
     "memory-human" = "./ai/memory-human.md",
     "memory-ai" = "./ai/memory-ai.md"
@@ -109,7 +111,7 @@ add_to_instructions <- function(...) {
       "semiology" = "./ai/semiology.md",
       "pipeline" = "./pipeline.md",
       "fides" = "./ai/FIDES.md",
-      "cache-manifest" = "./ai/CACHE-manifest.md",
+      "cache-manifest" = "./ai/CACHE-manifest-0.md",
       "memory-hub" = "./ai/memory-hub.md",
       "memory-human" = "./ai/memory-human.md",
       "memory-ai" = "./ai/memory-ai.md"
@@ -385,16 +387,18 @@ check_context_size <- function() {
 # CACHE MANIFEST MANAGEMENT
 # ==============================================================================
 
-# Function to check and update CACHE-manifest.md based on actual 0-ellis outputs
+# Function to check and update CACHE-manifest-0.md based on actual 0-ellis outputs
 check_cache_manifest <- function(update_if_needed = TRUE) {
-  cache_manifest_path <- "./ai/CACHE-manifest.md"
-  cache_example_path <- "./ai/CACHE-manifest-example.md"
+  cache_manifest_path <- "./ai/CACHE-manifest-0.md"
+  # Note: CACHE-manifest-example.md was removed - template no longer needed
+  # cache_example_path <- "./ai/CACHE-manifest-example.md"
   logbook_path <- "./ai/logbook.md"
   
-  # Check if required files exist
-  if (!file.exists(cache_example_path)) {
-    stop("❌ CACHE-manifest-example.md not found at: ", cache_example_path)
-  }
+  # Check if required files exist (example file check removed)
+  # if (!file.exists(cache_example_path)) {
+  # if (!file.exists(cache_example_path)) {
+    # stop("❌ CACHE-manifest-example.md not found at: ", cache_example_path)
+  # }
   
   message("🔍 Analyzing 0-ellis script outputs...")
   
@@ -661,7 +665,7 @@ check_cache_manifest <- function(update_if_needed = TRUE) {
   # Update logbook
   update_logbook_entry(new_datasets, existing_datasets)
   
-  message("✅ Updated CACHE-manifest.md with current dataset information")
+  message("✅ Updated CACHE-manifest-0.md with current dataset information")
   message("📊 Total datasets: ", length(existing_datasets))
   if (length(new_datasets) > 0) {
     message("🆕 New datasets documented: ", paste(new_datasets, collapse = ", "))
@@ -1064,7 +1068,7 @@ validate_context_silent <- function() {
     "pipeline" = "./pipeline.md",
     "fides" = "./ai/FIDES.md",
     "logbook" = "./ai/logbook.md",
-    "cache-manifest" = "./ai/CACHE-manifest.md"
+    "cache-manifest" = "./ai/CACHE-manifest-0.md"
   )
   
   stale_files <- c()
@@ -2283,7 +2287,7 @@ get_brief_file_description <- function(filename) {
     
     # AI directory
     "mission.md" = "🎯 Project aims",
-    "CACHE-manifest.md" = "📊 Dataset docs",
+    "CACHE-manifest-0.md" = "📊 Dataset docs",
     "project-memory.md" = "🧠 Decisions log",
     "logbook.md" = "📝 Change log",
     "method.md" = "📐 Methods",
@@ -2292,7 +2296,9 @@ get_brief_file_description <- function(filename) {
     "glossary.md" = "📖 Terms",
     "semiology.md" = "🔤 Symbols guide",
     "INPUT-manifest.md" = "📥 Input data docs",
-    "CACHE-manifest-example.md" = "📋 Template",
+    "CACHE-MANIFEST-1.md" = "📊 Enhanced DB",
+    "CACHE-manifest-analytical.md" = "📊 Analysis tables", 
+    "CACHE-manifest.md" = "� Core star schema",
     "vscode-tasks-reference.md" = "🔧 VS Code tasks",
     "memory-system-demo.md" = "🧠 Memory demo",
     
@@ -2373,7 +2379,7 @@ get_file_description <- function(filename, directory) {
     
     # AI directory
     "project-memory.md" = "Project decisions and intent tracking",
-    "CACHE-manifest.md" = "Automatically generated dataset documentation",
+    "CACHE-manifest-0.md" = "Automatically generated dataset documentation",
     "mission.md" = "Project objectives and epistemic aims",
     "method.md" = "Methodological approaches and standards",
     "onboarding-ai.md" = "AI assistant configuration and behavior",
