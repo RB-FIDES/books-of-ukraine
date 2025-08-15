@@ -87,7 +87,7 @@ data_private_derived_csv <- "data-private/derived/manipulation/CSV/"
 if (!fs::dir_exists(data_private_derived_csv)) {fs::dir_create(data_private_derived_csv)}
 
 # ---- establish-database-connection -------------------------------------------
-db_books_of_ukraine <- dbConnect(RSQLite::SQLite(), "data-private/derived/manipulation/SQLite/books-of-ukraine.sqlite")
+db_books_of_ukraine <- dbConnect(RSQLite::SQLite(), "data-private/derived/manipulation/SQLite/books-of-ukraine-long.sqlite")
 
 
 
@@ -305,10 +305,18 @@ dim_years <- fact_book_publications %>%
     )
   )
 
+# Build dim_categories with new 'measure' column and grouped category_id
 dim_categories <- fact_book_publications %>%
-  distinct(category_type, category_value) %>%
-  arrange(category_type, category_value) %>%
-  mutate(category_id = row_number())
+  distinct(category_type, category_value, measure_type) %>%
+  arrange(category_type, category_value, measure_type) %>%
+  group_by(category_type) %>%
+  mutate(category_id = row_number()) %>%
+  ungroup() %>%
+  select(category_type, category_value, measure_type, category_id)
+
+# Reorder columns: category_type, category_value, measure, category_id
+colnames(dim_categories)[3] <- "measure"
+dim_categories <- dim_categories %>% select(category_type, category_value, measure, category_id)
 
 dim_measures <- fact_book_publications %>%
   distinct(measure_type) %>%
@@ -339,22 +347,6 @@ dbWriteTable(db_books_of_ukraine, "dim_years", dim_years, overwrite = TRUE)
 dbWriteTable(db_books_of_ukraine, "dim_categories", dim_categories, overwrite = TRUE)
 dbWriteTable(db_books_of_ukraine, "dim_measures", dim_measures, overwrite = TRUE)
 
-# Save raw sheets data for reference
-# ISSUE FIX: Use translated names instead of regex that removes Cyrillic characters
-for (sheet_name in names(sheets_data)) {
-  # Create consistent English table names for raw data storage
-  safe_name <- case_when(
-    sheet_name == "Рік" ~ "year",           # Year totals sheet
-    sheet_name == "Мова" ~ "language",      # Language dimension
-    sheet_name == "Тема" ~ "theme",         # Theme/subject dimension  
-    sheet_name == "Територія" ~ "territory", # Geographic dimension
-    sheet_name == "Призначення" ~ "purpose", # Purpose dimension
-    TRUE ~ str_replace_all(tolower(sheet_name), "[^a-zA-Z0-9]", "_") # Fallback for unexpected sheets
-  )
-  # Save with descriptive table name: raw_language, raw_theme, etc.
-  dbWriteTable(db_books_of_ukraine, paste0("raw_", safe_name), sheets_data[[sheet_name]], overwrite = TRUE)
-}
-
 # Save to CSV for external access
 write.csv(fact_book_publications, paste0(data_private_derived_csv, "fact_book_publications.csv"), row.names = FALSE)
 write.csv(dim_years, paste0(data_private_derived_csv, "dim_years.csv"), row.names = FALSE)
@@ -370,6 +362,7 @@ saveRDS(dim_measures, paste0(data_private_derived, "dim_measures.rds"))
 cat("   ✓ Saved to SQLite database\n")
 cat("   ✓ Saved to CSV files\n")
 cat("   ✓ Saved to RDS files\n")
+
 
 # Close database connection
 dbDisconnect(db_books_of_ukraine)

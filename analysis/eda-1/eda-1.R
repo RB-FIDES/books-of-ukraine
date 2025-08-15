@@ -1,19 +1,25 @@
-# ---- suppress-dplyr-globals --------------------------------------------------
-# Suppress R CMD check notes for dplyr pipelines
-utils::globalVariables(c(
-  "measure", "language", "value", "region_group", "total", "overall_total", "total_titles", "year", "geography", "actual_value", "title_max", "copy_max", "scaled_copy"
-))
-rm(list = ls(all.names = TRUE)) # Clear the memory of variables from previous run. This is not called by knitr, because it's above the first chunk.
+rm(list = ls(all.names = TRUE)) # Clear the memory
 cat("\014") # Clear the console
-# verify root location
 cat("Working directory: ", getwd()) # Must be set to Project Directory
-# Project Directory should be the root by default unless overwritten
+
+# Minimal cross-platform plot window function
+show_plot_window <- function(plot_obj, width = 10, height = 6) {
+  os_type <- Sys.info()["sysname"]
+  if (os_type == "Windows") {
+    windows(width = width, height = height)
+  } else if (os_type == "Darwin") {
+    x11(width = width, height = height)
+  } else {
+    x11(width = width, height = height)
+  }
+  print(plot_obj)
+  invisible(plot_obj)
+}
+
+local_root <- "./analysis/eda-1/"
+local_data <- paste0(local_root, "data-local/")
 
 # ---- load-packages -----------------------------------------------------------
-# Choose to be greedy: load only what's needed
-# Three ways, from least (1) to most(3) greedy:
-# -- 1.Attach these packages so their functions don't need to be qualified: 
-# http://r-pkgs.had.co.nz/namespace.html#search-path
 library(magrittr)
 library(ggplot2)   # graphs
 library(forcats)   # factors
@@ -33,135 +39,56 @@ library(RSQLite)   # SQLite database
 library(ggrepel)   # for text labels in ggplot2
 library(gridExtra) # for combining plots
 
-# ---- load-sources ------------------------------------------------------------
-base::source("./scripts/common-functions.R") # project-level
-base::source("./scripts/operational-functions.R") # project-level
+base::source("./scripts/common-functions.R")
+base::source("./scripts/operational-functions.R")
 
 # ---- declare-globals ---------------------------------------------------------
-local_root <- "./analysis/eda-1/"
-local_data <- paste0(local_root, "data-local/") # for local outputs
-
-if (!fs::dir_exists(local_data)) {fs::dir_create(local_data)}
-
 data_private_derived <- "./data-private/derived/eda-1/"
+if (!fs::dir_exists(local_data)) {fs::dir_create(local_data)}
 if (!fs::dir_exists(data_private_derived)) {fs::dir_create(data_private_derived)}
-
 prints_folder <- paste0(local_root, "prints/")
 if (!fs::dir_exists(prints_folder)) {fs::dir_create(prints_folder)}
 
 # Data paths
 data_manipulation_path <- "data-private/derived/manipulation/"
-sqlite_db_path <- paste0(data_manipulation_path, "SQLite/books-of-ukraine.sqlite")
 
-# Define analysis periods
-target_window_opens  <- as.Date("2005-01-01")
-target_window_closes <- as.Date("2023-12-31")
-target_window <- c(target_window_opens, target_window_closes)
-
-# ---- declare-functions -------------------------------------------------------
-# Custom function to check if data files exist
-check_data_availability <- function() {
-  files_to_check <- c(
-    paste0(data_manipulation_path, "ds_year.rds"),
-    paste0(data_manipulation_path, "ds_language.rds"),
-    paste0(data_manipulation_path, "ds_genre.rds"),
-    paste0(data_manipulation_path, "ds_pubtype.rds"),
-    paste0(data_manipulation_path, "ds_geography.rds")
-  )
-  
-  missing_files <- files_to_check[!file.exists(files_to_check)]
-  
-  if (length(missing_files) > 0) {
-    cat("Missing data files:\n")
-    cat(paste(missing_files, collapse = "\n"))
-    cat("\nPlease run manipulation/0-ellis.R first to generate the data.\n")
-    return(FALSE)
-  } else {
-    cat("All required data files are available.\n")
-    return(TRUE)
-  }
-}
-
-# Function to ensure plot device is properly set up for VS Code
-setup_plot_device <- function() {
-  # Check if we're in VS Code R terminal
-  if (Sys.getenv("VSCODE_PID") != "") {
-    # Force graphics device refresh
-    if (length(dev.list()) > 0) {
-      dev.off()
-    }
-    # Set up device for VS Code
-    options(vsc.plot = TRUE)
-  }
-}
-
-# Function to display plot with explicit device handling
-show_plot <- function(plot_obj) {
-  setup_plot_device()
-  print(plot_obj)
-  return(plot_obj)
-}
-
-# Function to display plot in separate window
-show_plot_window <- function(plot_obj, width = 10, height = 6) {
-  # Detect operating system and use appropriate graphics device
-  os_type <- Sys.info()["sysname"]
-  
-  if (os_type == "Windows") {
-    windows(width = width, height = height)
-  } else if (os_type == "Darwin") {  # macOS
-    # quartz(width = width, height = height) # Removed for cross-platform compatibility
-    x11(width = width, height = height)
-  } else {  # Linux and others
-    x11(width = width, height = height)
-  }
-  
-  print(plot_obj)
-  return(plot_obj)
-}
-
-# Alternative: Use dev.new() which is cross-platform
-show_plot_new_device <- function(plot_obj, width = 10, height = 6) {
-  dev.new(width = width, height = height)
-  print(plot_obj)
-  return(plot_obj)
-}
-
-# Function to load all datasets
-load_books_data <- function() {
-  if (!check_data_availability()) {
-    stop("Data files are missing. Please run manipulation/0-ellis.R first.")
-  }
-  
-  list(
-    ds_year = readRDS(paste0(data_manipulation_path, "ds_year.rds")),
-    ds_language = readRDS(paste0(data_manipulation_path, "ds_language.rds")),
-    ds_genre = readRDS(paste0(data_manipulation_path, "ds_genre.rds")),
-    ds_pubtype = readRDS(paste0(data_manipulation_path, "ds_pubtype.rds")),
-    ds_geography = readRDS(paste0(data_manipulation_path, "ds_geography.rds"))
-  )
-}
-
-# Function to connect to SQLite database
-connect_to_db <- function() {
-  if (file.exists(sqlite_db_path)) {
-    return(dbConnect(RSQLite::SQLite(), sqlite_db_path))
-  } else {
-    cat("SQLite database not found. Please run manipulation/0-ellis.R first.\n")
-    return(NULL)
-  }
-}
 
 # ---- load-data ---------------------------------------------------------------
-# Load all datasets
-books_data <- load_books_data()
 
-# Extract individual datasets for easier access
-ds_year <- books_data$ds_year
-ds_language <- books_data$ds_language
-ds_genre <- books_data$ds_genre
-ds_pubtype <- books_data$ds_pubtype
-ds_geography <- books_data$ds_geography
+# ---- import fact_book_publications and transform to long format tables ----
+# Prefer CSV, fallback to RDS if not found
+fact_book_path_csv <- paste0(data_manipulation_path, "CSV/fact_book_publications.csv")
+fact_book_path_rds <- paste0(data_manipulation_path, "fact_book_publications.rds")
+if (file.exists(fact_book_path_csv)) {
+  fact_book <- read.csv(fact_book_path_csv, stringsAsFactors = FALSE)
+  cat("Loaded fact_book_publications from CSV\n")
+} else if (file.exists(fact_book_path_rds)) {
+  fact_book <- readRDS(fact_book_path_rds)
+  cat("Loaded fact_book_publications from RDS\n")
+} else {
+  stop("fact_book_publications file not found. Please run manipulation/1-ellis.R first.")
+}
+
+# Transform fact_book into long-format tables
+ds_year <- fact_book %>%
+  filter(category_type == "total") %>%
+  select(year, measure = measure_type, value)
+
+ds_language <- fact_book %>%
+  filter(category_type == "language") %>%
+  select(year, language = category_value, measure = measure_type, value)
+
+ds_genre <- fact_book %>%
+  filter(category_type == "theme") %>%
+  select(year, genre = category_value, measure = measure_type, value)
+
+ds_pubtype <- fact_book %>%
+  filter(category_type == "purpose") %>%
+  select(year, pubtype = category_value, measure = measure_type, value)
+
+ds_geography <- fact_book %>%
+  filter(category_type == "territory") %>%
+  select(year, geography = category_value, measure = measure_type, value)
 
 # Optional: Connect to SQLite database for SQL queries
 # books_db <- connect_to_db()
@@ -509,3 +436,6 @@ g3 <-
   facet_wrap(~ geography, scales = "free_y")
 
 print(g3)  # Print the plot to console
+
+# Pause to keep plot windows open
+readline("Press [Enter] to exit and close all plot windows...")

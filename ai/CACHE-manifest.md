@@ -1,384 +1,244 @@
-# CACHE Manifest - Books of Ukraine Enhanced Database
 
-**Generated:** 2025-08-08 17:22:25.262773
-**Database:** books-of-ukraine-enhanced.sqlite
-**Total Tables:** 11
+# CACHE Manifest – Books of Ukraine Star Schema (from 0-ellis.R)
 
-## 📊 Enhanced Star Schema Architecture
-
-This database extends the core star schema with supplementary data sources.
-
-### �️ Architecture Overview
-
-```
-CORE (from 0-ellis.R)          ENHANCED (from 1-ellis.R)
-┌─────────────────────┐       ┌─────────────────────────┐
-│ fact_book_publications │    │ fact_enhanced           │
-│ dim_years              │ → │ ext_geography_*         │
-│ dim_categories         │    │ ext_future_*            │
-│ dim_measures           │    │ (preserves core intact) │
-│ raw_*                  │    └─────────────────────────┘
-└─────────────────────┘
-```
-
-### 🔗 Integration Strategy
-
-**CORE TABLES** (unchanged from 0-ellis.R):
-- `fact_book_publications`: Original publication data
-- `dim_*`: Core dimension tables
-- `raw_*`: Original source data
-
-**EXTENSION TABLES** (added by 1-ellis.R):
-- `ext_geography_publications`: Geographic/territorial data
-- `fact_enhanced`: Integrated view combining core + extensions
-
-**ANALYSIS RECOMMENDATION**: Use `fact_enhanced` for comprehensive analysis
+**Generated:** 2025-08-15
+**Database:** books-of-ukraine-long.sqlite
+**Tables:** fact_book_publications, dim_years, dim_categories, dim_measures
 
 ---
 
-## 📋 Table Catalog
+# CACHE Overview
 
-### 📊 fact_book_publications
+## FERRY LOAD PROCESS
 
-**FACT TABLE** - Core fact table from 0-ellis.R (publications only)
+The CACHE is populated by the 0-ellis.R script, which extracts, transforms, and loads data from Google Sheets into a star schema optimized for research analysis.
 
-- **Records:** 3,180
-- **Columns:** 5
-
-#### Column Structure
-
-| Column | Type | Description |
-|--------|------|-------------|
-| year | INTEGER | Publication year (2005-2024) |
-| category_type | TEXT | Category type (language, theme, territory, purpose, total) |
-| category_value | TEXT | Specific category value |
-| measure_type | TEXT | Measure type (title_count, copy_count) |
-| value | REAL | Numeric value for the measure |
+- **Source System**: Google Sheets (cleaned Ukrainian book publication data)
+- **Ferry Script**: manipulation/0-ellis.R
+- **Schema Organization**: Star schema (fact + dimensions)
+- **Output Format**: SQLite database, CSV, RDS
 
 ---
 
-### 📊 fact_enhanced
+## CACHE STRUCTURE
 
-**ENHANCED FACT TABLE** - Integrated fact table combining core publications with geographic and future extensions
+### Schema Organization
+- **Primary Schema**: books-of-ukraine-long.sqlite (single schema)
+- **Table Naming**: fact_*, dim_*
+- **Key Structure**: Standardized primary and foreign keys
+- **Data Types**: Consistent across tables
 
-- **Records:** 3,180
-- **Columns:** 5
-
-#### Column Structure
-
-| Column | Type | Description |
-|--------|------|-------------|
-| year | INTEGER | Publication year (2005-2024) |
-| category_type | TEXT | Category type (language, theme, territory, purpose, total) |
-| category_value | TEXT | Specific category value |
-| measure_type | TEXT | Measure type (title_count, copy_count) |
-| value | REAL | Numeric value for the measure |
+### Common Data Patterns
+- **Fact Table**: fact_book_publications (year, category_type, category_value, measure_type, value)
+- **Dimension Tables**: dim_years, dim_categories, dim_measures
 
 ---
 
-### 📊 dim_categories
+## CACHE TABLES
 
-**DIMENSION TABLE** - Dimension table: categories
+### Ferry Load Tables (Raw Import Layer)
 
-- **Records:** 91
-- **Columns:** 3
-
-#### Column Structure
-
-| Column | Type | Description |
-|--------|------|-------------|
-| category_type | TEXT | Category type (language, theme, territory, purpose, total) |
-| category_value | TEXT | Specific category value |
-| category_id | INTEGER | Dimension table identifier |
+| **Table Name**            | **Primary Key(s)**                | **Purpose**                        | **Source System** |
+|---------------------------|------------------------------------|-------------------------------------|-------------------|
+| **fact_book_publications**| year, category_type, category_value, measure_type | Core fact table: book publication counts by year, category, and measure | Google Sheets |
+| **dim_years**             | year_id                            | Year dimension                      | Derived |
+| **dim_categories**        | category_id                        | Category dimension                  | Derived |
+| **dim_measures**          | measure_id                         | Measure dimension                   | Derived |
 
 ---
 
-### 📊 dim_measures
+## Data Transformation Details
 
-**DIMENSION TABLE** - Dimension table: measures
+### fact_book_publications (Fact Table)
+- **Definition**: Long-format table of book publication counts by year, category, and measure
+- **Variables**: year, category_type, category_value, measure_type, value
+- **Key Features**:
+	- Each row = unique combination of year, category, and measure
+	- Supports time series, cross-sectional, and categorical analysis
+	- Data quality: cleaned, standardized, robust numeric conversion
 
-- **Records:** 2
-- **Columns:** 3
+### dim_years (Dimension Table)
+- **Definition**: Year dimension with additional attributes
+- **Variables**: year, year_id, decade, period
+- **Key Features**:
+	- Unique year_id for each year
+	- Decade and period groupings for temporal analysis
 
-#### Column Structure
+### dim_categories (Dimension Table)
+- **Definition**: Category dimension (language, theme, territory, purpose, total)
+- **Variables**: category_type, category_value, measure, category_id
+- **Key Features**:
+	- Unique category_id for each (category_type, category_value, measure)
+	- Supports flexible grouping and filtering
 
-| Column | Type | Description |
-|--------|------|-------------|
-| measure_type | TEXT | Measure type (title_count, copy_count) |
-| measure_id | INTEGER | Dimension table identifier |
-| measure_description | TEXT | Data field |
-
----
-
-### 📊 dim_years
-
-**DIMENSION TABLE** - Dimension table: years
-
-- **Records:** 20
-- **Columns:** 4
-
-#### Column Structure
-
-| Column | Type | Description |
-|--------|------|-------------|
-| year | INTEGER | Publication year (2005-2024) |
-| year_id | INTEGER | Dimension table identifier |
-| decade | TEXT | Data field |
-| period | TEXT | Data field |
+### dim_measures (Dimension Table)
+- **Definition**: Measure dimension (title_count, copy_count)
+- **Variables**: measure_type, measure_id, measure_description
+- **Key Features**:
+	- Unique measure_id for each measure_type
+	- Descriptions for analytical clarity
 
 ---
 
-### 📊 ext_geography_publications
+## Detailed Column Specifications
 
-**EXTENSION TABLE** - Geographic extension: publication counts by territory
+### fact_book_publications
+| **Column**      | **Data Type** | **Description**                                 |
+|-----------------|--------------|-------------------------------------------------|
+| year            | INTEGER      | Publication year (2005–2024)                    |
+| category_type   | TEXT         | Category type (language, theme, territory, purpose, total) |
+| category_value  | TEXT         | Specific category value                         |
+| measure_type    | TEXT         | Measure type (title_count, copy_count)          |
+| value           | REAL         | Numeric value for the measure                   |
 
-- **Records:** 580
-- **Columns:** 5
+### dim_years
+| **Column** | **Data Type** | **Description**                |
+|------------|--------------|--------------------------------|
+| year       | INTEGER      | Publication year               |
+| year_id    | INTEGER      | Unique year identifier         |
+| decade     | TEXT         | Decade grouping (e.g., 2010s)  |
+| period     | TEXT         | Period label (e.g., early_2010s) |
 
-#### Column Structure
+### dim_categories
+| **Column**      | **Data Type** | **Description**                                 |
+|-----------------|--------------|-------------------------------------------------|
+| category_type   | TEXT         | Category type (language, theme, territory, purpose, total) |
+| category_value  | TEXT         | Specific category value                         |
+| measure         | TEXT         | Measure type (title_count, copy_count)          |
+| category_id     | INTEGER      | Unique category identifier                      |
 
-| Column | Type | Description |
-|--------|------|-------------|
-| year | INTEGER | Publication year (2005-2024) |
-| category_type | TEXT | Category type (language, theme, territory, purpose, total) |
-| category_value | TEXT | Specific category value |
-| measure_type | TEXT | Measure type (title_count, copy_count) |
-| value | REAL | Numeric value for the measure |
-
----
-
-### 📊 raw_language
-
-**RAW DATA TABLE** - Original source data: language
-
-- **Records:** 74
-- **Columns:** 22
-
-#### Column Structure
-
-| Column | Type | Description |
-|--------|------|-------------|
-| pokaznik | TEXT | Data field |
-| mova | TEXT | Data field |
-| x2005 | REAL | Data field |
-| x2006 | REAL | Data field |
-| x2007 | REAL | Data field |
-| x2008 | REAL | Data field |
-| x2009 | REAL | Data field |
-| x2010 | REAL | Data field |
-| x2011 | REAL | Data field |
-| x2012 | REAL | Data field |
-| x2013 | REAL | Data field |
-| x2014 | REAL | Data field |
-| x2015 | REAL | Data field |
-| x2016 | REAL | Data field |
-| x2017 | REAL | Data field |
-| x2018 | REAL | Data field |
-| x2019 | REAL | Data field |
-| x2020 | REAL | Data field |
-| x2021 | REAL | Data field |
-| x2022 | REAL | Data field |
-| x2023 | REAL | Data field |
-| x2024 | REAL | Data field |
+### dim_measures
+| **Column**         | **Data Type** | **Description**                                 |
+|--------------------|--------------|-------------------------------------------------|
+| measure_type       | TEXT         | Measure type (title_count, copy_count)          |
+| measure_id         | INTEGER      | Unique measure identifier                       |
+| measure_description| TEXT         | Description of the measure                      |
 
 ---
 
-### 📊 raw_purpose
+## Cohort Definitions and Data Transformations
 
-**RAW DATA TABLE** - Original source data: purpose
+### BASE Cohort (Ferry Load Layer)
+- **Definition**: All book publications in Ukraine, 2005–2024, as recorded in the source Google Sheet
+- **Inclusion Logic**: All records meeting basic data quality and completeness criteria
+- **Usage**: Foundation for all subsequent analytical cohorts
 
-- **Records:** 28
-- **Columns:** 22
-
-#### Column Structure
-
-| Column | Type | Description |
-|--------|------|-------------|
-| pokaznik | TEXT | Data field |
-| priznacenna | TEXT | Data field |
-| x2005 | REAL | Data field |
-| x2006 | REAL | Data field |
-| x2007 | REAL | Data field |
-| x2008 | REAL | Data field |
-| x2009 | REAL | Data field |
-| x2010 | REAL | Data field |
-| x2011 | REAL | Data field |
-| x2012 | REAL | Data field |
-| x2013 | REAL | Data field |
-| x2014 | REAL | Data field |
-| x2015 | REAL | Data field |
-| x2016 | REAL | Data field |
-| x2017 | REAL | Data field |
-| x2018 | REAL | Data field |
-| x2019 | REAL | Data field |
-| x2020 | REAL | Data field |
-| x2021 | REAL | Data field |
-| x2022 | REAL | Data field |
-| x2023 | REAL | Data field |
-| x2024 | REAL | Data field |
+### PRIMARY Research Cohort (Analysis Layer)
+- **Definition**: Main research population with specific inclusion/exclusion criteria (e.g., by language, territory, or theme)
+- **Filters Applied**: Data quality, temporal boundaries, category-based selection
+- **Key Variables Added**: Derived measures, standardized categories, quality flags
 
 ---
 
-### 📊 raw_territory
+## Data Storage and Access
 
-**RAW DATA TABLE** - Original source data: territory
+### File Formats and Locations
 
-- **Records:** 52
-- **Columns:** 22
-
-#### Column Structure
-
-| Column | Type | Description |
-|--------|------|-------------|
-| pokaznik | TEXT | Data field |
-| teritoria | TEXT | Data field |
-| x2005 | REAL | Data field |
-| x2006 | REAL | Data field |
-| x2007 | REAL | Data field |
-| x2008 | REAL | Data field |
-| x2009 | REAL | Data field |
-| x2010 | REAL | Data field |
-| x2011 | REAL | Data field |
-| x2012 | REAL | Data field |
-| x2013 | REAL | Data field |
-| x2014 | REAL | Data field |
-| x2015 | REAL | Data field |
-| x2016 | REAL | Data field |
-| x2017 | REAL | Data field |
-| x2018 | REAL | Data field |
-| x2019 | REAL | Data field |
-| x2020 | REAL | Data field |
-| x2021 | REAL | Data field |
-| x2022 | REAL | Data field |
-| x2023 | REAL | Data field |
-| x2024 | REAL | Data field |
+| **Format**   | **Location**                                                        | **Purpose**                  |
+|--------------|---------------------------------------------------------------------|------------------------------|
+| Database     | data-private/derived/manipulation/SQLite/books-of-ukraine-long.sqlite | Primary storage for analysis |
+| CSV          | data-private/derived/manipulation/CSV/                              | Universal format for sharing |
+| RDS          | data-private/derived/manipulation/                                  | R-native format for analysis |
 
 ---
 
-### 📊 raw_theme
+## Usage Guidelines and Best Practices
 
-**RAW DATA TABLE** - Original source data: theme
+### Quick Start Tips
+1. Load and validate: `glimpse(ds); validate_cache_data(ds)`
+2. Check completeness: `ds %>% summarise_all(~sum(is.na(.)))`
+3. Start with fact_book_publications for population context
+4. Join strategically – use year, category_type, category_value, and measure_type as keys
 
-- **Records:** 26
-- **Columns:** 22
-
-#### Column Structure
-
-| Column | Type | Description |
-|--------|------|-------------|
-| pokaznik | TEXT | Data field |
-| tema | TEXT | Data field |
-| x2005 | REAL | Data field |
-| x2006 | REAL | Data field |
-| x2007 | REAL | Data field |
-| x2008 | REAL | Data field |
-| x2009 | REAL | Data field |
-| x2010 | REAL | Data field |
-| x2011 | REAL | Data field |
-| x2012 | REAL | Data field |
-| x2013 | REAL | Data field |
-| x2014 | REAL | Data field |
-| x2015 | REAL | Data field |
-| x2016 | REAL | Data field |
-| x2017 | REAL | Data field |
-| x2018 | REAL | Data field |
-| x2019 | REAL | Data field |
-| x2020 | REAL | Data field |
-| x2021 | REAL | Data field |
-| x2022 | REAL | Data field |
-| x2023 | REAL | Data field |
-| x2024 | REAL | Data field |
-
----
-
-### 📊 raw_year
-
-**RAW DATA TABLE** - Original source data: year
-
-- **Records:** 2
-- **Columns:** 21
-
-#### Column Structure
-
-| Column | Type | Description |
-|--------|------|-------------|
-| pokaznik | TEXT | Data field |
-| x2005 | REAL | Data field |
-| x2006 | REAL | Data field |
-| x2007 | REAL | Data field |
-| x2008 | REAL | Data field |
-| x2009 | REAL | Data field |
-| x2010 | REAL | Data field |
-| x2011 | REAL | Data field |
-| x2012 | REAL | Data field |
-| x2013 | REAL | Data field |
-| x2014 | REAL | Data field |
-| x2015 | REAL | Data field |
-| x2016 | REAL | Data field |
-| x2017 | REAL | Data field |
-| x2018 | REAL | Data field |
-| x2019 | REAL | Data field |
-| x2020 | REAL | Data field |
-| x2021 | REAL | Data field |
-| x2022 | REAL | Data field |
-| x2023 | REAL | Data field |
-| x2024 | REAL | Data field |
-
----
-
-## 🔍 Enhanced Query Patterns
-
-### Core vs Enhanced Analysis
-```sql
--- Core publications only
-SELECT year, SUM(value) as core_titles
-FROM fact_book_publications
-WHERE measure_type = 'title_count'
-GROUP BY year;
-
--- Enhanced with geographic data
-SELECT year, SUM(value) as enhanced_titles
-FROM fact_enhanced
-WHERE measure_type = 'title_count'
-GROUP BY year;
+```r
+# Essential validation function
+validate_cache_data <- function(ds) {
+	list(
+		missing_keys = sum(is.na(ds$year) | is.na(ds$category_type) | is.na(ds$category_value) | is.na(ds$measure_type)),
+		duplicates = ds %>% group_by_all() %>% filter(n() > 1) %>% nrow(),
+		value_range = if("value" %in% names(ds)) range(ds$value, na.rm = TRUE) else NULL
+	)
+}
 ```
 
-### Multi-Source Geographic Analysis
-```sql
--- Territory breakdown from extensions
-SELECT category_value as territory, SUM(value) as total_publications
-FROM fact_enhanced
-WHERE category_type = 'territory' AND measure_type = 'title_count'
-GROUP BY category_value
-ORDER BY total_publications DESC;
+### Table-Specific Usage
+
+#### **fact_book_publications** – Start Here
+**Tip**: Always profile population first
+```r
+fact_book_publications %>% count(category_type, measure_type) %>% 
+	mutate(pct = round(100 * n / sum(n), 1))
 ```
 
-### Extension Data Quality
-```sql
--- Compare core vs extension coverage
-SELECT 'core' as source, COUNT(*) as records
-FROM fact_book_publications
-UNION ALL
-SELECT 'enhanced' as source, COUNT(*) as records
-FROM fact_enhanced;
+#### **dim_years** – Temporal Patterns
+**Tip**: Use for time series grouping
+```r
+fact_book_publications %>% 
+	left_join(dim_years, by = "year") %>%
+	count(decade, period)
 ```
 
-## 🔧 Extension Development Guide
+#### **dim_categories** – Segmentation
+**Tip**: Use for flexible grouping and filtering
+```r
+fact_book_publications %>%
+	left_join(dim_categories, by = c("category_type", "category_value", "measure_type" = "measure"))
+```
 
-To add new data sources to the enhanced database:
-
-1. **Create extension table**: `ext_[source_name]`
-2. **Standardize schema**: Match fact table structure (year, category_type, category_value, measure_type, value)
-3. **Update fact_enhanced**: Combine new extension with existing data
-4. **Extend dimensions**: Add new categories/measures as needed
-5. **Document**: Update this manifest
-
-### Extension Naming Convention
-- `ext_geography_*`: Geographic/territorial data
-- `ext_economic_*`: Economic indicators
-- `ext_cultural_*`: Cultural events/metrics
-- `ext_institutional_*`: Institutional data
+#### **dim_measures** – Measure Descriptions
+**Tip**: Use for analytical clarity
+```r
+fact_book_publications %>%
+	left_join(dim_measures, by = "measure_type")
+```
 
 ---
 
-*Enhanced database maintains backward compatibility while enabling multi-source analysis.*
+## Key Research Applications
+
+### Primary Research Capabilities
+1. **Entity Characterization**: Profiling by language, theme, territory, purpose
+2. **Behavioral Analysis**: Publication trends over time
+3. **Classification Analysis**: Category-based segmentation and comparison
+4. **Longitudinal Tracking**: Time-based trajectory and change analysis
+5. **Cross-Sectional Comparison**: Point-in-time comparative analysis
+
+---
+
+## Data Lineage and Provenance
+
+- **Original Source**: Google Sheets (curated by project team)
+- **Ferry Script**: manipulation/0-ellis.R
+- **Processing Steps**: Data extraction, cleaning, transformation, star schema loading
+- **Version Control**: All processing steps tracked in Git
+
+---
+
+## Glossary of Terms
+
+- **Fact Table**: Central table containing measurements or events (here: book publications)
+- **Dimension Table**: Table describing attributes of facts (here: years, categories, measures)
+- **Star Schema**: Database design with a central fact table and surrounding dimension tables
+- **Measure**: Quantitative variable (e.g., title_count, copy_count)
+- **Category**: Categorical variable (e.g., language, theme, territory, purpose)
+
+---
+
+## Summary
+
+**What's Available:** Book publication counts by year, category, and measure, with supporting dimensions for flexible analysis.
+
+**Key Capabilities:** Time series, cross-sectional, and categorical analysis; cohort and segmentation studies.
+
+**Data Format and Structure:** Star schema (fact + dimensions), long format, analysis-ready.
+
+**Update Status:**
+- **Last Updated:** 2025-08-15
+- **Coverage:** 2005–2024
+- **Quality:** Cleaned, validated, no missing core variables
+
+**Getting Started:**
+1. Start with fact_book_publications for population understanding
+2. Use dim_years, dim_categories, dim_measures for grouping and filtering
+3. Join tables using keys as described above
+4. Validate findings across multiple perspectives

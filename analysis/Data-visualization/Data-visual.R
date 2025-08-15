@@ -1,25 +1,51 @@
-# ---- Load and convert all ds_ tables to wide format ----
+
+
+
 library(tidyr)
-
-# Helper: convert long to wide for each table
-ds_year      <- readRDS("data-private/derived/manipulation/ds_year.rds")
-ds_language  <- readRDS("data-private/derived/manipulation/ds_language.rds")
-ds_genre     <- readRDS("data-private/derived/manipulation/ds_genre.rds")
-ds_pubtype   <- readRDS("data-private/derived/manipulation/ds_pubtype.rds")
-ds_geography <- readRDS("data-private/derived/manipulation/ds_geography.rds")
-
-# Convert to wide format and assign _wide names
-ds_year_wide <- tidyr::pivot_wider(ds_year, names_from = measure, values_from = value)
-ds_language_wide <- tidyr::pivot_wider(ds_language, names_from = language, values_from = value)
-ds_genre_wide <- tidyr::pivot_wider(ds_genre, names_from = genre, values_from = value)
-ds_pubtype_wide <- tidyr::pivot_wider(ds_pubtype, names_from = pubtype, values_from = value)
-ds_geography_wide <- tidyr::pivot_wider(ds_geography, names_from = geography, values_from = value)
-
-rm(ds_year, ds_language, ds_genre, ds_pubtype, ds_geography)
-# Introduction to the project books-of-ukraine
-# in this folder I want to do a review to the given tables 
 library(dplyr)
 library(ggplot2)
+library(tidyverse)
+
+fact_book_publications <- read.csv("data-private/derived/manipulation/CSV/fact_book_publications.csv")
+
+# ds_year_wide: year x measure (wide)
+ds_year_wide <- fact_book_publications %>%
+  rename(measure = measure_type) %>%
+  group_by(year, measure) %>%
+  summarise(value = sum(value, na.rm = TRUE), .groups = "drop") %>%
+  tidyr::pivot_wider(names_from = measure, values_from = value)
+
+# ds_pubtype_wide: year x pubtype (wide by purpose)
+ds_pubtype_wide <- fact_book_publications %>%
+  filter(category_type == "purpose") %>%
+  rename(measure = measure_type) %>%
+  group_by(year, pubtype = category_value, measure) %>%
+  summarise(value = sum(value, na.rm = TRUE), .groups = "drop") %>%
+  tidyr::pivot_wider(names_from = pubtype, values_from = value)
+
+# ds_language_wide: year x language (wide by language)
+ds_language_wide <- fact_book_publications %>%
+  filter(category_type == "language") %>%
+  rename(measure = measure_type) %>%
+  group_by(year, language = category_value, measure) %>%
+  summarise(value = sum(value, na.rm = TRUE), .groups = "drop") %>%
+  tidyr::pivot_wider(names_from = language, values_from = value)
+
+# ds_genre_wide: year x genre (wide by theme)
+ds_genre_wide <- fact_book_publications %>%
+  filter(category_type == "theme") %>%
+  rename(measure = measure_type) %>%
+  group_by(year, genre = category_value, measure) %>%
+  summarise(value = sum(value, na.rm = TRUE), .groups = "drop") %>%
+  tidyr::pivot_wider(names_from = genre, values_from = value)
+
+# ds_geography_wide: year x territory (wide by territory)
+ds_geography_wide <- fact_book_publications %>%
+  filter(category_type == "territory") %>%
+  rename(measure = measure_type) %>%
+  group_by(year, territory = category_value, measure) %>%
+  summarise(value = sum(value, na.rm = TRUE), .groups = "drop") %>%
+  tidyr::pivot_wider(names_from = territory, values_from = value)
 
 # ----------------------------------------- DS_YEAR -------------------------------------------------------------
 # in this table we can observe the number of titles and the number of copies for each year from 2005

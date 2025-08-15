@@ -2445,6 +2445,78 @@ extract_files_from_content <- function(content) {
 }
 
 # ==============================================================================
+# ELLIS SCRIPT GENERATION FUNCTION
+# ======================================================================
+# This function creates a new ellis script (N-ellis.R) by extracting specific
+# sections from the previous ellis script (N-1-ellis.R), preserving format and spacing.
+# Sections copied: load-packages, generate-documentation, cleanup, validate-enhanced-database,
+# and the CASHE-MANIFEST-N section (if present).
+
+create_next_ellis <- function() {
+  manip_dir <- "manipulation"
+  # List all files matching N-ellis.R, but ignore 10-ellis.R
+  ellis_files <- list.files(manip_dir, pattern = "^[0-9]+-ellis\\.R$", full.names = TRUE)
+  # Exclude 10-ellis.R from consideration
+  ellis_files <- ellis_files[!grepl("(^|/)10-ellis\\.R$", ellis_files)]
+  if (length(ellis_files) == 0) {
+    stop("No ellis scripts found in manipulation/. At least 0-ellis.R or 1-ellis.R required.")
+  }
+  # Find the highest N (excluding 10)
+  ellis_nums <- as.integer(gsub("-ellis\\.R$", "", basename(ellis_files)))
+  last_n <- max(ellis_nums, na.rm = TRUE)
+  last_file <- file.path(manip_dir, paste0(last_n, "-ellis.R"))
+  next_n <- last_n + 1
+  next_file <- file.path(manip_dir, paste0(next_n, "-ellis.R"))
+  # Read previous ellis script
+  lines <- readLines(last_file, warn = FALSE)
+  # Section headers to extract
+  section_patterns <- c(
+    "# ---- load-packages",
+    "# ---- generate-documentation",
+    "# ---- cleanup",
+    "# ---- validate-enhanced-database",
+    paste0("CASHE-MANIFEST-", next_n)
+  )
+  # Find all section header lines
+  section_indices <- lapply(section_patterns, function(pat) grep(pat, lines, fixed = TRUE))
+  # Only keep found sections
+  found_sections <- which(sapply(section_indices, function(idx) length(idx) > 0))
+  if (length(found_sections) == 0) stop("No target sections found in previous ellis script.")
+  # For each found section, extract from header to next header or end
+  get_section <- function(start_idx) {
+    # Find next section header after start_idx
+    next_header <- which(grepl("^# ---- ", lines) & seq_along(lines) > start_idx)
+    end_idx <- if (length(next_header) > 0) min(next_header) - 1 else length(lines)
+    lines[start_idx:end_idx]
+  }
+  # For CASHE-MANIFEST, allow any line containing it
+  get_manifest_section <- function(pat) {
+    idx <- grep(pat, lines, fixed = TRUE)
+    if (length(idx) == 0) return(NULL)
+    # Take block of lines around this header (up to next section or end)
+    get_section(idx[1])
+  }
+  # Build new script content
+  new_content <- c()
+  for (i in found_sections) {
+    pat <- section_patterns[i]
+    if (grepl("CASHE-MANIFEST", pat)) {
+      sec <- get_manifest_section(pat)
+    } else {
+      idx <- section_indices[[i]][1]
+      sec <- get_section(idx)
+    }
+    if (!is.null(sec)) {
+      # Add a blank line before each section except the first
+      if (length(new_content) > 0) new_content <- c(new_content, "")
+      new_content <- c(new_content, sec)
+    }
+  }
+  # Write to new ellis script
+  writeLines(new_content, next_file)
+  message("Created ", next_file, " with selected sections from ", last_file)
+  invisible(next_file)
+}
 
   copilot_context_initialized <- TRUE
 }
