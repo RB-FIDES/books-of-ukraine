@@ -1,64 +1,55 @@
-# CACHE Manifest - Books of Ukraine Enhanced Database
+# CACHE Manifest - Books of Ukraine Stage 1 Database
 
-**Generated:** 2025-08-10 14:57:19.715231
-**Database:** books-of-ukraine-enhanced.sqlite
+**Generated:** 2025-08-17 08:15:44.006602
+**Database:** books-of-ukraine-1.sqlite
 **Total Tables:** 9
 
-## 📊 Enhanced Star Schema Architecture
+## 📊 Stage 1 Database Architecture
 
-This database extends the core star schema with supplementary data sources.
+Stage 1 integrates core books data with Ukrainian administrative context.
 
-### �️ Architecture Overview
+### 🏗️ Architecture Overview
 
 ```
-CORE (from 0-ellis.R)          ENHANCED (from 1-ellis.R)
-┌─────────────────────┐       ┌─────────────────────────┐
-│ fact_book_publications │    │ fact_enhanced           │
-│ dim_years              │ → │ ext_geography_*         │
-│ dim_categories         │    │ ext_future_*            │
-│ dim_measures           │    │ (preserves core intact) │
-│ raw_*                  │    └─────────────────────────┘
-└─────────────────────┘
+CORE DATA (from Stage 0)           ADMINISTRATIVE DATA (Stage 1)
+┌─────────────────────────┐       ┌─────────────────────────────┐
+│ fact_book_publications  │  →  │ ua_oblasts_aggregated       │
+│ dim_years              │       │ dim_oblasts                 │
+│ dim_categories         │       │ dim_regions                 │
+│ dim_measures           │       │ fact_hromadas               │
+└─────────────────────────┘       └─────────────────────────────┘
 ```
 
 ### 🔗 Integration Strategy
 
-**CORE TABLES** (unchanged from 0-ellis.R):
-- `fact_book_publications`: Original publication data
-- `dim_*`: Core dimension tables
-- `raw_*`: Original source data
+**CORE TABLES** (preserved from Stage 0):
+- All original book publication data tables
+- Complete star schema from 0-ellis.R
 
-**EXTENSION TABLES** (added by 1-ellis.R):
-- `ext_geography_publications`: Geographic/territorial data
-- `fact_enhanced`: Integrated view combining core + extensions
+**ADMINISTRATIVE TABLES** (added in Stage 1):
+- `ua_oblasts_aggregated`: Oblast-level indicators for mapping
+- `dim_oblasts`: Oblast dimension with metadata
+- `dim_regions`: Regional classification dimension
+- `fact_hromadas`: Hromada-level fact table for detailed analysis
 
-**ANALYSIS RECOMMENDATION**: Use `fact_enhanced` for comprehensive analysis
+**ANALYSIS RECOMMENDATION**: Use combined tables for territorial analysis
 
 ---
 
 ## 📋 Table Catalog
 
-### 🏪 Bookstore Count 2023 Extension
-
-- **Measure:** `bookstore_count` (number of bookstores by region, 2023)
-- **Regions:** Kyiv, Lvivska, Kharkivska, Dnipropetrovska, Odeska, etc.
-- **Source:** Screenshot + Forbes data, provided August 2025
-- **Integration:** Added to `dim_measures`, `dim_categories`, and `fact_book_publications`
-- **CSV/RDS:** Updated in `fact_book_publications.csv` and `.rds`
-
-
 ### 📊 fact_book_publications
 
-**FACT TABLE** - Core fact table from 0-ellis.R (publications only)
+**FACT TABLE** - Core fact table: book publication data by year, category, measure
 
-- **Records:** 3,663
+- **Records:** 3,640
 - **Columns:** 5
 
 #### Column Structure
 
 | Column | Type | Description |
 |--------|------|-------------|
-| year | INTEGER | Publication year (2005-2024) |
+| year | INTEGER | Year (2005-2024 for books, 2020-2022 for admin data) |
 | category_type | TEXT | Category type (language, theme, territory, purpose, total) |
 | category_value | TEXT | Specific category value |
 | measure_type | TEXT | Measure type (title_count, copy_count) |
@@ -66,11 +57,41 @@ CORE (from 0-ellis.R)          ENHANCED (from 1-ellis.R)
 
 ---
 
+### 📊 fact_hromadas
+
+**FACT TABLE** - Hromada-level detailed data for territorial analysis
+
+- **Records:** 1,438
+- **Columns:** 16
+
+#### Column Structure
+
+| Column | Type | Description |
+|--------|------|-------------|
+| hromada_code | TEXT | Data field |
+| hromada_name | TEXT | Data field |
+| oblast_code | TEXT | Data field |
+| oblast_name_en | TEXT | Oblast name in English |
+| raion_name | TEXT | Data field |
+| type | TEXT | Data field |
+| total_popultaion_2022 | REAL | Data field |
+| square | REAL | Data field |
+| population_density | REAL | Data field |
+| income_per_capita_2021 | REAL | Data field |
+| income_per_capita_2022 | REAL | Data field |
+| income_change_pct | REAL | Data field |
+| lat_center | REAL | Data field |
+| lon_center | REAL | Data field |
+| travel_time | REAL | Data field |
+| oblast_id | INTEGER | Dimension table identifier |
+
+---
+
 ### 📊 dim_categories
 
 **DIMENSION TABLE** - Dimension table: categories
 
-- **Records:** 205
+- **Records:** 182
 - **Columns:** 4
 
 #### Column Structure
@@ -80,7 +101,7 @@ CORE (from 0-ellis.R)          ENHANCED (from 1-ellis.R)
 | category_type | TEXT | Category type (language, theme, territory, purpose, total) |
 | category_value | TEXT | Specific category value |
 | measure | TEXT | Data field |
-| category_id | REAL | Dimension table identifier |
+| category_id | INTEGER | Dimension table identifier |
 
 ---
 
@@ -88,7 +109,7 @@ CORE (from 0-ellis.R)          ENHANCED (from 1-ellis.R)
 
 **DIMENSION TABLE** - Dimension table: measures
 
-- **Records:** 3
+- **Records:** 2
 - **Columns:** 3
 
 #### Column Structure
@@ -96,8 +117,46 @@ CORE (from 0-ellis.R)          ENHANCED (from 1-ellis.R)
 | Column | Type | Description |
 |--------|------|-------------|
 | measure_type | TEXT | Measure type (title_count, copy_count) |
-| measure_id | REAL | Dimension table identifier |
+| measure_id | INTEGER | Dimension table identifier |
 | measure_description | TEXT | Data field |
+
+---
+
+### 📊 dim_oblasts
+
+**DIMENSION TABLE** - Oblast dimension with geographic and administrative metadata
+
+- **Records:** 24
+- **Columns:** 7
+
+#### Column Structure
+
+| Column | Type | Description |
+|--------|------|-------------|
+| oblast_code | TEXT | Data field |
+| oblast_name_en | TEXT | Oblast name in English |
+| region_en | TEXT | Data field |
+| region_type | TEXT | Regional classification (Western, Eastern, etc.) |
+| oblast_id | INTEGER | Dimension table identifier |
+| is_capital_region | INTEGER | Data field |
+| is_border_oblast | INTEGER | Data field |
+
+---
+
+### 📊 dim_regions
+
+**DIMENSION TABLE** - Regional classification (West, East, Center, South)
+
+- **Records:** 5
+- **Columns:** 3
+
+#### Column Structure
+
+| Column | Type | Description |
+|--------|------|-------------|
+| region_en | TEXT | Data field |
+| region_type | TEXT | Regional classification (Western, Eastern, etc.) |
+| region_id | INTEGER | Dimension table identifier |
 
 ---
 
@@ -112,245 +171,217 @@ CORE (from 0-ellis.R)          ENHANCED (from 1-ellis.R)
 
 | Column | Type | Description |
 |--------|------|-------------|
-| year | INTEGER | Publication year (2005-2024) |
+| year | INTEGER | Year (2005-2024 for books, 2020-2022 for admin data) |
 | year_id | INTEGER | Dimension table identifier |
 | decade | TEXT | Data field |
 | period | TEXT | Data field |
 
 ---
 
-### 📊 raw_language
+### 📊 ua_oblasts_aggregated
 
-**RAW DATA TABLE** - Original source data: language
+**UKRAINIAN ADMINISTRATIVE TABLE** - Oblast-level aggregated indicators for choropleth mapping
 
-- **Records:** 74
-- **Columns:** 22
-
-#### Column Structure
-
-| Column | Type | Description |
-|--------|------|-------------|
-| pokaznik | TEXT | Data field |
-| mova | TEXT | Data field |
-| x2005 | REAL | Data field |
-| x2006 | REAL | Data field |
-| x2007 | REAL | Data field |
-| x2008 | REAL | Data field |
-| x2009 | REAL | Data field |
-| x2010 | REAL | Data field |
-| x2011 | REAL | Data field |
-| x2012 | REAL | Data field |
-| x2013 | REAL | Data field |
-| x2014 | REAL | Data field |
-| x2015 | REAL | Data field |
-| x2016 | REAL | Data field |
-| x2017 | REAL | Data field |
-| x2018 | REAL | Data field |
-| x2019 | REAL | Data field |
-| x2020 | REAL | Data field |
-| x2021 | REAL | Data field |
-| x2022 | REAL | Data field |
-| x2023 | REAL | Data field |
-| x2024 | REAL | Data field |
-
----
-
-### 📊 raw_purpose
-
-**RAW DATA TABLE** - Original source data: purpose
-
-- **Records:** 28
-- **Columns:** 22
+- **Records:** 24
+- **Columns:** 20
 
 #### Column Structure
 
 | Column | Type | Description |
 |--------|------|-------------|
-| pokaznik | TEXT | Data field |
-| priznacenna | TEXT | Data field |
-| x2005 | REAL | Data field |
-| x2006 | REAL | Data field |
-| x2007 | REAL | Data field |
-| x2008 | REAL | Data field |
-| x2009 | REAL | Data field |
-| x2010 | REAL | Data field |
-| x2011 | REAL | Data field |
-| x2012 | REAL | Data field |
-| x2013 | REAL | Data field |
-| x2014 | REAL | Data field |
-| x2015 | REAL | Data field |
-| x2016 | REAL | Data field |
-| x2017 | REAL | Data field |
-| x2018 | REAL | Data field |
-| x2019 | REAL | Data field |
-| x2020 | REAL | Data field |
-| x2021 | REAL | Data field |
-| x2022 | REAL | Data field |
-| x2023 | REAL | Data field |
-| x2024 | REAL | Data field |
+| oblast_name_en | TEXT | Oblast name in English |
+| oblast_code | TEXT | Data field |
+| region_en | TEXT | Data field |
+| n_hromadas | INTEGER | Data field |
+| n_settlements | REAL | Data field |
+| total_population | REAL | Total population (2022) |
+| urban_population | REAL | Data field |
+| avg_population_density | REAL | Data field |
+| urbanization_pct | REAL | Percentage of urban population |
+| total_area | REAL | Data field |
+| avg_travel_time | REAL | Data field |
+| total_income_2021 | REAL | Data field |
+| total_income_2022 | REAL | Data field |
+| avg_income_per_capita_2021 | REAL | Data field |
+| avg_income_per_capita_2022 | REAL | Average income per capita in UAH (2022) |
+| pct_war_affected | REAL | Data field |
+| oblast_population_density | REAL | Data field |
+| income_growth_pct | REAL | Data field |
+| avg_hromada_size | REAL | Data field |
+| region_type | TEXT | Regional classification (Western, Eastern, etc.) |
 
 ---
 
-### 📊 raw_territory
+### 📊 raw_ua_hromadas
 
-**RAW DATA TABLE** - Original source data: territory
+**RAW DATA TABLE** - Raw data preservation for reference
 
-- **Records:** 75
-- **Columns:** 22
+- **Records:** 1,469
+- **Columns:** 114
 
 #### Column Structure
 
 | Column | Type | Description |
 |--------|------|-------------|
-| pokaznik | TEXT | Data field |
-| teritoria | TEXT | Data field |
-| x2005 | REAL | Data field |
-| x2006 | REAL | Data field |
-| x2007 | REAL | Data field |
-| x2008 | REAL | Data field |
-| x2009 | REAL | Data field |
-| x2010 | REAL | Data field |
-| x2011 | REAL | Data field |
-| x2012 | REAL | Data field |
-| x2013 | REAL | Data field |
-| x2014 | REAL | Data field |
-| x2015 | REAL | Data field |
-| x2016 | REAL | Data field |
-| x2017 | REAL | Data field |
-| x2018 | REAL | Data field |
-| x2019 | REAL | Data field |
-| x2020 | REAL | Data field |
-| x2021 | REAL | Data field |
-| x2022 | REAL | Data field |
-| x2023 | REAL | Data field |
-| x2024 | REAL | Data field |
+| hromada_code | TEXT | Data field |
+| hromada_name | TEXT | Data field |
+| raion_code | TEXT | Data field |
+| raion_name | TEXT | Data field |
+| oblast_code | TEXT | Data field |
+| oblast_name | TEXT | Data field |
+| type | TEXT | Data field |
+| hromada_full_name | TEXT | Data field |
+| oblast_center | REAL | Data field |
+| hromada_center_code | TEXT | Data field |
+| hromada_center | TEXT | Data field |
+| lat_center | REAL | Data field |
+| lon_center | REAL | Data field |
+| travel_time | REAL | Data field |
+| n_settlements | REAL | Data field |
+| square | REAL | Data field |
+| distance_to_russia_belarus | REAL | Data field |
+| distance_to_russia | REAL | Data field |
+| distance_to_eu | REAL | Data field |
+| mountain_hromada | REAL | Data field |
+| near_seas | REAL | Data field |
+| bordering_hromadas | REAL | Data field |
+| hromadas_30km_from_border | REAL | Data field |
+| hromadas_30km_russia_belarus | REAL | Data field |
+| buffer_nat_15km | REAL | Data field |
+| buffer_int_15km | REAL | Data field |
+| occipied_before_2022 | REAL | Data field |
+| total_popultaion_2022 | REAL | Data field |
+| urban_popultaion_2022.x | REAL | Data field |
+| urban_pct | REAL | Data field |
+| budget_code | REAL | Data field |
+| budget_name | TEXT | Data field |
+| oblast_name_en | TEXT | Oblast name in English |
+| region_en | TEXT | Data field |
+| region_code_en | TEXT | Data field |
+| income_total_2021 | REAL | Data field |
+| income_transfert_2021 | REAL | Data field |
+| income_military_2021 | REAL | Data field |
+| income_pdfo_2021 | REAL | Data field |
+| income_unified_tax_2021 | REAL | Data field |
+| income_property_tax_2021 | REAL | Data field |
+| income_excise_duty_2021 | REAL | Data field |
+| income_own_2021 | REAL | Data field |
+| own_income_prop_2021 | REAL | Data field |
+| transfert_prop_2021 | REAL | Data field |
+| military_tax_prop_2021 | REAL | Data field |
+| pdfo_prop_2021 | REAL | Data field |
+| unified_tax_prop_2021 | REAL | Data field |
+| property_tax_prop_2021 | REAL | Data field |
+| excise_duty_prop_2021 | REAL | Data field |
+| own_income_change | REAL | Data field |
+| own_prop_change | REAL | Data field |
+| total_income_change | REAL | Data field |
+| income_own_2022 | REAL | Data field |
+| income_total_2022 | REAL | Data field |
+| income_transfert_2022 | REAL | Data field |
+| own_income_no_mil_change_YoY_jan_feb | REAL | Data field |
+| own_income_no_mil_change_YoY_jun_aug | REAL | Data field |
+| own_income_no_mil_change_YoY_mar_may | REAL | Data field |
+| own_income_no_mil_change_YoY_adapt | REAL | Data field |
+| dfrr_executed | REAL | Data field |
+| turnout_2020 | REAL | Data field |
+| sex_head | TEXT | Data field |
+| age_head | REAL | Data field |
+| education_head | TEXT | Data field |
+| incumbent | REAL | Data field |
+| rda | REAL | Data field |
+| not_from_here | REAL | Data field |
+| party | TEXT | Data field |
+| enterpreuner | REAL | Data field |
+| unemployed | REAL | Data field |
+| priv_work | REAL | Data field |
+| polit_work | REAL | Data field |
+| communal_work | REAL | Data field |
+| ngo_work | REAL | Data field |
+| party_national_winner | REAL | Data field |
+| no_party | REAL | Data field |
+| male | REAL | Data field |
+| high_educ | REAL | Data field |
+| sum_osbb_2020 | REAL | Data field |
+| edem_total | REAL | Data field |
+| edem_petitions | REAL | Data field |
+| edem_consultations | REAL | Data field |
+| edem_participatory_budget | REAL | Data field |
+| edem_open_hromada | REAL | Data field |
+| youth_councils | REAL | Data field |
+| youth_centers | REAL | Data field |
+| business_support_centers | REAL | Data field |
+| creation_date | REAL | Data field |
+| creation_year | REAL | Data field |
+| time_before_24th | REAL | Data field |
+| voluntary | REAL | Data field |
+| war_zone_27_04_2022 | REAL | Data field |
+| war_zone_20_06_2022 | REAL | Data field |
+| war_zone_23_08_2022 | REAL | Data field |
+| war_zone_10_10_2022 | REAL | Data field |
+| passangers_2021 | REAL | Data field |
+| total_declarations | REAL | Data field |
+| female_declarations | REAL | Data field |
+| male_declarations | REAL | Data field |
+| female_pct_declarations | REAL | Data field |
+| male_pct_declarations | REAL | Data field |
+| urban_declarations | REAL | Data field |
+| rural_declarations | REAL | Data field |
+| urban_pct_declarations | REAL | Data field |
+| rural_pct_declarations | REAL | Data field |
+| youth_declarations | REAL | Data field |
+| youth_pct_declarations | REAL | Data field |
+| working_age_total_declarations | REAL | Data field |
+| working_age_pct_declarations | REAL | Data field |
+| urban_popultaion_2022.y | REAL | Data field |
+| declarations_pct | REAL | Data field |
+| urban_declarations_pct | REAL | Data field |
+| train_station | REAL | Data field |
 
 ---
 
-### 📊 raw_theme
+## 🔍 Stage 1 Query Patterns
 
-**RAW DATA TABLE** - Original source data: theme
-
-- **Records:** 26
-- **Columns:** 22
-
-#### Column Structure
-
-| Column | Type | Description |
-|--------|------|-------------|
-| pokaznik | TEXT | Data field |
-| tema | TEXT | Data field |
-| x2005 | REAL | Data field |
-| x2006 | REAL | Data field |
-| x2007 | REAL | Data field |
-| x2008 | REAL | Data field |
-| x2009 | REAL | Data field |
-| x2010 | REAL | Data field |
-| x2011 | REAL | Data field |
-| x2012 | REAL | Data field |
-| x2013 | REAL | Data field |
-| x2014 | REAL | Data field |
-| x2015 | REAL | Data field |
-| x2016 | REAL | Data field |
-| x2017 | REAL | Data field |
-| x2018 | REAL | Data field |
-| x2019 | REAL | Data field |
-| x2020 | REAL | Data field |
-| x2021 | REAL | Data field |
-| x2022 | REAL | Data field |
-| x2023 | REAL | Data field |
-| x2024 | REAL | Data field |
-
----
-
-### 📊 raw_year
-
-**RAW DATA TABLE** - Original source data: year
-
-- **Records:** 2
-- **Columns:** 21
-
-#### Column Structure
-
-| Column | Type | Description |
-|--------|------|-------------|
-| pokaznik | TEXT | Data field |
-| x2005 | REAL | Data field |
-| x2006 | REAL | Data field |
-| x2007 | REAL | Data field |
-| x2008 | REAL | Data field |
-| x2009 | REAL | Data field |
-| x2010 | REAL | Data field |
-| x2011 | REAL | Data field |
-| x2012 | REAL | Data field |
-| x2013 | REAL | Data field |
-| x2014 | REAL | Data field |
-| x2015 | REAL | Data field |
-| x2016 | REAL | Data field |
-| x2017 | REAL | Data field |
-| x2018 | REAL | Data field |
-| x2019 | REAL | Data field |
-| x2020 | REAL | Data field |
-| x2021 | REAL | Data field |
-| x2022 | REAL | Data field |
-| x2023 | REAL | Data field |
-| x2024 | REAL | Data field |
-
----
-
-## 🔍 Enhanced Query Patterns
-
-### Core vs Enhanced Analysis
+### Core Books Analysis
 ```sql
--- Core publications only
-SELECT year, SUM(value) as core_titles
+-- Basic publication trends
+SELECT year, SUM(value) as total_titles
 FROM fact_book_publications
-WHERE measure_type = 'title_count'
-GROUP BY year;
-
--- Enhanced with geographic data
-SELECT year, SUM(value) as enhanced_titles
-FROM fact_enhanced
-WHERE measure_type = 'title_count'
+WHERE measure_type = 'title_count' AND category_type = 'total'
 GROUP BY year;
 ```
 
-### Multi-Source Geographic Analysis
+### Territorial Administrative Analysis
 ```sql
--- Territory breakdown from extensions
-SELECT category_value as territory, SUM(value) as total_publications
-FROM fact_enhanced
-WHERE category_type = 'territory' AND measure_type = 'title_count'
-GROUP BY category_value
-ORDER BY total_publications DESC;
+-- Oblast population and income ranking
+SELECT oblast_name_en, total_population, avg_income_per_capita_2022,
+       region_type
+FROM ua_oblasts_aggregated
+ORDER BY avg_income_per_capita_2022 DESC;
 ```
 
-### Extension Data Quality
+### Cross-Domain Integration Opportunities
 ```sql
--- Compare core vs extension coverage
-SELECT 'core' as source, COUNT(*) as records
+-- Potential joins for future analysis
+-- (Note: territorial book data vs administrative territories may need mapping)
+SELECT DISTINCT category_value
 FROM fact_book_publications
-UNION ALL
-SELECT 'enhanced' as source, COUNT(*) as records
-FROM fact_enhanced;
+WHERE category_type = 'territory'
+ORDER BY category_value;
 ```
 
-## 🔧 Extension Development Guide
+## 🔧 Stage 1 Extension Notes
 
-To add new data sources to the enhanced database:
+**Integration Opportunities:**
+- Map book publication territories to administrative oblasts
+- Correlate publishing activity with economic indicators
+- Analyze regional patterns in language preference vs demographics
 
-1. **Create extension table**: `ext_[source_name]`
-2. **Standardize schema**: Match fact table structure (year, category_type, category_value, measure_type, value)
-3. **Update fact_enhanced**: Combine new extension with existing data
-4. **Extend dimensions**: Add new categories/measures as needed
-5. **Document**: Update this manifest
-
-### Extension Naming Convention
-- `ext_geography_*`: Geographic/territorial data
-- `ext_economic_*`: Economic indicators
-- `ext_cultural_*`: Cultural events/metrics
-- `ext_institutional_*`: Institutional data
+**Data Sources:**
+- **Books Data**: Original Ukrainian publishing statistics
+- **Administrative Data**: KSE Decentralization Reform project
+- **Geographic Coverage**: All Ukrainian oblasts with 2020-2022 indicators
 
 ---
 
-*Enhanced database maintains backward compatibility while enabling multi-source analysis.*
+*Stage 1 database provides foundation for territorial analysis and cross-domain insights.*

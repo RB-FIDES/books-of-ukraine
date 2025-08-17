@@ -61,13 +61,34 @@ foreach ($path in $ukraineDataPaths) {
     }
 }
 
-# Check main analysis database
-if (Test-Path "data-private/derived/manipulation/SQLite/books-of-ukraine-long.sqlite") {
-    $dbSize = (Get-Item "data-private/derived/manipulation/SQLite/books-of-ukraine-long.sqlite").Length
+# Check Ellis pipeline databases
+Write-Host "`n=== Ellis Pipeline Databases ===" -ForegroundColor Cyan
+
+# Stage 0: Core database (from 0-ellis.R)
+if (Test-Path "data-private/derived/manipulation/SQLite/books-of-ukraine-0.sqlite") {
+    $dbSize = (Get-Item "data-private/derived/manipulation/SQLite/books-of-ukraine-0.sqlite").Length
     $dbSizeMB = [math]::Round($dbSize / 1MB, 2)
-    Write-Host "OK Main database found ($dbSizeMB MB)" -ForegroundColor Green
+    Write-Host "OK Stage 0 (Core) database found ($dbSizeMB MB)" -ForegroundColor Green
 } else {
-    Write-Host "WARNING: Main database not found" -ForegroundColor Yellow
+    Write-Host "MISSING Stage 0 database (will be created by 0-ellis.R)" -ForegroundColor Yellow
+}
+
+# Stage 1: UA Admin database (from 1-ellis-ua-admin.R)  
+if (Test-Path "data-private/derived/manipulation/SQLite/books-of-ukraine-1.sqlite") {
+    $dbSize = (Get-Item "data-private/derived/manipulation/SQLite/books-of-ukraine-1.sqlite").Length
+    $dbSizeMB = [math]::Round($dbSize / 1MB, 2)
+    Write-Host "OK Stage 1 (UA Admin) database found ($dbSizeMB MB)" -ForegroundColor Green
+} else {
+    Write-Host "MISSING Stage 1 database (will be created by 1-ellis-ua-admin.R)" -ForegroundColor Yellow
+}
+
+# Final: Default analysis database (from last-ellis.R)
+if (Test-Path "data-private/derived/manipulation/SQLite/books-of-ukraine.sqlite") {
+    $dbSize = (Get-Item "data-private/derived/manipulation/SQLite/books-of-ukraine.sqlite").Length
+    $dbSizeMB = [math]::Round($dbSize / 1MB, 2)
+    Write-Host "OK Default analysis database found ($dbSizeMB MB)" -ForegroundColor Green
+} else {
+    Write-Host "MISSING Default database (will be created by last-ellis.R)" -ForegroundColor Yellow
     Write-Host "  Run manipulation/0-ellis.R to create database" -ForegroundColor Gray
 }
 

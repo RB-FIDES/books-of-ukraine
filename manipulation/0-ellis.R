@@ -87,7 +87,7 @@ data_private_derived_csv <- "data-private/derived/manipulation/CSV/"
 if (!fs::dir_exists(data_private_derived_csv)) {fs::dir_create(data_private_derived_csv)}
 
 # ---- establish-database-connection -------------------------------------------
-db_books_of_ukraine <- dbConnect(RSQLite::SQLite(), "data-private/derived/manipulation/SQLite/books-of-ukraine-long.sqlite")
+db_books_of_ukraine <- dbConnect(RSQLite::SQLite(), "data-private/derived/manipulation/SQLite/books-of-ukraine-0.sqlite")
 
 
 
@@ -368,8 +368,8 @@ cat("   ✓ Saved to RDS files\n")
 dbDisconnect(db_books_of_ukraine)
 
 cat("\n🎉 PROCESSING COMPLETE!\n")
-cat("Star schema database ready for analysis at:\n")
-cat("📁 ", "data-private/derived/manipulation/SQLite/books-of-ukraine-long.sqlite", "\n")
+cat("Core database (Stage 0) ready for analysis at:\n")
+cat("📁 ", "data-private/derived/manipulation/SQLite/books-of-ukraine-0.sqlite", "\n")
 
 # ---- analysis-below ----------------------------------------------------------
 # This section can be used for immediate analysis/validation of the processed data
@@ -378,7 +378,7 @@ cat("📁 ", "data-private/derived/manipulation/SQLite/books-of-ukraine-long.sql
 cat("\n📊 QUICK VALIDATION:\n")
 
 # Re-connect to check data
-db_books_of_ukraine <- dbConnect(RSQLite::SQLite(), "data-private/derived/manipulation/SQLite/books-of-ukraine-long.sqlite")
+db_books_of_ukraine <- dbConnect(RSQLite::SQLite(), "data-private/derived/manipulation/SQLite/books-of-ukraine-0.sqlite")
 
 # Count records by table
 tables <- c("fact_book_publications", "dim_years", "dim_categories", "dim_measures")

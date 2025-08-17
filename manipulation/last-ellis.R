@@ -7,8 +7,8 @@ library(dplyr)
 library(fs)
 
 
-# Hardcode import from books-of-ukraine-enhanced.sqlite
-enhanced_db_path <- "data-private/derived/manipulation/SQLite/books-of-ukraine-enhanced.sqlite"
+# Hardcode import from books-of-ukraine-1.sqlite (Stage 1: with UA admin data)
+enhanced_db_path <- "data-private/derived/manipulation/SQLite/books-of-ukraine-1.sqlite"
 cat("Importing from:", enhanced_db_path, "\n")
 db <- dbConnect(RSQLite::SQLite(), enhanced_db_path)
 
@@ -32,14 +32,14 @@ if ("fact_book_publications" %in% tables) {
 		NULL
 	})
 	if (!is.null(ds_year_wide)) {
-		BOOKS_OF_UKRAINE_path <- "data-private/derived/manipulation/SQLite/BOOKS-OF-UKRAINE.sqlite"
+		BOOKS_OF_UKRAINE_path <- "data-private/derived/manipulation/SQLite/books-of-ukraine.sqlite"
 		cat("\nCreating new SQLite database at:", BOOKS_OF_UKRAINE_path, "\n")
 		BOOKS_OF_UKRAINE <- dbConnect(RSQLite::SQLite(), BOOKS_OF_UKRAINE_path)
 		tryCatch({
 			dbWriteTable(BOOKS_OF_UKRAINE, "ds_year_wide", ds_year_wide, overwrite = TRUE)
-			cat(paste0("Created ds_year_wide in BOOKS-OF-UKRAINE.sqlite (", nrow(ds_year_wide), " rows, ", ncol(ds_year_wide), " columns)\n"))
+			cat(paste0("Created ds_year_wide in books-of-ukraine.sqlite (", nrow(ds_year_wide), " rows, ", ncol(ds_year_wide), " columns)\n"))
 		}, error = function(e) {
-			cat("Error writing ds_year_wide to BOOKS-OF-UKRAINE.sqlite:", e$message, "\n")
+			cat("Error writing ds_year_wide to books-of-ukraine.sqlite:", e$message, "\n")
 		})
 		dbDisconnect(BOOKS_OF_UKRAINE)
 	} else {
@@ -63,15 +63,15 @@ if ("fact_book_publications" %in% tables) {
 		NULL
 	})
 	if (!is.null(ds_language_wide)) {
-		BOOKS_OF_UKRAINE_path <- "data-private/derived/manipulation/SQLite/BOOKS-OF-UKRAINE.sqlite"
+		BOOKS_OF_UKRAINE_path <- "data-private/derived/manipulation/SQLite/books-of-ukraine.sqlite"
 		table_name <- "ds_language_wide"
 		cat("\nWriting ", table_name, " to: ", BOOKS_OF_UKRAINE_path, "\n", sep = "")
 		BOOKS_OF_UKRAINE <- dbConnect(RSQLite::SQLite(), BOOKS_OF_UKRAINE_path)
 		tryCatch({
 			dbWriteTable(BOOKS_OF_UKRAINE, table_name, ds_language_wide, overwrite = TRUE)
-			cat(paste0("Created ", table_name, " in BOOKS-OF-UKRAINE.sqlite (", nrow(ds_language_wide), " rows, ", ncol(ds_language_wide), " columns)\n"))
+			cat(paste0("Created ", table_name, " in books-of-ukraine.sqlite (", nrow(ds_language_wide), " rows, ", ncol(ds_language_wide), " columns)\n"))
 		}, error = function(e) {
-			cat("Error writing ", table_name, " to BOOKS-OF-UKRAINE.sqlite: ", e$message, "\n")
+			cat("Error writing ", table_name, " to books-of-ukraine.sqlite: ", e$message, "\n")
 		})
 		dbDisconnect(BOOKS_OF_UKRAINE)
 	}
@@ -92,15 +92,15 @@ if ("fact_book_publications" %in% tables) {
 		NULL
 	})
 	if (!is.null(ds_territory_wide)) {
-		BOOKS_OF_UKRAINE_path <- "data-private/derived/manipulation/SQLite/BOOKS-OF-UKRAINE.sqlite"
+		BOOKS_OF_UKRAINE_path <- "data-private/derived/manipulation/SQLite/books-of-ukraine.sqlite"
 		table_name <- "ds_territory_wide"
 		cat("\nWriting ", table_name, " to: ", BOOKS_OF_UKRAINE_path, "\n", sep = "")
 		BOOKS_OF_UKRAINE <- dbConnect(RSQLite::SQLite(), BOOKS_OF_UKRAINE_path)
 		tryCatch({
 			dbWriteTable(BOOKS_OF_UKRAINE, table_name, ds_territory_wide, overwrite = TRUE)
-			cat(paste0("Created ", table_name, " in BOOKS-OF-UKRAINE.sqlite (", nrow(ds_territory_wide), " rows, ", ncol(ds_territory_wide), " columns)\n"))
+			cat(paste0("Created ", table_name, " in books-of-ukraine.sqlite (", nrow(ds_territory_wide), " rows, ", ncol(ds_territory_wide), " columns)\n"))
 		}, error = function(e) {
-			cat("Error writing ", table_name, " to BOOKS-OF-UKRAINE.sqlite: ", e$message, "\n")
+			cat("Error writing ", table_name, " to books-of-ukraine.sqlite: ", e$message, "\n")
 		})
 		dbDisconnect(BOOKS_OF_UKRAINE)
 	}
@@ -119,15 +119,15 @@ if ("fact_book_publications" %in% tables) {
 		NULL
 	})
 	if (!is.null(ds_theme_wide)) {
-		BOOKS_OF_UKRAINE_path <- "data-private/derived/manipulation/SQLite/BOOKS-OF-UKRAINE.sqlite"
+		BOOKS_OF_UKRAINE_path <- "data-private/derived/manipulation/SQLite/books-of-ukraine.sqlite"
 		table_name <- "ds_theme_wide"
 		cat("\nWriting ", table_name, " to: ", BOOKS_OF_UKRAINE_path, "\n", sep = "")
 		BOOKS_OF_UKRAINE <- dbConnect(RSQLite::SQLite(), BOOKS_OF_UKRAINE_path)
 		tryCatch({
 			dbWriteTable(BOOKS_OF_UKRAINE, table_name, ds_theme_wide, overwrite = TRUE)
-			cat(paste0("Created ", table_name, " in BOOKS-OF-UKRAINE.sqlite (", nrow(ds_theme_wide), " rows, ", ncol(ds_theme_wide), " columns)\n"))
+			cat(paste0("Created ", table_name, " in books-of-ukraine.sqlite (", nrow(ds_theme_wide), " rows, ", ncol(ds_theme_wide), " columns)\n"))
 		}, error = function(e) {
-			cat("Error writing ", table_name, " to BOOKS-OF-UKRAINE.sqlite: ", e$message, "\n")
+			cat("Error writing ", table_name, " to books-of-ukraine.sqlite: ", e$message, "\n")
 		})
 		dbDisconnect(BOOKS_OF_UKRAINE)
 	}
@@ -146,15 +146,15 @@ if ("fact_book_publications" %in% tables) {
 		NULL
 	})
 	if (!is.null(ds_purpose_wide)) {
-		BOOKS_OF_UKRAINE_path <- "data-private/derived/manipulation/SQLite/BOOKS-OF-UKRAINE.sqlite"
+		BOOKS_OF_UKRAINE_path <- "data-private/derived/manipulation/SQLite/books-of-ukraine.sqlite"
 		table_name <- "ds_purpose_wide"
 		cat("\nWriting ", table_name, " to: ", BOOKS_OF_UKRAINE_path, "\n", sep = "")
 		BOOKS_OF_UKRAINE <- dbConnect(RSQLite::SQLite(), BOOKS_OF_UKRAINE_path)
 		tryCatch({
 			dbWriteTable(BOOKS_OF_UKRAINE, table_name, ds_purpose_wide, overwrite = TRUE)
-			cat(paste0("Created ", table_name, " in BOOKS-OF-UKRAINE.sqlite (", nrow(ds_purpose_wide), " rows, ", ncol(ds_purpose_wide), " columns)\n"))
+			cat(paste0("Created ", table_name, " in books-of-ukraine.sqlite (", nrow(ds_purpose_wide), " rows, ", ncol(ds_purpose_wide), " columns)\n"))
 		}, error = function(e) {
-			cat("Error writing ", table_name, " to BOOKS-OF-UKRAINE.sqlite: ", e$message, "\n")
+			cat("Error writing ", table_name, " to books-of-ukraine.sqlite: ", e$message, "\n")
 		})
 		dbDisconnect(BOOKS_OF_UKRAINE)
 	}
@@ -169,14 +169,14 @@ if ("fact_book_publications" %in% tables) {
 		filter(category_type == "total",
 					 category_value == "all_books") %>%
 		select(year, category_type, category_value, measure_type, value)
-	BOOKS_OF_UKRAINE_path <- "data-private/derived/manipulation/SQLite/BOOKS-OF-UKRAINE.sqlite"
+	BOOKS_OF_UKRAINE_path <- "data-private/derived/manipulation/SQLite/books-of-ukraine.sqlite"
 	cat("\nWriting ds_year_long to:", BOOKS_OF_UKRAINE_path, "\n")
 	BOOKS_OF_UKRAINE <- dbConnect(RSQLite::SQLite(), BOOKS_OF_UKRAINE_path)
 	tryCatch({
 		dbWriteTable(BOOKS_OF_UKRAINE, "ds_year_long", ds_year_long, overwrite = TRUE)
-		cat(paste0("Created ds_year_long in BOOKS-OF-UKRAINE.sqlite (", nrow(ds_year_long), " rows, ", ncol(ds_year_long), " columns)\n"))
+		cat(paste0("Created ds_year_long in books-of-ukraine.sqlite (", nrow(ds_year_long), " rows, ", ncol(ds_year_long), " columns)\n"))
 	}, error = function(e) {
-		cat("Error writing ds_year_long to BOOKS-OF-UKRAINE.sqlite:", e$message, "\n")
+		cat("Error writing ds_year_long to books-of-ukraine.sqlite:", e$message, "\n")
 	})
 	dbDisconnect(BOOKS_OF_UKRAINE)
 }
@@ -188,14 +188,14 @@ if ("fact_book_publications" %in% tables) {
 	ds_language_long <- fact_df %>%
 		filter(category_type == "language") %>%
 		select(year, category_type, category_value, measure_type, value)
-	BOOKS_OF_UKRAINE_path <- "data-private/derived/manipulation/SQLite/BOOKS-OF-UKRAINE.sqlite"
+	BOOKS_OF_UKRAINE_path <- "data-private/derived/manipulation/SQLite/books-of-ukraine.sqlite"
 	cat("\nWriting ds_language_long to:", BOOKS_OF_UKRAINE_path, "\n")
 	BOOKS_OF_UKRAINE <- dbConnect(RSQLite::SQLite(), BOOKS_OF_UKRAINE_path)
 	tryCatch({
 		dbWriteTable(BOOKS_OF_UKRAINE, "ds_language_long", ds_language_long, overwrite = TRUE)
-		cat(paste0("Created ds_language_long in BOOKS-OF-UKRAINE.sqlite (", nrow(ds_language_long), " rows, ", ncol(ds_language_long), " columns)\n"))
+		cat(paste0("Created ds_language_long in books-of-ukraine.sqlite (", nrow(ds_language_long), " rows, ", ncol(ds_language_long), " columns)\n"))
 	}, error = function(e) {
-		cat("Error writing ds_language_long to BOOKS-OF-UKRAINE.sqlite:", e$message, "\n")
+		cat("Error writing ds_language_long to books-of-ukraine.sqlite:", e$message, "\n")
 	})
 	dbDisconnect(BOOKS_OF_UKRAINE)
 }
@@ -208,14 +208,14 @@ if ("fact_book_publications" %in% tables) {
 	ds_territory_long <- fact_df %>%
 		filter(category_type == "territory") %>%
 		select(year, category_type, category_value, measure_type, value)
-	BOOKS_OF_UKRAINE_path <- "data-private/derived/manipulation/SQLite/BOOKS-OF-UKRAINE.sqlite"
+	BOOKS_OF_UKRAINE_path <- "data-private/derived/manipulation/SQLite/books-of-ukraine.sqlite"
 	cat("\nWriting ds_territory_long to:", BOOKS_OF_UKRAINE_path, "\n")
 	BOOKS_OF_UKRAINE <- dbConnect(RSQLite::SQLite(), BOOKS_OF_UKRAINE_path)
 	tryCatch({
 		dbWriteTable(BOOKS_OF_UKRAINE, "ds_territory_long", ds_territory_long, overwrite = TRUE)
-		cat(paste0("Created ds_territory_long in BOOKS-OF-UKRAINE.sqlite (", nrow(ds_territory_long), " rows, ", ncol(ds_territory_long), " columns)\n"))
+		cat(paste0("Created ds_territory_long in books-of-ukraine.sqlite (", nrow(ds_territory_long), " rows, ", ncol(ds_territory_long), " columns)\n"))
 	}, error = function(e) {
-		cat("Error writing ds_territory_long to BOOKS-OF-UKRAINE.sqlite:", e$message, "\n")
+		cat("Error writing ds_territory_long to books-of-ukraine.sqlite:", e$message, "\n")
 	})
 	dbDisconnect(BOOKS_OF_UKRAINE)
 }
@@ -227,14 +227,14 @@ if ("fact_book_publications" %in% tables) {
 	ds_theme_long <- fact_df %>%
 		filter(category_type == "theme") %>%
 		select(year, category_type, category_value, measure_type, value)
-	BOOKS_OF_UKRAINE_path <- "data-private/derived/manipulation/SQLite/BOOKS-OF-UKRAINE.sqlite"
+	BOOKS_OF_UKRAINE_path <- "data-private/derived/manipulation/SQLite/books-of-ukraine.sqlite"
 	cat("\nWriting ds_theme_long to:", BOOKS_OF_UKRAINE_path, "\n")
 	BOOKS_OF_UKRAINE <- dbConnect(RSQLite::SQLite(), BOOKS_OF_UKRAINE_path)
 	tryCatch({
 		dbWriteTable(BOOKS_OF_UKRAINE, "ds_theme_long", ds_theme_long, overwrite = TRUE)
-		cat(paste0("Created ds_theme_long in BOOKS-OF-UKRAINE.sqlite (", nrow(ds_theme_long), " rows, ", ncol(ds_theme_long), " columns)\n"))
+		cat(paste0("Created ds_theme_long in books-of-ukraine.sqlite (", nrow(ds_theme_long), " rows, ", ncol(ds_theme_long), " columns)\n"))
 	}, error = function(e) {
-		cat("Error writing ds_theme_long to BOOKS-OF-UKRAINE.sqlite:", e$message, "\n")
+		cat("Error writing ds_theme_long to books-of-ukraine.sqlite:", e$message, "\n")
 	})
 	dbDisconnect(BOOKS_OF_UKRAINE)
 }
@@ -245,14 +245,14 @@ if ("fact_book_publications" %in% tables) {
 	ds_purpose_long <- fact_df %>%
 		filter(category_type == "purpose") %>%
 		select(year, category_type, category_value, measure_type, value)
-	BOOKS_OF_UKRAINE_path <- "data-private/derived/manipulation/SQLite/BOOKS-OF-UKRAINE.sqlite"
+	BOOKS_OF_UKRAINE_path <- "data-private/derived/manipulation/SQLite/books-of-ukraine.sqlite"
 	cat("\nWriting ds_purpose_long to:", BOOKS_OF_UKRAINE_path, "\n")
 	BOOKS_OF_UKRAINE <- dbConnect(RSQLite::SQLite(), BOOKS_OF_UKRAINE_path)
 	tryCatch({
 		dbWriteTable(BOOKS_OF_UKRAINE, "ds_purpose_long", ds_purpose_long, overwrite = TRUE)
-		cat(paste0("Created ds_purpose_long in BOOKS-OF-UKRAINE.sqlite (", nrow(ds_purpose_long), " rows, ", ncol(ds_purpose_long), " columns)\n"))
+		cat(paste0("Created ds_purpose_long in books-of-ukraine.sqlite (", nrow(ds_purpose_long), " rows, ", ncol(ds_purpose_long), " columns)\n"))
 	}, error = function(e) {
-		cat("Error writing ds_purpose_long to BOOKS-OF-UKRAINE.sqlite:", e$message, "\n")
+		cat("Error writing ds_purpose_long to books-of-ukraine.sqlite:", e$message, "\n")
 	})
 	dbDisconnect(BOOKS_OF_UKRAINE)
 }

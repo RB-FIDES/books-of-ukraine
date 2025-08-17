@@ -1,5 +1,23 @@
 default:
-  project_name                                        : "{project_name}"
+  project_name                                        : "books-of-ukraine"
+  schema_name                                         : "books_ukraine"
+  
+  # Database Configuration - Books of Ukraine Project
+  database:
+    books_of_ukraine:
+      main: "data-private/derived/manipulation/SQLite/books-of-ukraine.sqlite"
+      intermediate:
+        core: "data-private/derived/manipulation/SQLite/books-of-ukraine-0.sqlite"
+        admin: "data-private/derived/manipulation/SQLite/books-of-ukraine-1.sqlite"
+  
+  dsn_staging                                         : "cdw_cache_staging"
+  # dsn_outpost                                         : "cdw_omop_1"
+  # dsn_omop                                            : "cdw_omop_1"
+  # dsn_waystation_gecb                                 : "cdw_waystation_idx"
+  # dsn_transaction                                     : "cdw_transaction"
+  # dsn_security                                        : "BbmcSecurity"
+  # redcap_pid                                          : 1
+  # redcap_instance                                     : "bbmc" project_name                                        : "{project_name}"
   schema_name                                         : "{schema_name}"
   dsn_staging                                         : "cdw_cache_staging"
   # dsn_outpost                                         : "cdw_outpost"

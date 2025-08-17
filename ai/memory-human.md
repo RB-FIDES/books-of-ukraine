@@ -5,6 +5,20 @@
 
 ---
 
+## 2025-08-17
+
+
+### 1 - Reform of the Ellis section of the pipeline
+
+Examine 1-ellis and see if it features any interesting functions, unique to this script. The data entered in this script about bookstores is a dud - we thought we'd get real data, but we didn't. now this script is not needed in the pipeline and the next script to be run must me what is currently called 2-ellist-ua-admin.  I want to remove 1-ellis.R ( but scoop out all the human know-how it captured!) and in its stead create 1-ellis-ua-admin.R. I also want to create a system for naming the database products they generate. Let the name of the produced DB have the number of the ellis that generates it: books-of-ukraine-0 , books-of-ukraine-1, etc.  However, the last script in the Ellis section of the pipeline (last-ellis.R) shold generate the product without any suffixes (e.g. books-of-ukraine) and serve as the featured product of the Ellis script sequence and the default product of an incoming user (human analyst). 
+
+Please ensure that ramifications of such pipeline shortening and involved renaming are carefully investigated, addressed, and checked afterwards.
+
+Structure your implementation into Phase-Part numbered system, so I can conveniently provide targeted feedback or permissions.
+
+Think hard, take your time.
+
+
 ## 2025-08-15: PowerShell Infrastructure Scripts Adaptation
 
 **Context**: Adapted PowerShell infrastructure scripts from SDA-CEIS-Impact to Books-of-Ukraine specific requirements.
