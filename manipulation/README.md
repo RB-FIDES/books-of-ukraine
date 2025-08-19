@@ -4,7 +4,7 @@ This directory contains the **Ellis Pipeline** - a multi-stage data processing s
 
 ## 📊 Pipeline Architecture
 
-The Ellis Pipeline processes data through 3 distinct stages:
+The Ellis Pipeline processes data through 4 distinct stages:
 
 ### **Stage 0**: Core Data Processing (`0-ellis.R`)
 - **Input**: Main Google Sheets document with 5 core data sheets
@@ -17,12 +17,13 @@ The Ellis Pipeline processes data through 3 distinct stages:
 - **Output**: `books-of-ukraine-1.sqlite` (Core + Administrative data)  
 - **Purpose**: Territorial enrichment with hromada-level data
 
-### **Stage 2**: Extra/Custom Data (`2-ellis-extra.R`)
+### **Stage 2**: Modular Custom Data (`2-ellis-extra.R`)
 - **Input**: Stage 1 database + Custom data sources (configured in `extra-data-config.R`)
-  - Currently processes: Книгарні (Bookstores) data
+  - **Bilingual Support**: Accepts Ukrainian or English column names, standardizes to English
+  - Currently processes: Книгарні (Bookstores) data with Ukrainian column headers
   - **User-friendly**: Add new sources via configuration, no code changes needed
 - **Output**: `books-of-ukraine-2.sqlite` (Complete dataset)  
-- **Purpose**: User-contributed and post-hoc custom tables
+- **Purpose**: User-contributed and post-hoc custom tables with automatic language handling
 
 ### **Final Stage**: Analytical Tables (`last-ellis.R`)
 - **Input**: Stage 2 database
@@ -58,16 +59,21 @@ The Ellis Pipeline processes data through 3 distinct stages:
 3. **Activate**: Set `active = TRUE`
 4. **Run**: `Rscript manipulation/2-ellis-extra.R`
 
+**🌍 Bilingual Support**: Input data can use Ukrainian or English column names:
+- **Ukrainian**: "Показник", "Територія", "Область" (natural for Ukrainian users)
+- **English**: "Measure", "Territory", "Oblast" (for standardization)
+- **Automatic**: All inputs are standardized to English internally for pipeline consistency
+
 **📚 Complete Guide**: See `guides/custom-data-guide.md` for:
 - Supported data types (categorical time series, lookup tables, fact tables)
-- Step-by-step examples  
+- Step-by-step examples with bilingual column examples  
 - Google Sheets formatting requirements
 - Troubleshooting tips
 
 **🔧 Modular Architecture**: 
 - `extra-data-config.R`: User-friendly configuration
-- `extra-data-functions.R`: Automatic data type detection and processing
-- Built-in validation and helpful error messages
+- `extra-data-functions.R`: Automatic data type detection, language standardization, and processing
+- Built-in validation with helpful error messages in both languages
 
 ## 🚀 Usage
 

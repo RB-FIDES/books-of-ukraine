@@ -8,9 +8,12 @@ The `flow.R` script orchestrates the execution of all data processing, analysis,
 
 The pipeline is organized into 4 phases:
 
-### Phase 1: Data Import & Preparation
-- `manipulation/0-ellis.R` - Main data import from Google Sheets, creates all core datasets
-- **🆕 Automatic CACHE manifest updates** - The system can automatically update data documentation
+### Phase 1: Ellis Data Pipeline (Multi-Stage Processing)
+- **Stage 0**: `manipulation/0-ellis.R` - Core book data import from Google Sheets
+- **Stage 1**: `manipulation/1-ellis-ua-admin.R` - Ukrainian administrative data integration
+- **Stage 2**: `manipulation/2-ellis-extra.R` - **NEW** Modular custom data with bilingual support
+- **Final Stage**: `manipulation/last-ellis.R` - Analysis-ready tables + CSV exports
+- **🆕 Automatic CACHE manifest updates** - The system automatically updates data documentation
 
 ### Phase 2: Analysis Scripts  
 - `analysis/eda-1/eda-1.R` - Exploratory data analysis script

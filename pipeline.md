@@ -6,7 +6,7 @@ Sequence of scripts that capture data assembly, modeling and reporting.
 
 ## Ellis Pipeline - Staged Data Processing
 
-The Ellis pipeline processes Ukrainian book publishing data through three progressive stages, each building upon the previous stage's output.
+The Ellis pipeline processes Ukrainian book publishing data through four progressive stages, each building upon the previous stage's output.
 
 ### **Ellis Stage 0: Core Data Foundation** 
 #### `manipulation/0-ellis.R` - Data Import and Standardization

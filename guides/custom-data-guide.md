@@ -9,6 +9,36 @@ This guide explains how to add your own custom data sources to the Ellis Pipelin
 3. **Set Active**: Change `active = FALSE` to `active = TRUE`
 4. **Run Pipeline**: Execute `Rscript manipulation/2-ellis-extra.R`
 
+## 🌍 Bilingual Support (Ukrainian ↔ English)
+
+The Ellis Pipeline Stage 2 **automatically handles both Ukrainian and English column names**:
+
+**✅ Ukrainian Input (Natural for Ukrainian Users)**:
+```
+Показник              | Територія           | 2023
+Кількість книгарень   | Івано-Франківська  | 19
+```
+
+**✅ English Input (For Standardization)**:  
+```
+Measure               | Territory           | 2023
+Number of Bookstores  | Ivano-Frankivska    | 19
+```
+
+**🔄 Automatic Standardization**: 
+- All inputs are converted to English internally ("pokaznik", "teritoria")
+- Ensures consistency with core pipeline (Stages 0-1)
+- No manual translation required by users
+- Both formats work seamlessly
+
+**📝 Supported Ukrainian → English Mappings**:
+- `Показник` / `показник` → `pokaznik` (measure/indicator)
+- `Територія` / `територія` → `teritoria` (territory/region)  
+- `Область` / `область` → `oblast` (oblast)
+- `Рік` / `рік` → `year` (year)
+
+*You can use either language consistently throughout your data - the system will handle the standardization automatically!*
+
 ## 📊 Supported Data Types
 
 ### 1. Categorical Time Series (`categorical_time_series`)
