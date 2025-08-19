@@ -5,7 +5,7 @@
 # into a streamlined, analysis-ready format optimized for human convenience.
 #
 # DESIGN PHILOSOPHY:
-# - Stage 1 (books-of-ukraine-1.sqlite): Comprehensive data storage with all source data
+# - Stage 2 (books-of-ukraine-2.sqlite): Comprehensive data storage with all source data + custom/extra data
 # - Final (books-of-ukraine.sqlite): Focused analytical convenience with clean, analysis-ready tables
 # - When analysts need source data, they can always reach back to Stage 1 database
 
@@ -14,15 +14,15 @@ library(RSQLite)
 library(dplyr)
 library(fs)
 
-# Import from comprehensive Stage 1 database
-enhanced_db_path <- "data-private/derived/manipulation/SQLite/books-of-ukraine-1.sqlite"
+# Import from comprehensive Stage 2 database (includes all core + custom data)
+enhanced_db_path <- "data-private/derived/manipulation/SQLite/books-of-ukraine-2.sqlite"
 final_db_path <- config::get("database")$books_of_ukraine$main
 
 # Set up CSV export directory for analytical tables
 csv_path <- "data-private/derived/manipulation/CSV/"
 if (!fs::dir_exists(csv_path)) {fs::dir_create(csv_path)}
 
-cat("🔍 Importing from comprehensive database:", enhanced_db_path, "\n")
+cat("🔍 Importing from comprehensive Stage 2 database:", enhanced_db_path, "\n")
 db <- dbConnect(RSQLite::SQLite(), enhanced_db_path)
 
 tables <- dbListTables(db)
@@ -31,7 +31,7 @@ print(tables)
 
 cat("\n🎯 Creating focused analytical database at:", final_db_path, "\n")
 cat("   Purpose: Clean, analysis-ready tables optimized for human analysts\n")
-cat("   Note: Comprehensive source data remains available in Stage 1 database\n\n")
+cat("   Note: Comprehensive source data remains available in Stage 2 database\n\n")
 
 # ------------------------------------------------------------------ CREATE WIDE TABLES ------------------------------------------------------------------
 
@@ -180,12 +180,9 @@ if ("fact_book_publications" %in% tables) {
 	}
 }
 
-# Create ds_bookstores_wide from fact_book_publications (wide format: year + measure_type as rows, category_value as columns, value as values)
-if ("fact_book_publications" %in% tables) {
-	fact_df <- dbReadTable(db, "fact_book_publications")
-	bookstores_df <- fact_df %>%
-		filter(category_type == "bookstores") %>%
-		select(year, measure_type, category_value, value)
+# Create ds_bookstores_wide from ds_bookstores table (wide format: category_value + measure_type as rows, years as columns)
+if ("ds_bookstores" %in% tables) {
+	bookstores_df <- dbReadTable(db, "ds_bookstores")
 	ds_bookstores_wide <- tryCatch({
 		tidyr::pivot_wider(bookstores_df, id_cols = c(category_value, measure_type), names_from = year, values_from = value)
 	}, error = function(e) {
@@ -304,12 +301,9 @@ if ("fact_book_publications" %in% tables) {
 	dbDisconnect(BOOKS_OF_UKRAINE)
 }
 
-# Create ds_bookstores from fact_book_publications (long format: year, category_type, category_value, measure_type, value)
-if ("fact_book_publications" %in% tables) {
-	fact_df <- dbReadTable(db, "fact_book_publications")
-	ds_bookstores <- fact_df %>%
-		filter(category_type == "bookstores") %>%
-		select(year, category_type, category_value, measure_type, value)
+# Create ds_bookstores from ds_bookstores table (long format: year, category_type, category_value, measure_type, value)
+if ("ds_bookstores" %in% tables) {
+	ds_bookstores <- dbReadTable(db, "ds_bookstores")
 	BOOKS_OF_UKRAINE_path <- final_db_path
 	cat("\nWriting ds_bookstores to:", BOOKS_OF_UKRAINE_path, "\n")
 	BOOKS_OF_UKRAINE <- dbConnect(RSQLite::SQLite(), BOOKS_OF_UKRAINE_path)

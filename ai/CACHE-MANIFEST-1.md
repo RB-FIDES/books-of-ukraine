@@ -1,6 +1,6 @@
 # CACHE Manifest - Books of Ukraine Stage 1 Database
 
-**Generated:** 2025-08-19 06:43:03.99995
+**Generated:** 2025-08-19 08:03:51.434394
 **Database:** books-of-ukraine-1.sqlite
 **Total Tables:** 9
 
@@ -42,7 +42,7 @@ CORE DATA (from Stage 0)           ADMINISTRATIVE DATA (Stage 1)
 
 **FACT TABLE** - Core fact table: book publication data by year, category, measure
 
-- **Records:** 3,663
+- **Records:** 3,640
 - **Columns:** 5
 
 #### Column Structure
@@ -91,7 +91,7 @@ CORE DATA (from Stage 0)           ADMINISTRATIVE DATA (Stage 1)
 
 **DIMENSION TABLE** - Dimension table: categories
 
-- **Records:** 205
+- **Records:** 182
 - **Columns:** 4
 
 #### Column Structure
@@ -109,7 +109,7 @@ CORE DATA (from Stage 0)           ADMINISTRATIVE DATA (Stage 1)
 
 **DIMENSION TABLE** - Dimension table: measures
 
-- **Records:** 3
+- **Records:** 2
 - **Columns:** 3
 
 #### Column Structure
