@@ -41,6 +41,8 @@ FIDES is organized as a modular folder of living documents. Each file plays a sp
 
 Note: The user should feel welcome to tweak the specifics of the provided template, and, with time, should be expected to customize it to better fit their needs.
 
+**Modular Philosophy Architecture**: This document structure separates universal FIDES framework principles (housed in `./philosophy/`) from project-specific implementations (housed in `./ai/`). The philosophy folder contains stable, cross-project foundational concepts that define the universe of AI-human symbiosis for research analytics, while project folders contain contextual applications. This separation enables framework reusability across research domains while allowing project-specific AI collaboration to evolve independently.
+
 ## 🧠 Key Principles
 
 *In no particular order*
