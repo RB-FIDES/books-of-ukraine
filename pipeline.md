@@ -4,27 +4,151 @@ Sequence of scripts that capture data assembly, modeling and reporting.
 
 # Data assembly
 
-## `manipulation/0-ellis.R` - Data Import and Standardization
+## Ellis Pipeline - Staged Data Processing
 
-**Purpose**: Import Ukrainian book publishing data from Google Sheets and transform it into analysis-ready datasets.
+The Ellis pipeline processes Ukrainian book publishing data through three progressive stages, each building upon the previous stage's output.
+
+### **Ellis Stage 0: Core Data Foundation** 
+#### `manipulation/0-ellis.R` - Data Import and Standardization
+
+**Purpose**: Import Ukrainian book publishing data from Google Sheets and create the foundational analytical database.
 
 **Key Operations**:
 - Imports publishing data from multiple Google Sheets tabs covering 2005-2023
-- Creates standardized datasets with consistent structure (year, measure, values)
+- Creates standardized star schema with fact and dimension tables
 - Processes 6 main data domains:
-  - `ds_year`: Overall publication counts (titles/copies by year)
-  - `ds_language`: Publications by language (including Ukrainian/Russian breakdown)
-  - `ds_genre`: Publications by thematic categories/genres
-  - `ds_pubtype`: Publications by target audience and purpose
-  - `ds_geography`: Regional publication distribution
+  - Overall publication counts (titles/copies by year)
+  - Publications by language (including Ukrainian/Russian breakdown)
+  - Publications by thematic categories/genres
+  - Publications by target audience and purpose
+  - Regional publication distribution
 
 **Outputs**: 
-- **SQLite database**: `data-private/derived/manipulation/SQLite/books-of-ukraine.sqlite` (primary analytical database)
-- **RDS files**: Individual R data files for each dataset
-- **CSV exports**: Human-readable exports in `data-private/derived/manipulation/csv/`
-- **Google Sheets backup**: Cleaned data pushed to analysis spreadsheet
+- **Stage 0 Database**: `books-of-ukraine-0.sqlite` (core books data only)
+- **Supporting formats**: RDS files, CSV exports for compatibility
 
-**Moving Forward**: The SQLite database serves as our primary data source for all subsequent analysis, providing structured, normalized data ready for visualization and statistical modeling.
+### **Ellis Stage 1: Administrative Integration**
+#### `manipulation/1-ellis-ua-admin.R` - Ukrainian Administrative Data Integration
+
+**Purpose**: Integrate core books data with Ukrainian administrative context for territorial analysis.
+
+**Key Operations**:
+- Copies Stage 0 database as foundation
+- Downloads Ukrainian hromada-level data from KSE Decentralization Reform project
+- Creates oblast-level aggregations (24 oblasts, 1,438 hromadas)
+- Integrates demographic, economic, and administrative indicators
+
+**Key Tables Added**:
+- `ua_oblasts_aggregated`: Oblast-level indicators for choropleth mapping
+- `dim_oblasts`: Oblast dimension with geographic metadata
+- `fact_hromadas`: Hromada-level detailed territorial data
+
+**Outputs**: 
+- **Stage 1 Database**: `books-of-ukraine-1.sqlite` (books + administrative data)
+
+### **Ellis Final: Analytical Optimization**
+#### `manipulation/last-ellis.R` - Analytical Database Creation
+
+**Purpose**: Create the final analytical database optimized for analysis workflows.
+
+**Key Operations**:
+- Transforms Stage 1 data into analysis-ready formats
+- Creates both wide and long format tables for different analytical needs
+- Generates comprehensive analytical views by category (language, territory, theme, purpose)
+
+**Outputs**:
+- **Default Database**: `books-of-ukraine.sqlite` (final analytical database)
+- **Auto-generated Documentation**: Comprehensive table descriptions and usage examples
+
+---
+
+## 🏗️ **Ellis Pipeline Architecture**
+
+```
+Stage 0: Core Foundation
+├── 0-ellis.R → books-of-ukraine-0.sqlite (0.26 MB)
+│   └── Core books publication data with star schema
+│
+Stage 1: Administrative Integration  
+├── 1-ellis-ua-admin.R → books-of-ukraine-1.sqlite (1.96 MB)
+│   └── Core + Ukrainian territorial & demographic data
+│
+Final: Analytical Optimization
+└── last-ellis.R → books-of-ukraine.sqlite (0.29 MB)
+    └── Analysis-ready wide/long format tables
+```
+
+## 📊 **Default Database Paradigm**
+
+**Key Principle**: Analysis scripts in `./analysis/` automatically connect to the **default database** unless specifically targeting intermediate stages.
+
+**Configuration-Driven Access**:
+```r
+# Standard pattern for analysis scripts
+library(yaml)
+config <- yaml::read_yaml("config.yml")
+db_path <- config$database$books_of_ukraine$main  # → books-of-ukraine.sqlite
+db <- dbConnect(RSQLite::SQLite(), db_path)
+```
+
+**When to Use Intermediate Databases**:
+- **books-of-ukraine-0.sqlite**: Quality control of core data processing
+- **books-of-ukraine-1.sqlite**: Specialized territorial analysis requiring administrative context
+- **books-of-ukraine.sqlite**: Standard analysis workflows (90% of use cases)
+
+---
+
+## ⚙️ **Configuration Management**
+
+**Centralized Configuration** (`config.yml`):
+All database paths and project settings are managed through a centralized configuration file:
+
+```yaml
+database:
+  books_of_ukraine:
+    main: "./data-private/derived/manipulation/SQLite/books-of-ukraine.sqlite"
+    stage_0: "./data-private/derived/manipulation/SQLite/books-of-ukraine-0.sqlite"
+    stage_1: "./data-private/derived/manipulation/SQLite/books-of-ukraine-1.sqlite"
+  directories:
+    cache: "./ai/"
+    derived: "./data-private/derived/"
+    raw: "./data-private/raw/"
+```
+
+**Standard Usage Pattern**:
+```r
+# Load configuration
+library(yaml)
+config <- yaml::read_yaml("config.yml")
+
+# Connect to appropriate database
+db_path <- config$database$books_of_ukraine$main  # Default for analysis
+# db_path <- config$database$books_of_ukraine$stage_1  # For territorial analysis
+# db_path <- config$database$books_of_ukraine$stage_0  # For core data QC
+
+db <- dbConnect(RSQLite::SQLite(), db_path)
+```
+
+**Enhanced Usage with Helper Functions**:
+```r
+# Source common functions for database utilities  
+source("scripts/common-functions.R")
+
+# Connect using standardized helper function
+db <- connect_books_db("main")  # or "stage_1", "stage_0"
+
+# Query data
+result <- dbGetQuery(db, "SELECT * FROM fact_book_publications LIMIT 5")
+
+# Always close connection when done
+dbDisconnect(db)
+```
+
+**Benefits**:
+- Single point of configuration management
+- Environment-independent path handling
+- Easy database switching for different analytical needs
+- Simplified maintenance when moving between development/production environments
 
 # Workflow Management
 

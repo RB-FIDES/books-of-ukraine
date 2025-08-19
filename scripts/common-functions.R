@@ -89,3 +89,109 @@ names_labels <- function(ds){
   return(nl)
 }
 # names_labels(ds=oneFile)
+
+# ----- database-connection-functions ----------------------------------------
+
+#' Connect to Books of Ukraine Database
+#' 
+#' @description 
+#' Standardized database connection using centralized configuration.
+#' Supports different database stages for specific analytical needs.
+#' 
+#' @param db_type Character. Database type to connect to:
+#'   - "main" (default): Final analytical database (books-of-ukraine.sqlite)
+#'   - "stage_0": Core books data only
+#'   - "stage_1": Books data with Ukrainian administrative integration
+#' @param config_path Character. Path to config.yml file. Default: "config.yml"
+#' 
+#' @return DBI database connection object
+#' 
+#' @examples
+#' # Standard connection for analysis
+#' db <- connect_books_db()
+#' 
+#' # Connect to specific stage for territorial analysis
+#' db <- connect_books_db("stage_1")
+#' 
+#' # Always close connection when done
+#' DBI::dbDisconnect(db)
+connect_books_db <- function(db_type = "main", config_path = "config.yml") {
+  if (!requireNamespace("yaml", quietly = TRUE)) {
+    stop("yaml package required. Install with: install.packages('yaml')")
+  }
+  if (!requireNamespace("DBI", quietly = TRUE)) {
+    stop("DBI package required. Install with: install.packages('DBI')")
+  }
+  if (!requireNamespace("RSQLite", quietly = TRUE)) {
+    stop("RSQLite package required. Install with: install.packages('RSQLite')")
+  }
+  
+  # Load configuration
+  if (!file.exists(config_path)) {
+    stop(paste0("Configuration file not found: ", config_path))
+  }
+  
+  config <- yaml::read_yaml(config_path)
+  
+  # Handle nested config structure (config$default$database vs config$database)  
+  if ("default" %in% names(config)) {
+    config <- config$default
+  }
+  
+  # Get database path based on type
+  db_path <- switch(db_type,
+    "main" = config$database$books_of_ukraine$main,
+    "stage_0" = config$database$books_of_ukraine$stage_0,
+    "stage_1" = config$database$books_of_ukraine$stage_1,
+    stop(paste0("Unknown db_type: ", db_type, ". Use 'main', 'stage_0', or 'stage_1'."))
+  )
+  
+  if (is.null(db_path)) {
+    stop(paste0("Database path not found in config for type: ", db_type))
+  }
+  
+  # Check if database exists
+  if (!file.exists(db_path)) {
+    warning(paste0("Database file not found: ", db_path, 
+                  "\nRun Ellis pipeline scripts to create databases."))
+  }
+  
+  # Create connection
+  DBI::dbConnect(RSQLite::SQLite(), db_path)
+}
+
+#' Get Database Path from Configuration
+#' 
+#' @description 
+#' Utility function to get database path without creating connection.
+#' Useful for file operations or when connection object not needed.
+#' 
+#' @param db_type Character. Database type ("main", "stage_0", "stage_1")
+#' @param config_path Character. Path to config.yml file
+#' 
+#' @return Character. Full path to database file
+get_db_path <- function(db_type = "main", config_path = "config.yml") {
+  if (!requireNamespace("yaml", quietly = TRUE)) {
+    stop("yaml package required. Install with: install.packages('yaml')")
+  }
+  
+  config <- yaml::read_yaml(config_path)
+  
+  # Handle nested config structure (config$default$database vs config$database)
+  if ("default" %in% names(config)) {
+    config <- config$default
+  }
+  
+  db_path <- switch(db_type,
+    "main" = config$database$books_of_ukraine$main,
+    "stage_0" = config$database$books_of_ukraine$stage_0,
+    "stage_1" = config$database$books_of_ukraine$stage_1,
+    stop(paste0("Unknown db_type: ", db_type))
+  )
+  
+  if (is.null(db_path)) {
+    stop(paste0("Database path not found in config for type: ", db_type))
+  }
+  
+  return(db_path)
+}

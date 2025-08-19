@@ -91,7 +91,12 @@ ds_geography <- fact_book %>%
   select(year, geography = category_value, measure = measure_type, value)
 
 # Optional: Connect to SQLite database for SQL queries
-# books_db <- connect_to_db()
+# Using centralized configuration management
+books_db <- connect_books_db("main")  # Use default analytical database
+
+# Alternative: Connect to specific stages if needed
+# books_db <- connect_books_db("stage_1")  # For territorial analysis with UA admin data
+# books_db <- connect_books_db("stage_0")  # For core books data only
 
 # ---- inspect-data-0 -----------------------------------------------------------
 # Basic inspection of all datasets
@@ -439,3 +444,9 @@ print(g3)  # Print the plot to console
 
 # Pause to keep plot windows open
 readline("Press [Enter] to exit and close all plot windows...")
+
+# Clean up database connection if it was created
+if (exists("books_db")) {
+  DBI::dbDisconnect(books_db)
+  cat("Database connection closed.\n")
+}
