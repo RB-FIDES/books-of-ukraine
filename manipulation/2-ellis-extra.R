@@ -257,6 +257,63 @@ cat("   • Functions: manipulation/extra-data-functions.R\n")
 cat("   • Complete guide: guides/custom-data-guide.md\n")
 cat("   • Pipeline guide: manipulation/README.md\n")
 
+# ---- generate-cache-manifest-2 ----------------------------------------------
+cat("\n📝 GENERATING STAGE 2 CACHE MANIFEST...\n")
+
+# Generate CACHE-MANIFEST-2.md
+manifest_content <- paste0(
+  "# CACHE Manifest - Books of Ukraine Stage 2 Database\n\n",
+  "**Generated:** ", Sys.time(), "\n",
+  "**Database:** books-of-ukraine-2.sqlite\n",
+  "**Pipeline Stage:** Modular Custom Data Integration\n",
+  "**Total Tables:** ", length(dbListTables(stage_2_db)), "\n\n",
+  "## 📊 Stage 2 Database Architecture\n\n",
+  "Stage 2 adds modular custom data sources with **bilingual Ukrainian/English support** to the comprehensive pipeline.\n\n",
+  "### 🌍 Bilingual Data Integration\n\n",
+  "- **Input Flexibility**: Accepts Ukrainian OR English column names\n",
+  "- **Standardized Output**: All data converted to English for pipeline consistency\n",
+  "- **Automatic Translation**: Ukrainian terms like 'Показник' → 'pokaznik', 'Територія' → 'teritoria'\n",
+  "- **User-Friendly**: No manual translation required by data contributors\n\n",
+  "### 🏗️ Architecture Overview\n\n",
+  "```\n",
+  "STAGE 1 DATABASE (All tables)     CUSTOM DATA SOURCES\n",
+  "┌─────────────────────────────┐   ┌─────────────────────┐\n",
+  "│ fact_book_publications      │   │ Google Sheets       │\n",
+  "│ dim_* (years, categories)   │ + │ (Ukrainian/English) │\n",
+  "│ fact_hromadas              │   │ Configuration-driven │\n",
+  "│ ua_oblasts_aggregated      │   │ User-contributed    │\n",
+  "└─────────────────────────────┘   └─────────────────────┘\n",
+  "                    ↓\n",
+  "            STAGE 2 DATABASE\n",
+  "        (Complete + Custom Data)\n",
+  "```\n\n",
+  "### 🔗 Integration Strategy\n\n",
+  "**PRESERVED TABLES** (from Stage 1):\n",
+  "- All core book publication data\n",
+  "- Ukrainian administrative data\n",
+  "- Complete dimensional structure\n\n",
+  "**CUSTOM TABLES** (added in Stage 2):\n",
+  "- Prefix: `ds_` (dataset)\n",
+  "- Bilingual input support\n",
+  "- Configuration-driven processing\n",
+  "- User-friendly validation\n\n"
+)
+
+# Get custom tables info
+custom_tables <- dbListTables(stage_2_db)[grepl("^ds_", dbListTables(stage_2_db))]
+if (length(custom_tables) > 0) {
+  manifest_content <- paste0(manifest_content, "## 📋 Custom Data Tables\n\n")
+  for (table in custom_tables) {
+    record_count <- dbGetQuery(stage_2_db, paste("SELECT COUNT(*) as count FROM", table))$count
+    manifest_content <- paste0(manifest_content, "- **", table, "**: ", record_count, " records\n")
+  }
+  manifest_content <- paste0(manifest_content, "\n")
+}
+
+# Write manifest
+writeLines(manifest_content, "ai/CACHE-MANIFEST-2.md")
+cat("   ✓ Generated Stage 2 manifest at: ai/CACHE-MANIFEST-2.md\n")
+
 # ---- cleanup -----------------------------------------------------------------
 # Close database connections
 dbDisconnect(stage_1_db)
