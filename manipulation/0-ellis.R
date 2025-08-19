@@ -241,6 +241,7 @@ for (sheet_name in names(sheets_data)) {
       sheet_name == "Тема" ~ "theme",           # Book theme/subject dimension  
       sheet_name == "Територія" ~ "territory",  # Geographic/regional dimension
       sheet_name == "Призначення" ~ "purpose",  # Purpose/target audience dimension
+      sheet_name == "Книгарні" ~ "bookstores",  # Bookstores by region dimension
       TRUE ~ tolower(sheet_name)                # Fallback for unexpected sheets
     )
     
@@ -264,6 +265,7 @@ for (sheet_name in names(sheets_data)) {
           sheet_name == "Тема" ~ "theme", 
           sheet_name == "Територія" ~ "territory",
           sheet_name == "Призначення" ~ "purpose",
+          sheet_name == "Книгарні" ~ "bookstores",
           TRUE ~ tolower(sheet_name)
         ),
         # CATEGORY VALUE: Extract the actual category (e.g., "Українська", "Російська")
@@ -272,6 +274,7 @@ for (sheet_name in names(sheets_data)) {
         measure_type = case_when(
           pokaznik == "Наіменувань" ~ "title_count",
           str_detect(pokaznik, "Примірників") ~ "copy_count", 
+          pokaznik == "Кількість книгарень" ~ "bookstore_count",
           TRUE ~ "title_count"  # default
         )
       ) %>%
