@@ -4,7 +4,9 @@
 
 rm(list = ls(all.names = TRUE)) # Clear the memory of variables from previous run. This is not called by knitr, because it's above the first chunk.
 cat("\014") # Clear the console
-# verify root location
+cat("   ✅ Saved to SQLite database\n")
+cat("   ✅ Saved to CSV files\n")
+# cat("   ✓ Saved to RDS files\n")  # REMOVED: .rds files no longer createderify root location
 cat("Working directory: ", getwd()) # Must be set to Project Directory
 # Project Directory should be the root by default unless overwritten
 
@@ -356,11 +358,11 @@ write.csv(dim_years, paste0(data_private_derived_csv, "dim_years.csv"), row.name
 write.csv(dim_categories, paste0(data_private_derived_csv, "dim_categories.csv"), row.names = FALSE)
 write.csv(dim_measures, paste0(data_private_derived_csv, "dim_measures.csv"), row.names = FALSE)
 
-# Save processed tables as RDS
-saveRDS(fact_book_publications, paste0(data_private_derived, "fact_book_publications.rds"))
-saveRDS(dim_years, paste0(data_private_derived, "dim_years.rds"))
-saveRDS(dim_categories, paste0(data_private_derived, "dim_categories.rds"))
-saveRDS(dim_measures, paste0(data_private_derived, "dim_measures.rds"))
+# Save processed tables as RDS - REMOVED: Using SQLite as single source of truth
+# saveRDS(fact_book_publications, paste0(data_private_derived, "fact_book_publications.rds"))
+# saveRDS(dim_years, paste0(data_private_derived, "dim_years.rds"))
+# saveRDS(dim_categories, paste0(data_private_derived, "dim_categories.rds"))
+# saveRDS(dim_measures, paste0(data_private_derived, "dim_measures.rds"))
 
 cat("   ✓ Saved to SQLite database\n")
 cat("   ✓ Saved to CSV files\n")

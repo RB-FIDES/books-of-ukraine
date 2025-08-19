@@ -18,6 +18,10 @@ library(fs)
 enhanced_db_path <- "data-private/derived/manipulation/SQLite/books-of-ukraine-1.sqlite"
 final_db_path <- config::get("database")$books_of_ukraine$main
 
+# Set up CSV export directory for analytical tables
+csv_path <- "data-private/derived/manipulation/CSV/"
+if (!fs::dir_exists(csv_path)) {fs::dir_create(csv_path)}
+
 cat("🔍 Importing from comprehensive database:", enhanced_db_path, "\n")
 db <- dbConnect(RSQLite::SQLite(), enhanced_db_path)
 
@@ -413,4 +417,19 @@ for (db_path in sqlite_files) {
 }
 writeLines(manifest_lines, output_path)
 message("Created ", output_path, " with actual data descriptions and column schema reference for all BOOKS-OF-*.sqlite files.")
+
+# ---- Export all analytical tables to CSV ----
+cat("\n💾 EXPORTING ANALYTICAL TABLES TO CSV:\n")
+db_final <- dbConnect(RSQLite::SQLite(), final_db_path)
+all_tables <- dbListTables(db_final)
+
+for (table_name in all_tables) {
+  table_data <- dbReadTable(db_final, table_name)
+  csv_file_path <- paste0(csv_path, table_name, ".csv")
+  write.csv(table_data, csv_file_path, row.names = FALSE)
+  cat(paste0("   ✅ Exported ", table_name, " (", nrow(table_data), " rows) to CSV\n"))
+}
+dbDisconnect(db_final)
+cat("📋 All analytical tables exported to:", csv_path, "\n")
+
 # ------------------------------------------------------------------ END OF SCRIPT ------------------------------------------------------------------

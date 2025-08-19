@@ -524,11 +524,11 @@ write.csv(dim_oblasts, paste0(csv_path, "dim_oblasts.csv"), row.names = FALSE)
 write.csv(dim_regions, paste0(csv_path, "dim_regions.csv"), row.names = FALSE)
 write.csv(fact_hromadas, paste0(csv_path, "fact_hromadas.csv"), row.names = FALSE)
 
-# Save processed tables as RDS
-saveRDS(ua_oblasts_aggregated, paste0(data_private_derived, "ua_oblasts_aggregated.rds"))
-saveRDS(dim_oblasts, paste0(data_private_derived, "dim_oblasts.rds"))
-saveRDS(dim_regions, paste0(data_private_derived, "dim_regions.rds"))
-saveRDS(fact_hromadas, paste0(data_private_derived, "fact_hromadas.rds"))
+# Save processed tables as RDS - REMOVED: Using SQLite as single source of truth  
+# saveRDS(ua_oblasts_aggregated, paste0(data_private_derived, "ua_oblasts_aggregated.rds"))
+# saveRDS(dim_oblasts, paste0(data_private_derived, "dim_oblasts.rds"))
+# saveRDS(dim_regions, paste0(data_private_derived, "dim_regions.rds"))
+# saveRDS(fact_hromadas, paste0(data_private_derived, "fact_hromadas.rds"))
 
 cat("   ✓ Saved Ukrainian admin tables to Stage 1 database\n")
 cat("   ✓ Saved to CSV files\n")

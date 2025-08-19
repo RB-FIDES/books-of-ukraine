@@ -1,6 +1,6 @@
 # CACHE Manifest - Books of Ukraine Stage 1 Database
 
-**Generated:** 2025-08-19 05:39:26.843557
+**Generated:** 2025-08-19 06:43:03.99995
 **Database:** books-of-ukraine-1.sqlite
 **Total Tables:** 9
 
