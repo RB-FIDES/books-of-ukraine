@@ -5,6 +5,30 @@
 
 ---
 
+## 2025-08-19: Folder Architecture Clarification & Implementation
+
+**Context**: Human clarified the distinct conceptual purposes of `./philosophy/` vs `./ai/` directories and moved ontology.md → glossary.md
+
+**Architectural Intent**:
+- **`./philosophy/`**: Universal FIDES Framework principles that remain consistent across all research projects using FIDES methodology
+- **`./ai/`**: Project-specific AI-human symbiotic collaboration documents for Books-of-Ukraine implementation
+
+**Implementation Status**: ✅ DOCUMENTED
+- ✅ Captured folder architecture principles in project memory
+- ✅ Documented ontology.md → glossary.md move rationale  
+- ✅ Established clear conceptual hierarchy for future file placement decisions
+
+**Architectural Benefits**:
+- **Separation of Concerns**: Framework vs. Implementation
+- **Reusability**: FIDES principles can be applied to other research domains  
+- **Maintenance**: Universal concepts stable, project-specific content evolves
+- **Scalable Pedagogy**: Universal teaching principles with project-specific applications
+
+**Files Modified**: ai/memory-ai.md (this entry)  
+**Status**: Complete - Conceptual architecture clarified and documented
+
+---
+
 ## 2025-08-15: PowerShell Infrastructure Scripts Enhancement
 
 **Context**: Successfully adapted PowerShell infrastructure scripts from SDA-CEIS-Impact to Books-of-Ukraine project context

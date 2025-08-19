@@ -6,7 +6,16 @@ library(dplyr)
 library(ggplot2)
 library(tidyverse)
 
+# Source common functions for standardized database connections
+source("scripts/common-functions.R")
+
+# Option 1: Use direct CSV loading (existing approach)
 fact_book_publications <- read.csv("data-private/derived/manipulation/CSV/fact_book_publications.csv")
+
+# Option 2: Use config-driven SQLite database connection
+# books_db <- connect_books_db("main")  # Connect to default analytical database
+# fact_book_publications <- DBI::dbReadTable(books_db, "fact_book_publications")
+# DBI::dbDisconnect(books_db)  # Always close connection when done
 
 # ds_year_wide: year x measure (wide)
 ds_year_wide <- fact_book_publications %>%
