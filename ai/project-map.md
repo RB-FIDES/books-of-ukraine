@@ -1,6 +1,19 @@
 # Project Map
 
-**Generated**:  2├── ai/  🧠 Context mgmt & AI memory
+**Generated**:  2├── a│   ├── CACHE-manifest-analytical.md  📊 A├── guides/  📚 Setup & usage guides
+│   ├── getting-started.md  🚀 New device setup
+│   ├── flow-usage.md  🔄 Flow usage guide
+│   ├── command-guide.md  📖 Command guide
+│   ├── command-reference.md  📚 Reference manual
+│   ├── memory-system-guide.md  🧠 Memory system demo
+│   ├── setup-google-access.md  🔑 Google auth setup
+│   └── google-service-account-template.json  📋 Template tables
+│   ├── CACHE-manifest-0.md  📊 Core star schema (0-ellis.R)
+│   ├── FIDES.md  🔬 Research framework
+│   ├── glossary.md  📖 Terms
+│   ├── INPUT-manifest.md  📥 Input data docs
+│   ├── logbook.md  📝 Change log
+│   ├── method.md  📐 Methodsontext mgmt & AI memory
 │   ├── CACHE-manifest-0.md  📊 Core star schema (0-ellis.R)
 │   ├── CACHE-MANIFEST-1.md  📊 Enhanced DB (1-ellis.R)
 │   ├── CACHE-manifest-analytical.md  📊 Analysis tables (last-ellis.R)08-08 11:02:35
