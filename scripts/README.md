@@ -3,6 +3,14 @@
 
 Contains collections of scripts aimed at anticipating standard needs during analytic and publishing work flow.
 
+## Directory Structure
+
+### `./ps1/` - PowerShell Workflow Scripts
+PowerShell scripts for workflow automation that assume the project is already set up.
+- **Organization Principle**: Workflow `.ps1` files go here; bootstrapping scripts stay in project root
+- **Standards**: ASCII-only (no emojis/Unicode) - see `ai/onboarding-ai.md`
+- **Current Scripts**: `run-complete-ellis-pipeline.ps1`
+
 ## Key Scripts
 
 ### `update-copilot-context.R`
