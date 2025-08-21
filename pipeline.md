@@ -46,15 +46,44 @@ The Ellis pipeline processes Ukrainian book publishing data through four progres
 **Outputs**: 
 - **Stage 1 Database**: `books-of-ukraine-1.sqlite` (books + administrative data)
 
+### **Ellis Stage 2: Custom Data Integration**
+#### `manipulation/2-ellis-extra.R` - Modular Custom/Extra Data Integration
+
+**Purpose**: Integrate user-contributed custom data sources through a modular, configuration-driven system.
+
+**Key Features**:
+- **Bilingual Support**: Accepts Ukrainian OR English input, standardizes to English
+- **Configuration-Driven**: Add new data sources via `extra-data-config.R` without code changes
+- **Modular Processing**: Different data types (time series, lookup tables, fact tables) handled automatically
+- **Google Sheets Integration**: Direct import from shared Google Sheets
+- **User-Friendly**: Clear documentation and examples for non-technical contributors
+
+**Key Operations**:
+- Copies Stage 1 database as foundation
+- Processes custom data sources defined in `extra-data-config.R`
+- Applies bilingual column name translation (Ukrainian → English)
+- Creates systematic table naming with `ds_` prefix for custom tables
+- Validates and documents all custom data additions
+
+**Supporting Files**:
+- `extra-data-config.R`: User-editable configuration for new data sources
+- `extra-data-functions.R`: Modular processing functions for different data types
+- `guides/custom-data-guide.md`: Complete user guide for adding custom data
+
+**Outputs**: 
+- **Stage 2 Database**: `books-of-ukraine-2.sqlite` (complete + custom data)
+- **Documentation**: `CACHE-MANIFEST-2.md` with bilingual integration details
+
 ### **Ellis Final: Analytical Optimization**
 #### `manipulation/last-ellis.R` - Analytical Database Creation
 
 **Purpose**: Create the final analytical database optimized for analysis workflows.
 
 **Key Operations**:
-- Transforms Stage 1 data into analysis-ready formats
+- Transforms Stage 2 data (complete dataset) into analysis-ready formats
 - Creates both wide and long format tables for different analytical needs
 - Generates comprehensive analytical views by category (language, territory, theme, purpose)
+- Optimizes database size by focusing on analytical tables
 
 **Outputs**:
 - **Default Database**: `books-of-ukraine.sqlite` (final analytical database)
@@ -72,6 +101,11 @@ Stage 0: Core Foundation
 Stage 1: Administrative Integration  
 ├── 1-ellis-ua-admin.R → books-of-ukraine-1.sqlite (1.96 MB)
 │   └── Core + Ukrainian territorial & demographic data
+│
+Stage 2: Custom Data Integration
+├── 2-ellis-extra.R → books-of-ukraine-2.sqlite (~2+ MB)
+│   └── Complete + user-contributed custom data sources
+│   └── Bilingual support (Ukrainian/English input)
 │
 Final: Analytical Optimization
 └── last-ellis.R → books-of-ukraine.sqlite (0.29 MB)
@@ -94,6 +128,7 @@ db <- dbConnect(RSQLite::SQLite(), db_path)
 **When to Use Intermediate Databases**:
 - **books-of-ukraine-0.sqlite**: Quality control of core data processing
 - **books-of-ukraine-1.sqlite**: Specialized territorial analysis requiring administrative context
+- **books-of-ukraine-2.sqlite**: Complete dataset with custom/user-contributed data
 - **books-of-ukraine.sqlite**: Standard analysis workflows (90% of use cases)
 
 ---
@@ -109,6 +144,7 @@ database:
     main: "./data-private/derived/manipulation/SQLite/books-of-ukraine.sqlite"
     stage_0: "./data-private/derived/manipulation/SQLite/books-of-ukraine-0.sqlite"
     stage_1: "./data-private/derived/manipulation/SQLite/books-of-ukraine-1.sqlite"
+    stage_2: "./data-private/derived/manipulation/SQLite/books-of-ukraine-2.sqlite"
   directories:
     cache: "./ai/"
     derived: "./data-private/derived/"
@@ -123,6 +159,7 @@ config <- yaml::read_yaml("config.yml")
 
 # Connect to appropriate database
 db_path <- config$database$books_of_ukraine$main  # Default for analysis
+# db_path <- config$database$books_of_ukraine$stage_2  # For complete dataset with custom data
 # db_path <- config$database$books_of_ukraine$stage_1  # For territorial analysis
 # db_path <- config$database$books_of_ukraine$stage_0  # For core data QC
 
@@ -135,7 +172,7 @@ db <- dbConnect(RSQLite::SQLite(), db_path)
 source("scripts/common-functions.R")
 
 # Connect using standardized helper function
-db <- connect_books_db("main")  # or "stage_1", "stage_0"
+db <- connect_books_db("main")  # or "stage_2", "stage_1", "stage_0"
 
 # Query data
 result <- dbGetQuery(db, "SELECT * FROM fact_book_publications LIMIT 5")
@@ -149,6 +186,75 @@ dbDisconnect(db)
 - Environment-independent path handling
 - Easy database switching for different analytical needs
 - Simplified maintenance when moving between development/production environments
+
+---
+
+## 🔧 **Modular Custom Data System (Stage 2)**
+
+The Ellis Pipeline includes a sophisticated system for integrating user-contributed custom data sources without requiring code modifications.
+
+### **Key Features**
+
+**🌍 Bilingual Support**:
+- Accepts data input in Ukrainian OR English
+- Automatic column name translation (e.g., 'Показник' → 'pokaznik', 'Територія' → 'teritoria')
+- Standardized English output for pipeline consistency
+- No manual translation required from data contributors
+
+**⚙️ Configuration-Driven Processing**:
+- Add new data sources via `manipulation/extra-data-config.R`
+- No modifications to core processing scripts required
+- Supports multiple data types with automatic format detection
+- Clear examples and templates for each data type
+
+**📊 Supported Data Types**:
+- **Categorical Time Series**: Categories × Years format (like bookstores by region over time)
+- **Lookup Tables**: Reference/mapping data with key-value relationships
+- **Fact Tables**: Event-based or survey data with multiple dimensions
+
+### **Usage Workflow**
+
+**For Data Contributors**:
+1. Create Google Sheet with data (Ukrainian or English column names)
+2. Share sheet with read access
+3. Edit `manipulation/extra-data-config.R` to add data source configuration
+4. Set `active = TRUE` for the new data source
+5. Run `Rscript manipulation/2-ellis-extra.R`
+
+**For Analysts**:
+- Custom tables appear in Stage 2 database with `ds_` prefix
+- Bilingual data automatically standardized to English
+- Full documentation generated in `CACHE-MANIFEST-2.md`
+
+### **Example Data Source Configuration**
+
+```r
+# In manipulation/extra-data-config.R
+bookstores = list(
+  name = "Ukrainian Bookstores by Region",
+  description = "Number of bookstores per region for 2023",
+  url = "https://docs.google.com/spreadsheets/d/1ovYOr_jmdDprYjcGMWAa-w9D1-h7kwwjbRgUgVtlUa0",
+  data_type = "categorical_time_series",
+  active = TRUE,
+  processing_notes = list(
+    sheet_mapping = list("Книгарні" = "bookstores"),
+    measure_mapping = list("Кількість книгарень" = "bookstore_count"),
+    expected_sheets = c("Книгарні")
+  )
+)
+```
+
+### **Documentation & Support**
+
+- **Complete Guide**: `guides/custom-data-guide.md` - Step-by-step instructions
+- **Configuration**: `manipulation/extra-data-config.R` - Add new data sources
+- **Functions**: `manipulation/extra-data-functions.R` - Processing logic
+- **Examples**: Templates for each data type with real examples
+
+**Pipeline Integration**: Custom data flows seamlessly through the pipeline:
+```
+Custom Data → Stage 2 → Final Database → Analysis Scripts
+```
 
 # Workflow Management
 
