@@ -20,15 +20,15 @@ update_copilot_instructions <- function(file_list) {
     "semiology" = "./ai/semiology.md",
     "pipeline" = "./pipeline.md",
     "fides" = "./ai/FIDES.md",
-    "cache-manifest" = "./ai/CACHE-manifest-0.md",
-    "cache-manifest-enhanced" = "./ai/CACHE-MANIFEST-1.md",
+    "cache-manifest" = "./data-public/metadata/CACHE-manifest-0.md",
+    "cache-manifest-enhanced" = "./data-public/metadata/CACHE-MANIFEST-1.md",
     "cache-manifest-analytical" = "./ai/CACHE-manifest-analytical.md",
     "memory-hub" = "./ai/memory-hub.md",
     "memory-human" = "./ai/memory-human.md",
     "memory-ai" = "./ai/memory-ai.md",
     "project-map" = "./ai/project-map.md",
-    "input-manifest" = "./ai/INPUT-manifest.md",
-    "ua-admin-manifest" = "./ai/ua-admin-manifest.md"
+    "input-manifest" = "./data-public/metadata/INPUT-manifest.md",
+    "ua-admin-manifest" = "./data-public/metadata/ua-admin-manifest.md"
   )
   
   instructions_path <- ".github/copilot-instructions.md"

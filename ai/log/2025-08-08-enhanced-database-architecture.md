@@ -150,7 +150,7 @@ fact_enhanced (unified view)
 ## Documentation Automation
 
 ### CACHE Manifest Generation
-**Auto-Generated**: `ai/CACHE-manifest.md`
+**Auto-Generated**: `data-public/metadata/CACHE-manifest.md`
 - **Schema Documentation**: Complete table structure documentation
 - **Relationship Mapping**: Foreign key relationships and join patterns
 - **Data Dictionary**: Column descriptions with data types

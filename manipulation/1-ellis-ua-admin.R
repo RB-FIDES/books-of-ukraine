@@ -100,7 +100,7 @@ download_ua_data <- function(url, description) {
 }
 
 # Function to generate comprehensive manifest (adapted from 1-ellis.R patterns)
-generate_stage_1_manifest <- function(db_connection, output_path = "ai/CACHE-MANIFEST-1.md") {
+generate_stage_1_manifest <- function(db_connection, output_path = "data-public/metadata/CACHE-MANIFEST-1.md") {
   cat("📝 Generating Stage 1 CACHE-MANIFEST-1.md...\n")
   
   tables <- dbListTables(db_connection)
@@ -571,7 +571,7 @@ cat("\n📝 GENERATING DOCUMENTATION\n")
 cat(paste(rep("=", 30), collapse = ""), "\n")
 
 # Generate Stage 1 manifest
-generate_stage_1_manifest(db_stage_1, output_path = "ai/CACHE-MANIFEST-1.md")
+generate_stage_1_manifest(db_stage_1, output_path = "data-public/metadata/CACHE-MANIFEST-1.md")
 
 # Close database connection
 dbDisconnect(db_stage_1)
@@ -586,13 +586,13 @@ cat("  ✓ Stage 1 SQLite database:", stage_1_db_path, "\n")
 cat("  ✓ Core books data preserved (from Stage 0)\n")
 cat("  ✓ Ukrainian administrative data integrated\n")
 cat("  ✓ Oblast-level aggregations for mapping\n")
-cat("  ✓ Comprehensive documentation (ai/CACHE-MANIFEST-1.md)\n")
+cat("  ✓ Comprehensive documentation (data-public/metadata/CACHE-MANIFEST-1.md)\n")
 
 cat("\n🔍 RECOMMENDED USAGE:\n")
 cat("  • Use ua_oblasts_aggregated for oblast-level choropleth maps\n")
 cat("  • Use fact_hromadas for detailed territorial analysis\n")
 cat("  • Use fact_book_publications for core publishing analysis\n")
-cat("  • Reference ai/CACHE-MANIFEST-1.md for schema details\n")
+cat("  • Reference data-public/metadata/CACHE-MANIFEST-1.md for schema details\n")
 
 cat("\n🚀 NEXT STEPS:\n")
 cat("  1. Run last-ellis.R to create final analytical database\n")

@@ -20,8 +20,8 @@ update_copilot_instructions <- function(file_list) {
     "semiology" = "./ai/semiology.md",
     "pipeline" = "./pipeline.md",
     "fides" = "./ai/FIDES.md",
-    "cache-manifest" = "./ai/CACHE-manifest-0.md",
-    "cache-manifest-enhanced" = "./ai/CACHE-MANIFEST-1.md",
+    "cache-manifest" = "./data-public/metadata/CACHE-manifest-0.md",
+    "cache-manifest-enhanced" = "./data-public/metadata/CACHE-MANIFEST-1.md",
     "cache-manifest-analytical" = "./ai/CACHE-manifest-analytical.md",
     "memory-hub" = "./ai/memory-hub.md",
     "memory-human" = "./ai/memory-human.md",
@@ -111,7 +111,7 @@ add_to_instructions <- function(...) {
       "semiology" = "./ai/semiology.md",
       "pipeline" = "./pipeline.md",
       "fides" = "./ai/FIDES.md",
-      "cache-manifest" = "./ai/CACHE-manifest-0.md",
+      "cache-manifest" = "./data-public/metadata/CACHE-manifest-0.md",
       "memory-hub" = "./ai/memory-hub.md",
       "memory-human" = "./ai/memory-human.md",
       "memory-ai" = "./ai/memory-ai.md"
@@ -389,7 +389,7 @@ check_context_size <- function() {
 
 # Function to check and update CACHE-manifest-0.md based on actual 0-ellis outputs
 check_cache_manifest <- function(update_if_needed = TRUE) {
-  cache_manifest_path <- "./ai/CACHE-manifest-0.md"
+  cache_manifest_path <- "./data-public/metadata/CACHE-manifest-0.md"
   # Note: CACHE-manifest-example.md was removed - template no longer needed
   # cache_example_path <- "./ai/CACHE-manifest-example.md"
   logbook_path <- "./ai/logbook.md"
@@ -1068,7 +1068,7 @@ validate_context_silent <- function() {
     "pipeline" = "./pipeline.md",
     "fides" = "./ai/FIDES.md",
     "logbook" = "./ai/logbook.md",
-    "cache-manifest" = "./ai/CACHE-manifest-0.md"
+    "cache-manifest" = "./data-public/metadata/CACHE-manifest-0.md"
   )
   
   stale_files <- c()

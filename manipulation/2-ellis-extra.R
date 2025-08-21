@@ -311,8 +311,8 @@ if (length(custom_tables) > 0) {
 }
 
 # Write manifest
-writeLines(manifest_content, "ai/CACHE-MANIFEST-2.md")
-cat("   ✓ Generated Stage 2 manifest at: ai/CACHE-MANIFEST-2.md\n")
+writeLines(manifest_content, "data-public/metadata/CACHE-MANIFEST-2.md")
+cat("   ✓ Generated Stage 2 manifest at: data-public/metadata/CACHE-MANIFEST-2.md\n")
 
 # ---- cleanup -----------------------------------------------------------------
 # Close database connections

@@ -321,7 +321,7 @@ if ("ds_bookstores" %in% tables) {
 dbDisconnect(db)
 
 # Write a manifest that describes the actual data, using the example only for format inspiration
-output_path <- "ai/CACHE-MANIFEST.md"
+output_path <- "data-public/metadata/CACHE-MANIFEST.md"
 sqlite_dir <- "data-private/derived/manipulation/SQLite"
 sqlite_files <- list.files(sqlite_dir, pattern = "^BOOKS-OF-.*\\.sqlite$", full.names = TRUE)
 manifest_lines <- c(

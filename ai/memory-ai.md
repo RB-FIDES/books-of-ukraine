@@ -231,13 +231,13 @@ books-of-ukraine-enhanced.sqlite (11 tables):
 **Context**: Automated CACHE manifest generation for dataset documentation
 
 **Implementation**:
-- Auto-generated ai/CACHE-manifest-0.md based on actual dataset outputs
+- Auto-generated data-public/metadata/CACHE-manifest-0.md based on actual dataset outputs
 - Documented 6 datasets: ds_year_long, ds_language_long, ds_genre_long, ds_pubtype_long, ds_geography_long, ds_ukr_rus_long
 - Database integration: books-of-ukraine.sqlite
 - Ferry script documentation: manipulation/0-ellis.R
 
 **Status**: Complete - 6 datasets documented and verified
-**Files**: ai/CACHE-manifest-0.md, books-of-ukraine.sqlite
+**Files**: data-public/metadata/CACHE-manifest-0.md, books-of-ukraine.sqlite
 **Dependencies**: Linked to ferry script outputs
 
 ---
