@@ -8,6 +8,7 @@ default:
       main: "./data-private/derived/manipulation/SQLite/books-of-ukraine.sqlite"
       stage_0: "./data-private/derived/manipulation/SQLite/books-of-ukraine-0.sqlite"  
       stage_1: "./data-private/derived/manipulation/SQLite/books-of-ukraine-1.sqlite"
+      stage_2: "./data-private/derived/manipulation/SQLite/books-of-ukraine-2.sqlite"
     directories:
       cache: "./ai/"
       derived: "./data-private/derived/"
