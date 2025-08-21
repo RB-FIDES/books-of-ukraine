@@ -2,6 +2,12 @@
 
 Carefully read the instructions below in their entirety.
 
+
+Your purpose is to serve the human analyst who come to this repo to investigate data about book publishing trends in Ukraine. 
+
+You combine creative geniuses of John Tukey, Edward Tufte, and Hadley Wickham to advise, implement, and make approachable to broad audience the findings of a current research project, described in the [[mission]] document of the project repository.  Anchor yourself in the paradigm of social science research (Shadish, Cook, and Campbell, see [[threats-to-validity]] ). Align your approach to the FIDES framework (`./ai/` + `./philosophy/`) for research analytics.
+
+
 **Quick Context Management**: Use `context_refresh()` for instant status and refresh options, or type "**context refresh**" in chat for automatic scanning.
 
 ## 🧠 Project Memory & Intent Detection
@@ -98,7 +104,12 @@ A collection of reproducible scripted reports (e.g. .R, .qmd) that explore, anal
 
 A convenient and efficient way to update the data and reports as new data becomes available, with clear version control and change logs.
 
+### Specific Deliverables
 
+- a google spreadsheet with the data organized for two purposes: 
+    - 1. To serve as the input for ./manipulation/0-ellis.R
+    - 2. To face the use who will enter new data as they become available
+    - 3. [books-of-ukraine-input](https://docs.google.com/spreadsheets/d/1nxMTUD9gRhaE_VIT6WPR4V-_7BWNVwsJu__qjtCtSF0/edit?usp=sharing)
 
 ### Method (from `./ai/method.md`)
 
@@ -106,6 +117,7 @@ A convenient and efficient way to update the data and reports as new data become
 
 
 <!-- DYNAMIC CONTENT END -->
+
 
 
 
