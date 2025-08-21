@@ -1,4 +1,4 @@
-# onboarding_ai.md
+# ./philosophy/FIDES-example.md
 
 ## Purpose
 

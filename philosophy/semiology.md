@@ -50,7 +50,7 @@ This allows us to frame **data analysis** as a polyglot enterprise — expressin
 
 ## Human Analyst as Conductor {#human-analyst-as-conductor}
 
-In [[FIDES]] (organization framework for AI-augmented research analytics), the human analyst operates as a conductor of movement across dimensions. Analysis is approached not as a linear act but a narrative arc that shifts attention between modalities as our inquiry unfolds. For example, one might begin with a tabular summary, discover a surprising pattern visually, formalize it algebraically, validate it numerically, and then communicate it semantically.
+In [[philosophy/README]] (organization framework for AI-augmented research analytics), the human analyst operates as a conductor of movement across dimensions. Analysis is approached not as a linear act but a narrative arc that shifts attention between modalities as our inquiry unfolds. For example, one might begin with a tabular summary, discover a surprising pattern visually, formalize it algebraically, validate it numerically, and then communicate it semantically.
 
 The added value lies not in mastery of one dialect (AI role), but in the ability to move between them (human role): to translate, contextualize, and refine understanding across representational forms.
 
