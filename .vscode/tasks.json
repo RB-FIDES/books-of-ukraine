@@ -23,16 +23,15 @@
     },
     {
       "label": "Load Memory Functions (R)",
-      "type": "shell", 
+      "type": "process",
       "command": "Rscript",
       "args": [
-        "-e",
-        "source('./scripts/ai-memory-functions-core.R'); ai_memory_check()"
+        "scripts/wrappers/run-ai-memory-check.R"
       ],
       "group": "build",
       "presentation": {
         "echo": true,
-        "reveal": "always", 
+        "reveal": "always",
         "focus": false,
         "panel": "shared"
       },
@@ -46,14 +45,14 @@
         "-ExecutionPolicy",
         "Bypass",
         "-NoProfile",
-  "-Command",
-  "Write-Host '📁 Project Structure:'; tree /F /A | Out-String -Stream | Select-Object -First 30 | ForEach-Object { Write-Host $_ }"
+        "-Command",
+        "Write-Host '📁 Project Structure:'; tree /F /A | Out-String -Stream | Select-Object -First 30 | ForEach-Object { Write-Host $_ }"
       ],
       "group": "build",
       "presentation": {
         "echo": true,
         "reveal": "always",
-        "focus": false, 
+        "focus": false,
         "panel": "shared"
       },
       "problemMatcher": []

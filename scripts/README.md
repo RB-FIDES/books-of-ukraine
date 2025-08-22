@@ -11,6 +11,12 @@ PowerShell scripts for workflow automation that assume the project is already se
 - **Standards**: ASCII-only (no emojis/Unicode) - see `ai/onboarding-ai.md`
 - **Current Scripts**: `run-complete-ellis-pipeline.ps1`
 
+### `./wrappers/` - Script Wrappers
+Small wrapper scripts that bridge VS Code tasks with main project scripts.
+- **Purpose**: Avoid PowerShell quoting issues and provide clean task entry points
+- **Contents**: Minimal R/Python wrappers for automation
+- **Documentation**: See `./wrappers/README.md` for details
+
 ## Key Scripts
 
 ### `update-copilot-context.R`
