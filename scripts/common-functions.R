@@ -95,13 +95,15 @@ names_labels <- function(ds){
 #' Connect to Books of Ukraine Database
 #' 
 #' @description 
-#' Standardized database connection using centralized configuration.
+#' Modern standardized database connection using centralized configuration.
 #' Supports different database stages for specific analytical needs.
+#' This replaces the outdated config::get() approach that was causing issues.
 #' 
 #' @param db_type Character. Database type to connect to:
 #'   - "main" (default): Final analytical database (books-of-ukraine.sqlite)
-#'   - "stage_0": Core books data only
-#'   - "stage_1": Books data with Ukrainian administrative integration
+#'   - "stage_0": Core books data only (books-of-ukraine-0.sqlite)
+#'   - "stage_1": Books + Ukrainian administrative data (books-of-ukraine-1.sqlite)
+#'   - "stage_2": Books + admin + custom data (books-of-ukraine-2.sqlite)
 #' @param config_path Character. Path to config.yml file. Default: "config.yml"
 #' 
 #' @return DBI database connection object
@@ -112,6 +114,9 @@ names_labels <- function(ds){
 #' 
 #' # Connect to specific stage for territorial analysis
 #' db <- connect_books_db("stage_1")
+#' 
+#' # Connect to comprehensive database with all data
+#' db <- connect_books_db("stage_2")
 #' 
 #' # Always close connection when done
 #' DBI::dbDisconnect(db)
@@ -143,7 +148,8 @@ connect_books_db <- function(db_type = "main", config_path = "config.yml") {
     "main" = config$database$books_of_ukraine$main,
     "stage_0" = config$database$books_of_ukraine$stage_0,
     "stage_1" = config$database$books_of_ukraine$stage_1,
-    stop(paste0("Unknown db_type: ", db_type, ". Use 'main', 'stage_0', or 'stage_1'."))
+    "stage_2" = config$database$books_of_ukraine$stage_2,
+    stop(paste0("Unknown db_type: ", db_type, ". Use 'main', 'stage_0', 'stage_1', or 'stage_2'."))
   )
   
   if (is.null(db_path)) {
@@ -165,8 +171,9 @@ connect_books_db <- function(db_type = "main", config_path = "config.yml") {
 #' @description 
 #' Utility function to get database path without creating connection.
 #' Useful for file operations or when connection object not needed.
+#' Updated to support all Ellis pipeline stages.
 #' 
-#' @param db_type Character. Database type ("main", "stage_0", "stage_1")
+#' @param db_type Character. Database type ("main", "stage_0", "stage_1", "stage_2")
 #' @param config_path Character. Path to config.yml file
 #' 
 #' @return Character. Full path to database file
@@ -186,7 +193,8 @@ get_db_path <- function(db_type = "main", config_path = "config.yml") {
     "main" = config$database$books_of_ukraine$main,
     "stage_0" = config$database$books_of_ukraine$stage_0,
     "stage_1" = config$database$books_of_ukraine$stage_1,
-    stop(paste0("Unknown db_type: ", db_type))
+    "stage_2" = config$database$books_of_ukraine$stage_2,
+    stop(paste0("Unknown db_type: ", db_type, ". Use 'main', 'stage_0', 'stage_1', or 'stage_2'."))
   )
   
   if (is.null(db_path)) {
