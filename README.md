@@ -33,3 +33,15 @@ Our **modular Ellis Pipeline** transforms raw data into analysis-ready formats:
 **Analysis Templates**: Explore `analysis/` directory for example workflows
 
 ---
+
+## ⚠️ PowerShell tasks and Execution Policy
+
+Some development tasks in `.vscode/tasks.json` invoke PowerShell scripts. To allow these to run on machines with restricted PowerShell execution policy, the tasks include the flags `-ExecutionPolicy Bypass -NoProfile` when invoking PowerShell. This does not change the system's execution policy; it only instructs the PowerShell process started by VS Code to bypass the policy for that run.
+
+If you prefer to change your user execution policy permanently instead, run PowerShell as Administrator and set:
+
+```powershell
+Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
+```
+
+Only do that if you understand the security implications. The current task approach is minimally invasive and safe for development workflows.
