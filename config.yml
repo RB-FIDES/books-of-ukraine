@@ -3,6 +3,11 @@ default:
   schema_name: "books_ukraine"
   
   # Database Configuration - Books of Ukraine Project
+  # Ellis Pipeline stages:
+  # - stage_0: Core foundation (books data only)
+  # - stage_1: + Ukrainian administrative data
+  # - stage_2: + Custom/extra data integration  
+  # - main: Final analytical database (optimized for analysts)
   database:
     books_of_ukraine:
       main: "./data-private/derived/manipulation/SQLite/books-of-ukraine.sqlite"
