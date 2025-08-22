@@ -6,6 +6,9 @@
       "type": "shell",
       "command": "powershell",
       "args": [
+        "-ExecutionPolicy",
+        "Bypass",
+        "-NoProfile",
         "-Command",
         "Write-Host '🧠 Memory System Status:'; Get-ChildItem ai/*.md | ForEach-Object { Write-Host \"📄 $($_.Name): $(Get-Date $_.LastWriteTime -Format 'yyyy-MM-dd HH:mm')\" }"
       ],
@@ -40,8 +43,11 @@
       "type": "shell",
       "command": "powershell",
       "args": [
-        "-Command",
-        "Write-Host '📁 Project Structure:'; tree /F /A | head -30"
+        "-ExecutionPolicy",
+        "Bypass",
+        "-NoProfile",
+  "-Command",
+  "Write-Host '📁 Project Structure:'; tree /F /A | Out-String -Stream | Select-Object -First 30 | ForEach-Object { Write-Host $_ }"
       ],
       "group": "build",
       "presentation": {
@@ -53,7 +59,7 @@
       "problemMatcher": []
     },
     {
-      "label": "Ellis Pipeline - Complete (All Stages)",
+      "label": "Ellis Pipeline Run",
       "type": "shell",
       "command": "powershell",
       "args": [
@@ -82,86 +88,13 @@
       }
     },
     {
-      "label": "Ellis Stage 0 - Core Foundation",
-      "type": "shell",
-      "command": "Rscript",
-      "args": [
-        "manipulation/0-ellis.R"
-      ],
-      "group": "build",
-      "presentation": {
-        "echo": true,
-        "reveal": "always",
-        "focus": false,
-        "panel": "shared"
-      },
-      "problemMatcher": [],
-      "options": {
-        "cwd": "${workspaceFolder}"
-      }
-    },
-    {
-      "label": "Ellis Stage 1 - Administrative Integration", 
-      "type": "shell",
-      "command": "Rscript",
-      "args": [
-        "manipulation/1-ellis-ua-admin.R"
-      ],
-      "group": "build",
-      "presentation": {
-        "echo": true,
-        "reveal": "always",
-        "focus": false,
-        "panel": "shared"
-      },
-      "problemMatcher": [],
-      "options": {
-        "cwd": "${workspaceFolder}"
-      }
-    },
-    {
-      "label": "Ellis Stage 2 - Custom Data Integration",
-      "type": "shell", 
-      "command": "Rscript",
-      "args": [
-        "manipulation/2-ellis-extra.R"
-      ],
-      "group": "build",
-      "presentation": {
-        "echo": true,
-        "reveal": "always",
-        "focus": false,
-        "panel": "shared"
-      },
-      "problemMatcher": [],
-      "options": {
-        "cwd": "${workspaceFolder}"
-      }
-    },
-    {
-      "label": "Ellis Final - Analytical Optimization",
-      "type": "shell",
-      "command": "Rscript", 
-      "args": [
-        "manipulation/last-ellis.R"
-      ],
-      "group": "build",
-      "presentation": {
-        "echo": true,
-        "reveal": "always",
-        "focus": false,
-        "panel": "shared"
-      },
-      "problemMatcher": [],
-      "options": {
-        "cwd": "${workspaceFolder}"
-      }
-    },
-    {
       "label": "Project Status Check",
       "type": "shell",
       "command": "powershell",
       "args": [
+        "-ExecutionPolicy",
+        "Bypass",
+        "-NoProfile",
         "-File",
         "${workspaceFolder}/project-status.ps1",
         "-Detailed"
@@ -183,6 +116,9 @@
       "type": "shell",
       "command": "powershell",
       "args": [
+        "-ExecutionPolicy",
+        "Bypass",
+        "-NoProfile",
         "-File",
         "${workspaceFolder}/setup-nodejs.ps1"
       ],
