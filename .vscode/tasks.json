@@ -57,6 +57,9 @@
       "type": "shell",
       "command": "powershell",
       "args": [
+        "-ExecutionPolicy",
+        "Bypass",
+        "-NoProfile",
         "-File",
         "${workspaceFolder}/scripts/ps1/run-complete-ellis-pipeline.ps1"
       ],
