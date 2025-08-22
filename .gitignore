@@ -162,3 +162,6 @@ google-service-account.json
 context7.json
 data-public/metadata/CACHE-MANIFEST-1.md
 data-public/metadata/CACHE-MANIFEST-2.md
+
+# Local VS Code workspace settings (contains user paths and tokens)
+.vscode/settings.json

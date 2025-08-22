@@ -43,6 +43,12 @@ install.packages(c(
 - Place your Google Sheets authentication file as `.secrets` in the project root (see `guides/setup-google-access.md` for help).
 ## Here some instructions on how to do it:
 
+**Local VS Code settings:** Copy the example settings file to create your local workspace settings (this file is ignored by git):
+
+```powershell
+copy .vscode\settings.json.example .vscode\settings.json
+```
+
 ### Set Up Google Sheets Authentication
 
 To access project data in Google Sheets, you must authenticate your R environment. There are two supported methods:
