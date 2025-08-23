@@ -1,6 +1,6 @@
 # Books of Ukraine - Data Pipeline
 
-This project analyzes Ukrainian book publication data from the [Ukrainian Book Chamber](http://www.ukrbook.net/), providing insights into publishing trends, language patterns, and regional distributions since 2005.
+This project analyzes Ukrainian book publication data from the [Ukrainian Book Chamber](http://www.ukrbook.net/), providing insights into publishing trends, language use, genre prevalence, and regional distributions since 2005.
 
 ## 🚀 **Ellis Pipeline**: 4-Stage Data Processing System
 
@@ -8,8 +8,8 @@ Our **modular Ellis Pipeline** transforms raw data into analysis-ready formats:
 
 - **Stage 0**: Core book publication data (5 main categories)
 - **Stage 1**: Ukrainian administrative data integration (hromadas, oblasts)  
-- **Stage 2**: **NEW** Modular custom data with **bilingual Ukrainian/English support**
-- **Final**: Analysis-ready tables + CSV exports
+- **Stage 2**: Modular custom data with **bilingual Ukrainian/English support**
+- **Final**: Analysis-ready tables + CSV exports, aka default database
 
 ### 🌟 **Key Features**:
 - **Bilingual Support**: Input Ukrainian or English data, get standardized English output
