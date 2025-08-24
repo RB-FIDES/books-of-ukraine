@@ -12,6 +12,8 @@
 library(DBI)
 library(RSQLite)
 library(dplyr)
+library(tidyr)     # for pivot_longer operations in oblast tables
+library(stringr)   # for str_detect operations
 library(fs)
 
 # ---- load-sources ------------------------------------------------------------
@@ -187,6 +189,96 @@ if (!bookstore_wide_created) {
 	cat("ds_bookstores_wide was not created due to missing source tables or errors.\n")
 }
 
+# ------------------------------------------------------------------ CREATE OBLAST TABLES (ADMINISTRATIVE DATA) ------------------------------------------------------------------
+
+# Create ds_oblast_wide from ua_oblasts_aggregated (administrative indicators as columns)
+if ("ua_oblasts_aggregated" %in% tables) {
+	cat("🏛️  Creating oblast administrative tables...\n")
+	
+	ua_oblasts_df <- dbReadTable(db, "ua_oblasts_aggregated")
+	
+	# Create wide format: oblasts as rows, indicators as columns
+	ds_oblast_wide <- ua_oblasts_df %>%
+		select(
+			oblast_name_en, oblast_code, region_type,
+			total_population, n_hromadas, total_area,
+			avg_income_per_capita_2021, avg_income_per_capita_2022,
+			income_growth_pct, oblast_population_density,
+			urbanization_pct, avg_travel_time
+		) %>%
+		mutate(
+			# Create analysis-friendly indicators
+			population_category = case_when(
+				total_population > 2000000 ~ "Large (>2M)",
+				total_population > 1000000 ~ "Medium (1-2M)",
+				total_population > 500000 ~ "Small (0.5-1M)",
+				TRUE ~ "Very Small (<0.5M)"
+			),
+			income_category = case_when(
+				avg_income_per_capita_2022 > 50000 ~ "High Income",
+				avg_income_per_capita_2022 > 35000 ~ "Medium Income", 
+				avg_income_per_capita_2022 > 25000 ~ "Low Income",
+				TRUE ~ "Very Low Income"
+			)
+		)
+	
+	append_to_final_db(ds_oblast_wide, "ds_oblast_wide")
+	cat("   ✓ Created ds_oblast_wide:", nrow(ds_oblast_wide), "oblasts\n")
+}
+
+# Create ds_oblast (long format) from ua_oblasts_aggregated for statistical analysis
+if ("ua_oblasts_aggregated" %in% tables) {
+	ua_oblasts_df <- dbReadTable(db, "ua_oblasts_aggregated")
+	
+	# Transform to long format: year, category_type, category_value, measure_type, value
+	ds_oblast <- ua_oblasts_df %>%
+		select(
+			oblast_name_en, oblast_code, region_type,
+			total_population, n_hromadas, total_area,
+			avg_income_per_capita_2021, avg_income_per_capita_2022,
+			income_growth_pct, oblast_population_density, urbanization_pct
+		) %>%
+		tidyr::pivot_longer(
+			cols = c(total_population, n_hromadas, total_area, avg_income_per_capita_2021, 
+			        avg_income_per_capita_2022, income_growth_pct, oblast_population_density, urbanization_pct),
+			names_to = "measure_type",
+			values_to = "value"
+		) %>%
+		mutate(
+			year = case_when(
+				str_detect(measure_type, "2021") ~ 2021L,
+				str_detect(measure_type, "2022") ~ 2022L,
+				TRUE ~ 2022L  # Default to 2022 for non-year-specific measures
+			),
+			category_type = "oblast",
+			category_value = oblast_name_en,
+			# Clean measure names
+			measure_type = str_replace_all(measure_type, "_202[12]", ""),
+			measure_type = str_replace_all(measure_type, "avg_", "")
+		) %>%
+		select(year, category_type, category_value, measure_type, value, oblast_code, region_type) %>%
+		filter(!is.na(value))
+	
+	append_to_final_db(ds_oblast, "ds_oblast")
+	cat("   ✓ Created ds_oblast:", nrow(ds_oblast), "administrative indicators\n")
+}
+
+# Copy dimension tables for administrative hierarchy
+if ("dim_oblasts" %in% tables) {
+	dim_oblasts <- dbReadTable(db, "dim_oblasts")
+	append_to_final_db(dim_oblasts, "dim_oblasts")
+	cat("   ✓ Copied dim_oblasts:", nrow(dim_oblasts), "records\n")
+}
+
+if ("dim_regions" %in% tables) {
+	dim_regions <- dbReadTable(db, "dim_regions")
+	append_to_final_db(dim_regions, "dim_regions")
+	cat("   ✓ Copied dim_regions:", nrow(dim_regions), "records\n")
+}
+
+cat("✅ OBLAST ADMINISTRATIVE DATA INTEGRATION COMPLETE\n")
+cat("   💡 Oblast data now available for territorial analysis and book publication correlation\n\n")
+
 # ------------------------------------------------------------------ CREATE LONG TABLES ------------------------------------------------------------------
 
 # Create ds_year from fact_book_publications (long format: year, category_type, category_value, measure_type, value)
@@ -283,10 +375,18 @@ manifest_lines <- c(
   "**WIDE FORMAT TABLES** (for pivot tables, dashboards):",
   "- Ready for immediate use in Excel, Tableau, PowerBI",
   "- Years as columns, categories as rows",
+  "- Includes: ds_year_wide, ds_language_wide, ds_territory_wide, ds_theme_wide, ds_purpose_wide",
   "",
   "**LONG FORMAT TABLES** (for statistical analysis, modeling):",
   "- Tidy data format for R, Python analysis",
   "- One observation per row",
+  "- Includes: ds_year, ds_language, ds_territory, ds_theme, ds_purpose",
+  "",
+  "**ADMINISTRATIVE DATA TABLES** (Ukrainian territorial analysis):",
+  "- `ds_oblast_wide`: Oblast-level indicators in wide format (oblasts × indicators)",
+  "- `ds_oblast`: Oblast-level indicators in long format (year × measure_type × value)",
+  "- `dim_oblasts`: Oblast dimension with administrative hierarchy",
+  "- `dim_regions`: Regional classification (West/East/Center/South)",
   "",
   "**CUSTOM DATA TABLES** (from Stage 2):",
   "- User-contributed datasets (bookstores, surveys, etc.)",

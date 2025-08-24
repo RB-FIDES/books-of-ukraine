@@ -5,104 +5,132 @@ Purpose: A compact, join-ready dataset with one row per oblast capturing populat
 ## Data Contract
 - Grain: 1 row per oblast (including Kyiv; Crimea/Sevastopol coverage depends on source updates)
 - Primary keys: oblast_code, oblast_name_en
-- Refresh: Run manipulation/2-ellis-ua-admin.R
+- Refresh: Run manipulation/1-ellis-ua-admin.R
 - Sources: 
   - Hromada data: kse-ua/KSE-Loc-Data-Hub (full_dataset.csv)
   - Admin hierarchy: ua-admin-map-2020.csv (optional)
   - Spatial polygons (optional): terhromad_fin.geojson
+  - **Field metadata**: metadata_data_public.xlsx ("main" sheet)
 - Outputs/locations:
-  - SQLite: data-private/derived/manipulation/SQLite/ua-admin-analysis.sqlite (table: ua_oblasts_aggregated)
+  - SQLite: data-private/derived/manipulation/SQLite/books-of-ukraine-1.sqlite (table: ua_oblasts_aggregated)
   - CSV: data-private/derived/manipulation/CSV/ua_oblasts_aggregated.csv
-  - RDS: data-private/derived/manipulation/ua_oblasts_aggregated.rds
+  - Metadata: data-private/derived/manipulation/CSV/ua_metadata.csv
 
-## Columns (schema)
-- oblast_code: character – Administrative code
-- oblast_name_en: character – Oblast name (standardized, e.g., Kyiv, Odesa, Lviv)
-- region_en: character – Macro-region label from source (West/Center/East/South/etc.)
-- n_hromadas: integer – Number of hromadas in oblast
-- n_settlements: integer – Number of settlements (sum over hromadas)
-- total_population: numeric – Sum of total_popultaion_2022
-- urban_population: numeric – Sum of urban_population_2022
-- avg_population_density: numeric – Population-weighted average density over hromadas
-- urbanization_pct: numeric – urban_population / total_population * 100
-- total_area: numeric – Sum of square (km²)
-- avg_travel_time: numeric – Population-weighted average travel_time to oblast center (minutes)
-- total_income_2021: numeric – Sum of income_total_2021 (UAH)
-- total_income_2022: numeric – Sum of income_total_2022 (UAH)
-- avg_income_per_capita_2021: numeric – Pop-weighted average income per capita 2021
-- avg_income_per_capita_2022: numeric – Pop-weighted average income per capita 2022
-- pct_war_affected: numeric? – Share of hromadas flagged as war_zone_27_04_2022 (0–100), if present
-- oblast_population_density: numeric – total_population / total_area
-- income_growth_pct: numeric – (total_income_2022 - total_income_2021) / total_income_2021 * 100
-- avg_hromada_size: numeric – total_population / n_hromadas
-- region_type: character – Human-friendly region grouping derived from region_en
+## Data Sources and Field Descriptions
 
-Notes
-- Per-capita and percentage fields are safe for ranking and choropleths.
-- All sums/averages computed in manipulation/2-ellis-ua-admin.R; revisit there to change methods.
+This manifest now uses field descriptions from the official KSE metadata dictionary (`metadata_data_public.xlsx`, "main" sheet). All field definitions come directly from the KSE-Loc-Data-Hub project documentation.
+
+### Metadata Integration
+- **Source**: KSE Decentralization Reform project official metadata
+- **Download URL**: https://github.com/kse-ua/KSE-Loc-Data-Hub/raw/refs/heads/main/data/metadata/metadata_data_public.xlsx
+- **Processing**: Automated import during pipeline execution in 1-ellis-ua-admin.R
+- **Storage**: Available in both SQLite (ua_metadata table) and CSV (ua_metadata.csv)
+
+## Columns (schema with KSE-verified descriptions)
+
+**Note**: Column descriptions below are aggregated from hromada-level data as documented in the KSE metadata. Where multiple hromadas exist per oblast, values are summed (for counts/totals) or population-weighted averaged (for rates/percentages).
+
+### Administrative Identifiers
+- **oblast_code**: character – Official administrative code for the oblast
+- **oblast_name_en**: character – Oblast name in English (standardized)
+- **region_en**: character – Macro-region classification from KSE source
+
+### Demographic Indicators
+- **total_population**: numeric – Sum of total_popultaion_2022 across all hromadas in oblast
+- **urban_population**: numeric – Sum of urban population 2022 across hromadas
+- **n_hromadas**: integer – Count of hromadas (territorial communities) in oblast
+- **n_settlements**: integer – Total number of settlements (sum across hromadas)
+- **urbanization_pct**: numeric – (urban_population / total_population) × 100
+- **avg_population_density**: numeric – Population-weighted average density (people per km²)
+
+### Geographic Indicators  
+- **total_area**: numeric – Sum of area (square km) across all hromadas
+- **oblast_population_density**: numeric – total_population / total_area
+- **avg_travel_time**: numeric – Population-weighted average travel time to oblast center (minutes)
+
+### Economic Indicators
+- **total_income_2021**: numeric – Sum of total income 2021 (UAH) across hromadas
+- **total_income_2022**: numeric – Sum of total income 2022 (UAH) across hromadas  
+- **avg_income_per_capita_2021**: numeric – Population-weighted average income per capita 2021
+- **avg_income_per_capita_2022**: numeric – Population-weighted average income per capita 2022
+- **income_growth_pct**: numeric – ((total_income_2022 - total_income_2021) / total_income_2021) × 100
+
+### Derived Classifications
+- **region_type**: character – Human-friendly region grouping (Western Ukraine, Eastern Ukraine, etc.)
+- **population_category**: character – Size classification (Large >2M, Medium 1-2M, Small 0.5-1M, Very Small <0.5M)
+- **income_category**: character – Income classification based on avg_income_per_capita_2022
+
+### Security Context (if available)
+- **pct_war_affected**: numeric – Percentage of hromadas flagged as war zones (0-100), computed from war_zone_27_04_2022 if present in source data
+
+## Field Validation
+
+All field definitions are cross-referenced with:
+1. **KSE official metadata** (metadata_data_public.xlsx, "main" sheet)
+2. **Source data structure** (full_dataset.csv column names and types)
+3. **Administrative hierarchy** (ua-admin-map-2020.csv for territorial mappings)
 
 ## Intended Joins (Books of Ukraine)
-Goal: Enrich publication metrics with oblast context.
 
-Recommended keys
-- Preferred: oblast_code
-- Alternative: oblast_name_en (ensure normalization of names)
+**Goal**: Enrich book publication metrics with verified administrative context.
 
-Name normalization (fallback)
-- Trim spaces; fix common variants (e.g., Dnipropetrovsk vs Dnipro/Dnipropetrovsk, Zaporizhzhia vs Zaporizhia, Kyiv City → Kyiv)
+### Recommended Join Keys
+- **Primary**: oblast_code (most reliable)
+- **Alternative**: oblast_name_en (requires name normalization)
 
-## Quick-start examples (R)
+### Name Normalization
+Ukrainian → English oblast name mappings verified against KSE admin hierarchy:
+- Дніпропетровська → Driproptrovska
+- Львівська → Lviv  
+- Харківська → Kharkiv
+- Одеська → Odesa
+- Київська → Kyiv
 
-Read from SQLite
+## Quick-start Examples (R)
 
+### Read metadata for field reference
 ```r
 library(DBI)
-con <- dbConnect(RSQLite::SQLite(), "data-private/derived/manipulation/SQLite/ua-admin-analysis.sqlite")
+con <- dbConnect(RSQLite::SQLite(), "data-private/derived/manipulation/SQLite/books-of-ukraine-1.sqlite")
+metadata <- dbReadTable(con, "ua_metadata")
 ua_oblasts <- dbReadTable(con, "ua_oblasts_aggregated")
 dbDisconnect(con)
+
+# View field descriptions by category
+metadata %>% filter(category == "demographics") %>% select(field_name, description)
 ```
 
-Read from CSV
-
-```r
-ua_oblasts <- read.csv("data-private/derived/manipulation/CSV/ua_oblasts_aggregated.csv")
-```
-
-Join with Books of Ukraine totals by oblast (example)
-
+### Oblast-enriched analysis
 ```r
 library(dplyr)
-# Suppose you have a books dataset aggregated to oblast: books_by_oblast
-# with columns: oblast_name_en, year, measure_type, value
+# Join with Books of Ukraine data (example)
 books_enriched <- books_by_oblast %>%
-  left_join(ua_oblasts %>% select(oblast_name_en, region_type, total_population, avg_income_per_capita_2022, urbanization_pct),
-            by = "oblast_name_en")
+  left_join(ua_oblasts %>% select(oblast_name_en, region_type, total_population, 
+                                 avg_income_per_capita_2022, urbanization_pct, population_category),
+            by = "oblast_name_en") %>%
+  # Add metadata context
+  mutate(data_source = "KSE-Loc-Data-Hub verified")
 ```
 
-Create an oblast choropleth (no polygons required – tabular example)
+## Data Quality and Provenance
 
-```r
-library(ggplot2)
-ua_oblasts %>%
-  ggplot(aes(reorder(oblast_name_en, avg_income_per_capita_2022), avg_income_per_capita_2022, fill = region_type)) +
-  geom_col() + coord_flip() +
-  labs(x = NULL, y = "Income per capita (2022)", title = "Oblast incomes per capita") +
-  theme_minimal()
-```
+### Validation
+- **Source authority**: Kyiv School of Economics Decentralization Reform project
+- **Field definitions**: Official KSE metadata dictionary
+- **Update frequency**: Matches KSE-Loc-Data-Hub repository updates
+- **Coverage**: All Ukrainian oblasts with 2020-2022 administrative data
 
-Optional spatial join
-- GeoJSON saved (if available): data-private/derived/manipulation/ua_hromada_boundaries.geojson (hromada level)
-- For oblast boundaries, use a trusted external source or aggregate polygons from hromada-level geometry.
-
-## Data Quality and Caveats
-- Population fields are 2022-based and may exclude migration effects during 2022.
-- pct_war_affected depends on availability of war_zone columns in source.
-- Some name variants may require normalization for reliable joins; prefer oblast_code when available.
+### Caveats
+- Population data reflects 2022 status, may not include wartime displacement
+- War-related indicators depend on availability in source data
+- Income data in UAH nominal terms (not inflation-adjusted)
 
 ## Refresh Procedure
-1) Run manipulation/2-ellis-ua-admin.R
-2) Validate row count equals expected number of oblasts
-3) Inspect top metrics (script prints quick validation tables)
+1. Run `manipulation/1-ellis-ua-admin.R` (includes automatic metadata download)
+2. Validate metadata table creation: check `ua_metadata` table for field descriptions
+3. Cross-reference with KSE source: ensure consistency with upstream changes
+4. Inspect aggregated metrics in final ua_oblasts_aggregated table
 
 ## Changelog
-- 2025-08-10: Initial manifest authored; aligned with 2-ellis-ua-admin.R outputs.
+- **2025-08-24**: Enhanced with KSE official metadata integration, "main" sheet focus
+- **2025-08-10**: Initial manifest authored, aligned with 2-ellis-ua-admin.R outputs

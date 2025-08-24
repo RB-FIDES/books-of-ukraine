@@ -133,6 +133,42 @@
         "cwd": "${workspaceFolder}"
       }
     }
+    ,
+    {
+      "label": "Add Core Context (R)",
+      "type": "process",
+      "command": "Rscript",
+      "args": [
+        "scripts/wrappers/run-add-core-context.R"
+      ],
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Run 1-ellis-ua-admin.R",
+      "type": "shell",
+      "command": "Rscript",
+      "args": [
+        "${workspaceFolder}/manipulation/1-ellis-ua-admin.R"
+      ],
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared"
+      },
+      "problemMatcher": []
+    }
   ]
 }
 

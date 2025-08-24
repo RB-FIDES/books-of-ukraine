@@ -78,6 +78,7 @@ Many tasks require similar or identical context. This system brings relevant con
 When working with .R + qmd pairs (.R and .qmd scripts connect via read_chunk() function), follow these guidelines:
 - when you see I develop a new chunk in .R script, create a corresponding chunk in the .qmd file with the same name
 - when you see I develop a new section in .qmd file, create a corresponding chunk in the .R script with the same name to support it
+- when asked to design new report (ellis type or eda type) always consult the templates in ./scripts/templates/ 
 
 ### Data
 - use the default database (books-of-ukraine.sqlite) unless otherwise specified

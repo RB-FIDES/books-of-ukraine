@@ -203,3 +203,17 @@ get_db_path <- function(db_type = "main", config_path = "config.yml") {
   
   return(db_path)
 }
+
+
+# Function to safely convert numeric values 
+safe_numeric_convert <- function(x) {
+  cleaned <- as.character(x)
+  cleaned <- gsub("[^0-9.\\s-]", "", cleaned)
+  cleaned <- gsub("\\s+", "", cleaned)
+  cleaned[cleaned == "" | cleaned == "-" | cleaned == "NULL" | 
+          cleaned == "NA" | cleaned == "n/a" | is.na(cleaned)] <- "0"
+  cleaned <- gsub("\\.{2,}", ".", cleaned)
+  result <- suppressWarnings(as.numeric(cleaned))
+  result[is.na(result)] <- 0
+  return(result)
+}
