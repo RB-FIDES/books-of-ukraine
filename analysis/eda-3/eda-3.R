@@ -58,7 +58,7 @@ local_data <- paste0(local_root, "data-local/") # for local outputs
 
 if (!fs::dir_exists(local_data)) {fs::dir_create(local_data)}
 
-data_private_derived <- "./data-private/derived/eda-1/"
+data_private_derived <- "./data-private/derived/eda-3/"
 if (!fs::dir_exists(data_private_derived)) {fs::dir_create(data_private_derived)}
 
 prints_folder <- paste0(local_root, "prints/")
@@ -125,53 +125,6 @@ for (nm in db_tables) {
 
 # ----- g1 ---------------------------------------------
 # let's create a plot to show the volume of unique books published each year
-
-g1_df <- fact_book_publications %>%
-  dplyr::filter(measure_type == "title_count", category_type == "total", category_value == "all_books") %>%
-  dplyr::mutate(year = as.integer(year)) %>%
-  dplyr::arrange(year)
-
-# If no rows found, provide a helpful message and create an empty plot frame
-if (nrow(g1_df) == 0) {
-  message("No rows found in fact_book_publications for title_count / all_books. g1 will be empty.")
-  g1 <- ggplot2::ggplot() +
-    ggplot2::labs(title = "Unique book titles published per year", x = "Year", y = "Unique titles") +
-    ggplot2::theme_minimal()
-} else {
-  g1 <- ggplot2::ggplot(g1_df, ggplot2::aes(x = year, y = value)) +
-    ggplot2::geom_col(fill = "#2b8cbe", alpha = 0.9) +
-    ggplot2::geom_line(color = "#08519c", size = 0.8) +
-    ggplot2::geom_point(color = "#08306b", size = 2) +
-    ggplot2::scale_y_continuous(labels = scales::comma) +
-    ggplot2::scale_x_continuous(breaks = g1_df$year) +
-    ggplot2::labs(
-      title = "Unique book titles published per year",
-      subtitle = "Number of unique titles (title_count) — all books",
-      x = "Year",
-      y = "Unique titles"
-    ) +
-    ggplot2::theme_minimal() +
-    ggplot2::theme(
-      plot.title = ggplot2::element_text(size = 14, face = "bold"),
-      plot.subtitle = ggplot2::element_text(size = 11),
-      axis.text.x = ggplot2::element_text(angle = 45, hjust = 1)
-    )
-}
-
-# Save to prints folder if available
-if (exists("prints_folder") && fs::dir_exists(prints_folder)) {
-  out_path <- file.path(prints_folder, "g1_unique_titles_by_year.png")
-  ggplot2::ggsave(filename = out_path, plot = g1, width = 9, height = 5, dpi = 300)
-  message("Saved plot to: ", out_path)
-} else {
-  message("prints_folder not found; plot not saved to disk.")
-}
-
-# return plot object
-g1
-
-
-
 
 
 
