@@ -70,8 +70,9 @@ if (!fs::dir_exists(prints_folder)) {fs::dir_create(prints_folder)}
 
 # ---- load-data ---------------------------------------------------------------
 
-# Connect to the default Books of Ukraine database using modern functions
+# Connect to the default Books of Ukraine database using custom functions
 # Note: Using 'main' database which contains analysis-ready tables created by Ellis pipeline
+# Note: The complete optimized database (books + ua admin + extra) 
 # Note: wide tables (those with a _wide suffix) are good for getting to know the data, but tables (without _wide suffix) are better for analysis.
 db <- connect_books_db("main")  # connects to the final analytical database
 # now let's inspect what data tables are available in the database
