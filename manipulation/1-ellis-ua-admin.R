@@ -21,6 +21,8 @@ library(readr)     # for reading CSV files
 library(janitor)   # tidy data
 library(DBI)       # database interface
 library(RSQLite)   # SQLite database
+library(sf)
+library(tmap)
 cat("📦 Packages loaded successfully\n")
 
 # ---- load-project-functions ----
@@ -429,6 +431,163 @@ print(head(dim_oblasts, 3))
 print("dim_regions:")
 print(head(dim_regions, 3))
 
+# ---- prepare-oblast-polygons ----
+# Extract and prepare Ukrainian oblast polygons for mapping
+cat("🗺️ Preparing Ukrainian oblast polygons for mapping...\n")
+
+# Create mapping assets folder
+mapping_assets_path <- "data-private/derived/manipulation/mapping/"
+if (!fs::dir_exists(mapping_assets_path)) {fs::dir_create(mapping_assets_path)}
+
+# Download hromada polygons from KSE-Loc-Data-Hub
+hromada_geojson_url <- "https://raw.githubusercontent.com/kse-ua/KSE-Loc-Data-Hub/main/maps/terhromad_fin.geojson"
+hromada_geojson_path <- paste0(mapping_assets_path, "terhromad_fin.geojson")
+
+if (!file.exists(hromada_geojson_path)) {
+  cat("   📥 Downloading hromada polygons...\n")
+  tryCatch({
+    if (Sys.info()["sysname"] == "Windows") {
+      system(paste0('powershell -Command "Invoke-WebRequest \\"', hromada_geojson_url, '\\" -OutFile \\"', hromada_geojson_path, '\\""'))
+    } else {
+      system(paste0("curl -L '", hromada_geojson_url, "' -o '", hromada_geojson_path, "'"))
+    }
+    
+    if (file.exists(hromada_geojson_path)) {
+      cat("   ✓ Downloaded hromada polygons\n")
+    } else {
+      stop("Download failed - hromada polygons file not created")
+    }
+  }, error = function(e) {
+    cat("   ⚠️  Warning: Failed to download hromada polygons:", e$message, "\n")
+    cat("   💡 Manual download from:", hromada_geojson_url, "\n")
+    hromada_geojson_path <- NULL
+  })
+} else {
+  cat("   ✓ Hromada polygons file already exists\n")
+}
+
+# Build oblast polygons from hromada data if sf package is available
+oblast_polygons <- NULL
+if (!is.null(hromada_geojson_path) && requireNamespace("sf", quietly = TRUE)) {
+  tryCatch({
+    cat("   🔧 Building oblast polygons from hromada data...\n")
+    
+    # Load and clean hromada polygons
+    hromadas_sf <- sf::st_read(hromada_geojson_path, quiet = TRUE) %>%
+      janitor::clean_names()
+    
+    # Repair invalid geometries before grouping
+    hromadas_sf <- hromadas_sf %>%
+      mutate(geometry = sf::st_make_valid(geometry))
+    
+    # Create oblast name mapping from hierarchy data
+    oblast_name_map <- ua_admin_hierarchy %>%
+      select(oblast_name, oblast_name_en) %>%
+      distinct() %>%
+      # Handle the " область" suffix in polygon data
+      mutate(
+        polygon_name = case_when(
+          oblast_name == "Автономна Республіка Крим" ~ "Автономна Республіка Крим",
+          TRUE ~ paste0(oblast_name, " область")
+        )
+      )
+    
+    # Group hromadas into oblasts by admin_1 field and apply name mapping
+    oblast_polygons <- hromadas_sf %>%
+      group_by(admin_1) %>%
+      summarise(geometry = sf::st_union(geometry), .groups = "drop") %>%
+      rename(polygon_name = admin_1) %>%
+      # Join with name mapping to get English names
+      left_join(oblast_name_map, by = "polygon_name") %>%
+      select(oblast_name_en, oblast_name, geometry)
+    
+    # Save oblast polygons in multiple formats
+    oblast_rds_path <- paste0(mapping_assets_path, "ua_oblast_polygons.rds")
+    oblast_geojson_path <- paste0(mapping_assets_path, "ua_oblast_polygons.geojson")
+    
+    # Save as RDS for fast R access
+    saveRDS(oblast_polygons, oblast_rds_path)
+    cat("   ✓ Saved oblast polygons as RDS:", oblast_rds_path, "\n")
+    
+    # Save as GeoJSON for broader compatibility
+    sf::st_write(oblast_polygons, oblast_geojson_path, delete_dsn = TRUE, quiet = TRUE)
+    cat("   ✓ Saved oblast polygons as GeoJSON:", oblast_geojson_path, "\n")
+    
+    # Create name harmonization lookup - now they should match!
+    polygon_names <- sort(unique(oblast_polygons$oblast_name_en))
+    data_names <- sort(unique(ua_oblasts_aggregated$oblast_name_en))
+    
+    # Create a proper mapping table showing Ukrainian and English names
+    harmonization_check <- oblast_name_map %>%
+      arrange(oblast_name_en) %>%
+      select(ukrainian_name = oblast_name, english_name = oblast_name_en, polygon_name)
+    
+    write.csv(harmonization_check, paste0(mapping_assets_path, "name_harmonization_check.csv"), 
+              row.names = FALSE, na = "")
+    cat("   ✓ Created name harmonization mapping file\n")
+    
+    # Report summary with improved matching
+    cat("   📊 Oblast polygons summary:\n")
+    cat("      - Total oblasts in polygons:", nrow(oblast_polygons), "\n")
+    cat("      - Total oblasts in data:", nrow(ua_oblasts_aggregated), "\n")
+    
+    # Check name matching (should be much better now!)
+    matched_names <- intersect(polygon_names, data_names)
+    cat("      - Matched names:", length(matched_names), "/", length(data_names), "\n")
+    
+    if (length(matched_names) < length(data_names)) {
+      unmatched_data <- setdiff(data_names, polygon_names)
+      unmatched_polygons <- setdiff(polygon_names, data_names)
+      cat("      ⚠️  Unmatched data names:", paste(unmatched_data, collapse = ", "), "\n")
+      cat("      ⚠️  Unmatched polygon names:", paste(unmatched_polygons, collapse = ", "), "\n")
+    } else {
+      cat("      ✅ Perfect name matching achieved!\n")
+    }
+    
+  }, error = function(e) {
+    cat("   ❌ Failed to build oblast polygons:", e$message, "\n")
+    oblast_polygons <- NULL
+  })
+} else {
+  if (is.null(hromada_geojson_path)) {
+    cat("   ⚠️  Skipping polygon processing - hromada data not available\n")
+  } else {
+    cat("   ⚠️  Skipping polygon processing - sf package not installed\n")
+    cat("   💡 Install sf package: install.packages('sf')\n")
+  }
+}
+
+# Create mapping guide reference
+mapping_readme_path <- paste0(mapping_assets_path, "README.md")
+mapping_readme_content <- paste0(
+  "# Ukrainian Oblast Mapping Assets\n\n",
+  "**Generated:** ", Sys.time(), "\n",
+  "**Source:** KSE-Loc-Data-Hub\n\n",
+  "## Files\n\n",
+  "- `terhromad_fin.geojson` - Hromada-level polygons (source data)\n",
+  "- `ua_oblast_polygons.rds` - Oblast polygons for R (fast loading)\n", 
+  "- `ua_oblast_polygons.geojson` - Oblast polygons (universal format)\n",
+  "- `name_harmonization_check.csv` - Name matching between polygons and data\n\n",
+  "## Usage\n\n",
+  "```r\n",
+  "# Load oblast polygons\n",
+  "library(sf)\n",
+  "oblasts <- readRDS('data-private/derived/manipulation/mapping/ua_oblast_polygons.rds')\n",
+  "\n",
+  "# Join with your data\n",
+  "oblasts_with_data <- oblasts %>%\n",
+  "  left_join(your_data, by = 'oblast_name_en')\n",
+  "```\n\n",
+  "## Reference\n\n",
+  "See `analysis/map-guide/` for complete mapping examples using tmap and leaflet.\n"
+)
+
+writeLines(mapping_readme_content, mapping_readme_path)
+cat("   ✓ Created mapping assets README\n")
+
+cat("✅ Oblast polygons preparation complete!\n")
+cat("   📁 Assets saved to:", mapping_assets_path, "\n\n")
+
 # ---- create-stage1-database ----
 # Create Stage 1 database by copying core and adding Ukrainian admin data
 cat("🏗️ Creating Stage 1 database...\n")
@@ -558,3 +717,32 @@ cat("  - ua_metadata_tweak1 (", nrow(ua_metadata_tweak1), " rows)\n")
 cat("  - dim_oblasts (", nrow(dim_oblasts), " rows)\n")
 
 cat("\n", paste(rep("=", 60), collapse = ""), "\n")
+
+# Here's an example of a ukrainian map with oblasts mapped to population density
+if (requireNamespace("sf", quietly = TRUE) && requireNamespace("tmap", quietly = TRUE)) {
+  cat("🗺️ Generating example map of oblast population density...\n")
+  mapping_assets_path <- "data-private/derived/manipulation/mapping/"
+  # Load oblast polygons
+  oblasts <- readRDS(paste0(mapping_assets_path, "ua_oblast_polygons.rds"))
+  
+  # Join with aggregated data
+  oblasts_map <- oblasts %>%
+    left_join(ua_oblasts_aggregated, by = "oblast_name_en")
+  
+  # Create a simple thematic map using tmap
+  map <- tmap::tm_shape(oblasts_map) +
+    tmap::tm_polygons("oblast_population_density", 
+                      title = "Population Density (per sq km)", 
+                      palette = "Blues", 
+                      style = "quantile") +
+    tmap::tm_layout(title = "Ukrainian Oblast Population Density",
+                    legend.outside = TRUE)
+  
+  # Save map to file
+  map_file <- paste0(mapping_assets_path, "oblast_population_density_map.png")
+  tmap::tmap_save(map, filename = map_file, width = 800, height = 600)
+  
+  cat("   ✓ Map saved to:", map_file, "\n")
+} else {
+  cat("⚠️ Skipping map generation - sf or tmap package not installed\n")
+}
