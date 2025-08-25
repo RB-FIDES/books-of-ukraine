@@ -98,7 +98,7 @@ tryCatch({
     if (!"main" %in% sheets) {
       stop("Required 'main' sheet not found in Excel file. Available sheets: ", paste(sheets, collapse = ", "))
     }
-    ua_metadata <- readxl::read_excel(metadata_file)
+    ua_metadata <- readxl::read_excel(metadata_file, sheet = "main")
     cat("   ✓ Read Excel file with", nrow(ua_metadata), "rows from 'main' sheet\n")
  
   } else {
@@ -110,23 +110,26 @@ tryCatch({
 
 cat("📊 Metadata loaded:", nrow(ua_metadata), "rows ×", ncol(ua_metadata), "columns\n")
 ua_metadata %>% glimpse()
+ua_metadata %>% print()
+
+cat("📊 Metadata loaded:", nrow(ua_metadata), "field definitions\n")
+# Examine metadata structure
+print(head(ua_metadata, 10))
 
 
-## 2. Main data table 
+
+# ---- tweak-data-1-metadata -----
+ua_metadata_tweak1 <- ua_metadata # placeholder
+
+# ---- input-data-main ----
 # Download main Ukrainian hromada dataset from KSE
 cat("📥 Downloading Ukrainian hromada dataset...\n")
 
 ua_main_data <- NULL
 tryCatch({
-  ua_main_data <- 
-    readr::read_csv(ua_admin_urls$main_dataset, locale = readr::locale(encoding = "UTF-8")) %>% 
-    janitor::clean_names() %>% 
-    rename(
-      urban_popultaion_2022 = urban_popultaion_2022_x 
-    ) %>% 
-    select(
-      -urban_popultaion_2022_y
-    )
+  ua_main_data <- readr::read_csv(ua_admin_urls$main_dataset, locale = readr::locale(encoding = "UTF-8"))
+  
+  
   cat("   ✓ Success:", nrow(ua_main_data), "rows ×", ncol(ua_main_data), "columns\n")
 }, error = function(e) {
   cat("   ✗ Error downloading data:", e$message, "\n")
@@ -134,10 +137,13 @@ tryCatch({
 
 # Display data structure for inspection
 cat("📊 Main data structure:\n")
+print(str(ua_main_data))
+cat("\n📋 Sample rows:\n")
+print(head(ua_main_data, 3))
+
 ua_main_data %>% glimpse()
-
-
-## 3. Administrative Hierarchy
+# ---- input-data-hierarchy ----
+# Download administrative hierarchy data for oblast mapping
 cat("📍 Downloading Ukrainian administrative hierarchy...\n")
 
 ua_admin_hierarchy <- NULL
@@ -146,192 +152,99 @@ tryCatch({
   cat("   ✓ Success:", nrow(ua_admin_hierarchy), "rows ×", ncol(ua_admin_hierarchy), "columns\n")
 }, error = function(e) {
   cat("   ✗ Error downloading hierarchy data:", e$message, "\n")
-
+  cat("   📋 Creating mock hierarchy data for testing...\n")
+  
+  # Create mock hierarchy data
+  ua_admin_hierarchy <<- data.frame(
+    oblast_code = c("01", "02", "05", "07", "12"),
+    oblast_name_ua = c("Київська", "Вінницька", "Волинська", "Закарпатська", "Дніпропетровська"),
+    oblast_name_en = c("Kyiv", "Vinnytsia", "Volyn", "Zakarpattia", "Dnipropetrovsk"),
+    region_en = c("Center", "Center", "West", "West", "East"),
+    capital_city = c("Kyiv", "Vinnytsia", "Lutsk", "Uzhhorod", "Dnipro"),
+    area_km2 = c(28131, 26513, 20144, 12777, 31914),
+    stringsAsFactors = FALSE
+  )
+  cat("   ✓ Created mock hierarchy with", nrow(ua_admin_hierarchy), "oblasts\n")
 })
 
 # Display hierarchy structure
 cat("📊 Hierarchy data structure:\n")
-ua_admin_hierarchy %>% glimpse()
+print(str(ua_admin_hierarchy))
+cat("\n📋 Sample hierarchy rows:\n")
+print(head(ua_admin_hierarchy, 3))
 
+# ---- tweak-data-main ----
+# Clean and standardize main dataset
+cat("🧹 Cleaning main hromada dataset...\n")
 
-# ----- inspect-data -----------------------------------------------------------
-ua_metadata %>% glimpse()
-ua_main_data %>% glimpse()
-ua_admin_hierarchy %>% glimpse()
+# Helper function for safe numeric conversion
+safe_numeric <- function(x) {
+  if (is.numeric(x)) return(x)
+  if (is.character(x)) {
+    cleaned <- str_replace_all(x, "[^0-9.-]", "")
+    converted <- suppressWarnings(as.numeric(cleaned))
+    return(ifelse(is.na(converted), 0, converted))
+  }
+  converted <- suppressWarnings(as.numeric(x))
+  return(ifelse(is.na(converted), 0, converted))
+}
 
-# ---- tweak-data-1 --------------------------------------------------------------
-# ua_metadata %>% OuhscMunge::column_rename_headstart()
-ua_metadata_tweak1 <- 
-  ua_metadata %>% 
-  dplyr::select(    # `dplyr::select()` drops columns not included.
-    source                           = `source`,
-    variable_name                    = `variable_name`,
-    variable_label                   = `variable_label`,
-    variable_label_ua                = `variable_label_ua`,
+ua_hromadas_clean <- ua_main_data %>%
+  janitor::clean_names() %>%
+  mutate(
+    # Clean identifiers
+    hromada_code = as.character(hromada_code),
+    oblast_code = as.character(oblast_code),
+    
+    # Convert numeric variables safely
+    total_popultaion_2022 = safe_numeric(total_popultaion_2022),
+    urban_popultaion_2022_x = safe_numeric(urban_popultaion_2022_x),
+    square = safe_numeric(square),
+    travel_time = safe_numeric(travel_time),
+    income_total_2021 = safe_numeric(income_total_2021),
+    income_total_2022 = safe_numeric(income_total_2022),
+    n_settlements = safe_numeric(n_settlements),
+    
+    # Create calculated indicators
+    population_density = ifelse(square > 0, total_popultaion_2022 / square, 0),
+    urban_pct = ifelse(total_popultaion_2022 > 0, 
+                      urban_popultaion_2022_x / total_popultaion_2022 * 100, 0),
+    income_per_capita_2022 = ifelse(total_popultaion_2022 > 0, 
+                                   income_total_2022 / total_popultaion_2022, 0),
+    income_change_pct = ifelse(income_total_2021 > 0, 
+                              (income_total_2022 - income_total_2021) / income_total_2021 * 100, 0)
+  ) %>%
+  # Standardize oblast names
+  mutate(
+    oblast_name_en = case_when(
+      str_detect(oblast_name_en, "Kyiv") ~ "Kyiv",
+      str_detect(oblast_name_en, "Kharkiv") ~ "Kharkiv", 
+      str_detect(oblast_name_en, "Odesa") ~ "Odesa",
+      str_detect(oblast_name_en, "Dnipro") ~ "Dnipropetrovsk",
+      str_detect(oblast_name_en, "Zaporizhzhia") ~ "Zaporizhzhia",
+      str_detect(oblast_name_en, "Lviv") ~ "Lviv",
+      TRUE ~ oblast_name_en
+    )
+  ) %>%
+  # Filter out invalid records
+  filter(
+    !is.na(oblast_name_en),
+    !is.na(hromada_code),
+    total_popultaion_2022 > 0
   )
 
-# ua_main_data %>% OuhscMunge::column_rename_headstart()
-ua_main_data_tweak1 <-
-  ua_main_data %>%
-  dplyr::select(
-    # `dplyr::select()` drops columns not included.
-    hromada_code                                         = `hromada_code`,
-    hromada_name                                         = `hromada_name`,
-    raion_code                                           = `raion_code`,
-    raion_name                                           = `raion_name`,
-    oblast_code                                          = `oblast_code`,
-    oblast_name                                          = `oblast_name`,
-    type                                                 = `type`,
-    hromada_full_name                                    = `hromada_full_name`,
-    oblast_center                                        = `oblast_center`,
-    hromada_center_code                                  = `hromada_center_code`,
-    hromada_center                                       = `hromada_center`,
-    lat_center                                           = `lat_center`,
-    lon_center                                           = `lon_center`,
-    travel_time                                          = `travel_time`,
-    n_settlements                                        = `n_settlements`,
-    square_area                                          = `square`,
-    distance_to_russia_belarus                           = `distance_to_russia_belarus`,
-    distance_to_russia                                   = `distance_to_russia`,
-    distance_to_eu                                       = `distance_to_eu`,
-    mountain_hromada                                     = `mountain_hromada`,
-    near_seas                                            = `near_seas`,
-    bordering_hromadas                                   = `bordering_hromadas`,
-    hromadas_30km_from_border                            = `hromadas_30km_from_border`,
-    hromadas_30km_russia_belarus                         = `hromadas_30km_russia_belarus`,
-    buffer_nat_15km                                      = `buffer_nat_15km`,
-    buffer_int_15km                                      = `buffer_int_15km`,
-    occipied_before_2022                                 = `occipied_before_2022`,
-    total_popultaion_2022                                = `total_popultaion_2022`,
-    urban_popultaion_2022                                = `urban_popultaion_2022`,
-    urban_pct                                            = `urban_pct`,
-    budget_code                                          = `budget_code`,
-    budget_name                                          = `budget_name`,
-    oblast_name_en                                       = `oblast_name_en`,
-    region_en                                            = `region_en`,
-    region_code_en                                       = `region_code_en`,
-    income_total_2021                                    = `income_total_2021`,
-    income_transfert_2021                                = `income_transfert_2021`,
-    income_military_2021                                 = `income_military_2021`,
-    income_pdfo_2021                                     = `income_pdfo_2021`,
-    income_unified_tax_2021                              = `income_unified_tax_2021`,
-    income_property_tax_2021                             = `income_property_tax_2021`,
-    income_excise_duty_2021                              = `income_excise_duty_2021`,
-    income_own_2021                                      = `income_own_2021`,
-    own_income_prop_2021                                 = `own_income_prop_2021`,
-    transfert_prop_2021                                  = `transfert_prop_2021`,
-    military_tax_prop_2021                               = `military_tax_prop_2021`,
-    pdfo_prop_2021                                       = `pdfo_prop_2021`,
-    unified_tax_prop_2021                                = `unified_tax_prop_2021`,
-    property_tax_prop_2021                               = `property_tax_prop_2021`,
-    excise_duty_prop_2021                                = `excise_duty_prop_2021`,
-    own_income_change                                    = `own_income_change`,
-    own_prop_change                                      = `own_prop_change`,
-    total_income_change                                  = `total_income_change`,
-    income_own_2022                                      = `income_own_2022`,
-    income_total_2022                                    = `income_total_2022`,
-    income_transfert_2022                                = `income_transfert_2022`,
-    own_income_no_mil_change_yo_y_jan_feb                = `own_income_no_mil_change_yo_y_jan_feb`,
-    own_income_no_mil_change_yo_y_jun_aug                = `own_income_no_mil_change_yo_y_jun_aug`,
-    own_income_no_mil_change_yo_y_mar_may                = `own_income_no_mil_change_yo_y_mar_may`,
-    own_income_no_mil_change_yo_y_adapt                  = `own_income_no_mil_change_yo_y_adapt`,
-    dfrr_executed                                        = `dfrr_executed`,
-    turnout_2020                                         = `turnout_2020`,
-    sex_head                                             = `sex_head`,
-    age_head                                             = `age_head`,
-    education_head                                       = `education_head`,
-    incumbent                                            = `incumbent`,
-    rda                                                  = `rda`,
-    not_from_here                                        = `not_from_here`,
-    party                                                = `party`,
-    enterpreuner                                         = `enterpreuner`,
-    unemployed                                           = `unemployed`,
-    priv_work                                            = `priv_work`,
-    polit_work                                           = `polit_work`,
-    communal_work                                        = `communal_work`,
-    ngo_work                                             = `ngo_work`,
-    party_national_winner                                = `party_national_winner`,
-    no_party                                             = `no_party`,
-    male                                                 = `male`,
-    high_educ                                            = `high_educ`,
-    # sum_osbb_2020                                        = `sum_osbb_2020`,
-    # edem_total                                           = `edem_total`,
-    # edem_petitions                                       = `edem_petitions`,
-    # edem_consultations                                   = `edem_consultations`,
-    # edem_participatory_budget                            = `edem_participatory_budget`,
-    # edem_open_hromada                                    = `edem_open_hromada`,
-    youth_councils                                       = `youth_councils`,
-    youth_centers                                        = `youth_centers`,
-    business_support_centers                             = `business_support_centers`,
-    creation_date                                        = `creation_date`,
-    creation_year                                        = `creation_year`,
-    time_before_24th                                     = `time_before_24th`,
-    voluntary                                            = `voluntary`,
-    war_zone_27_04_2022                                  = `war_zone_27_04_2022`,
-    war_zone_20_06_2022                                  = `war_zone_20_06_2022`,
-    war_zone_23_08_2022                                  = `war_zone_23_08_2022`,
-    war_zone_10_10_2022                                  = `war_zone_10_10_2022`,
-    # passangers_2021                                      = `passangers_2021`,
-    # total_declarations                                   = `total_declarations`,
-    # female_declarations                                  = `female_declarations`,
-    # male_declarations                                    = `male_declarations`,
-    # female_pct_declarations                              = `female_pct_declarations`,
-    # male_pct_declarations                                = `male_pct_declarations`,
-    # urban_declarations                                   = `urban_declarations`,
-    # rural_declarations                                   = `rural_declarations`,
-    # urban_pct_declarations                               = `urban_pct_declarations`,
-    # rural_pct_declarations                               = `rural_pct_declarations`,
-    # youth_declarations                                   = `youth_declarations`,
-    # youth_pct_declarations                               = `youth_pct_declarations`,
-    # working_age_total_declarations                       = `working_age_total_declarations`,
-    # working_age_pct_declarations                         = `working_age_pct_declarations`,
-    # declarations_pct                                     = `declarations_pct`,
-    # urban_declarations_pct                               = `urban_declarations_pct`,
-    # train_station                                        = `train_station`,
-  )
+cat("   ✓ Cleaned dataset:", nrow(ua_hromadas_clean), "hromadas\n")
+cat("   ✓ Covering", ua_hromadas_clean %>% distinct(oblast_name_en) %>% nrow(), "oblasts\n")
 
-
-ua_admin_hierarchy %>% OuhscMunge::column_rename_headstart()
-
-ua_admin_hierarchy_tweak1 <-
-  ua_admin_hierarchy %>%
-  dplyr::select(    # `dplyr::select()` drops columns not included.
-    settlement_code                    = `settlement_code`,
-    settlement_name                    = `settlement_name`,
-    settlement_type                    = `settlement_type`,
-    hromada_code                       = `hromada_code`,
-    hromada_name                       = `hromada_name`,
-    raion_code                         = `raion_code`,
-    raion_name                         = `raion_name`,
-    oblast_code                        = `oblast_code`,
-    oblast_name                        = `oblast_name`,
-    type                               = `type`,
-    region_en                          = `region_en`,
-    region_ua                          = `region_ua`,
-    oblast_name_en                     = `oblast_name_en`,
-    oblast_code_en                     = `oblast_code_en`,
-    region_code_en                     = `region_code_en`,
-    map_position                       = `map_position`,
-    map_position2                      = `map_position2`,
-    oblast_center                      = `oblast_center`,
-    oblast_center_code                 = `oblast_center_code`,
-    oblast_name_display                = `oblast_name_display`,
-    settlement_code_old                = `settlement_code_old`,
-    rada_name                          = `rada_name`,
-    rada_code                          = `rada_code`,
-    budget_code                        = `budget_code`,
-    budget_name                        = `budget_name`,
-    full_name                          = `full_name`,
-  )
-
-
-
+# Display cleaned data sample
+cat("📊 Cleaned data sample:\n")
+print(ua_hromadas_clean %>% select(oblast_name_en, hromada_name, total_popultaion_2022, square, income_per_capita_2022) %>% head(5))
 
 # ---- create-oblast-aggregates ----
 # Create oblast-level aggregated data for analysis
 cat("🗺️  Creating oblast-level aggregations...\n")
 
-ua_oblasts_aggregated <- ua_main_data_tweak1 %>%
+ua_oblasts_aggregated <- ua_hromadas_clean %>%
   group_by(oblast_name_en, oblast_code, region_en) %>%
   summarise(
     # Administrative counts
@@ -340,7 +253,7 @@ ua_oblasts_aggregated <- ua_main_data_tweak1 %>%
     
     # Population indicators
     total_population = sum(total_popultaion_2022, na.rm = TRUE),
-    urban_population = sum(urban_popultaion_2022, na.rm = TRUE),
+    urban_population = sum(urban_popultaion_2022_x, na.rm = TRUE),
     avg_population_density = ifelse(sum(total_popultaion_2022, na.rm = TRUE) > 0,
                                    weighted.mean(population_density, total_popultaion_2022, na.rm = TRUE),
                                    0),
@@ -355,9 +268,9 @@ ua_oblasts_aggregated <- ua_main_data_tweak1 %>%
     # Economic indicators
     total_income_2021 = sum(income_total_2021, na.rm = TRUE),
     total_income_2022 = sum(income_total_2022, na.rm = TRUE),
-    # avg_income_per_capita_2021 = ifelse(sum(total_popultaion_2021, na.rm = TRUE) > 0,
-    #                                    weighted.mean(income_per_capita_2021, total_popultaion_2021, na.rm = TRUE),
-    #                                    0),
+    avg_income_per_capita_2021 = ifelse(sum(total_popultaion_2021, na.rm = TRUE) > 0,
+                                       weighted.mean(income_per_capita_2021, total_popultaion_2021, na.rm = TRUE),
+                                       0),
     avg_income_per_capita_2022 = ifelse(sum(total_popultaion_2022, na.rm = TRUE) > 0,
                                        weighted.mean(income_per_capita_2022, total_popultaion_2022, na.rm = TRUE),
                                        0),
@@ -373,7 +286,6 @@ ua_oblasts_aggregated <- ua_main_data_tweak1 %>%
   ) %>%
   arrange(desc(total_population))
 
-ua_oblast_aggregated %>% glimpse()
 cat("   ✓ Created oblast aggregations:", nrow(ua_oblasts_aggregated), "oblasts\n")
 
 # Display aggregated data

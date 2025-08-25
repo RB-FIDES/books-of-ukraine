@@ -200,7 +200,7 @@ if ("ua_oblasts_aggregated" %in% tables) {
 	# Create wide format: oblasts as rows, indicators as columns
 	ds_oblast_wide <- ua_oblasts_df %>%
 		select(
-			oblast_name_en, oblast_code, region_type,
+			oblast_name_en, oblast_code, region_en,
 			total_population, n_hromadas, total_area,
 			avg_income_per_capita_2021, avg_income_per_capita_2022,
 			income_growth_pct, oblast_population_density,
@@ -233,7 +233,7 @@ if ("ua_oblasts_aggregated" %in% tables) {
 	# Transform to long format: year, category_type, category_value, measure_type, value
 	ds_oblast <- ua_oblasts_df %>%
 		select(
-			oblast_name_en, oblast_code, region_type,
+			oblast_name_en, oblast_code, region_en,
 			total_population, n_hromadas, total_area,
 			avg_income_per_capita_2021, avg_income_per_capita_2022,
 			income_growth_pct, oblast_population_density, urbanization_pct
@@ -256,7 +256,7 @@ if ("ua_oblasts_aggregated" %in% tables) {
 			measure_type = str_replace_all(measure_type, "_202[12]", ""),
 			measure_type = str_replace_all(measure_type, "avg_", "")
 		) %>%
-		select(year, category_type, category_value, measure_type, value, oblast_code, region_type) %>%
+		select(year, category_type, category_value, measure_type, value, oblast_code, region_en) %>%
 		filter(!is.na(value))
 	
 	append_to_final_db(ds_oblast, "ds_oblast")
@@ -415,7 +415,7 @@ manifest_lines <- c(
   "| **Column** | **Data Type** | **Description** | **Analysis Use** |",
   "|------------|---------------|-----------------|------------------|",
   "| `oblast_name_en` | Character | Oblast name in English | Mapping, regional analysis |",
-  "| `region_type` | Character | Central/Eastern/Western/Southern Ukraine | Regional aggregation |",
+  "| `region_en` | Character | Central/Eastern/Western/Southern Ukraine | Regional aggregation |",
   "| `total_population` | Numeric | Oblast population | Per-capita calculations |",
   "| `avg_income_per_capita_2022` | Numeric | Economic indicator | Correlation analysis |",
   "",
