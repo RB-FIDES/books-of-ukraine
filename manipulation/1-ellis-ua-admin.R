@@ -171,7 +171,7 @@ ua_metadata_tweak1 <-
   )
 
 # ua_main_data %>% OuhscMunge::column_rename_headstart()
-ua_main_data_tweak1 <-
+ua_hromadas_tweak1 <-
   ua_main_data %>%
   dplyr::select(
     # `dplyr::select()` drops columns not included.
@@ -186,91 +186,91 @@ ua_main_data_tweak1 <-
     oblast_center                                        = `oblast_center`,
     hromada_center_code                                  = `hromada_center_code`,
     hromada_center                                       = `hromada_center`,
-    lat_center                                           = `lat_center`,
-    lon_center                                           = `lon_center`,
+    # lat_center                                           = `lat_center`,
+    # lon_center                                           = `lon_center`,
     travel_time                                          = `travel_time`,
     n_settlements                                        = `n_settlements`,
     square_area                                          = `square`,
-    distance_to_russia_belarus                           = `distance_to_russia_belarus`,
+    # distance_to_russia_belarus                           = `distance_to_russia_belarus`,
     distance_to_russia                                   = `distance_to_russia`,
     distance_to_eu                                       = `distance_to_eu`,
-    mountain_hromada                                     = `mountain_hromada`,
-    near_seas                                            = `near_seas`,
-    bordering_hromadas                                   = `bordering_hromadas`,
-    hromadas_30km_from_border                            = `hromadas_30km_from_border`,
-    hromadas_30km_russia_belarus                         = `hromadas_30km_russia_belarus`,
-    buffer_nat_15km                                      = `buffer_nat_15km`,
-    buffer_int_15km                                      = `buffer_int_15km`,
-    occipied_before_2022                                 = `occipied_before_2022`,
+    # mountain_hromada                                     = `mountain_hromada`,
+    # near_seas                                            = `near_seas`,
+    # bordering_hromadas                                   = `bordering_hromadas`,
+    # hromadas_30km_from_border                            = `hromadas_30km_from_border`,
+    # hromadas_30km_russia_belarus                         = `hromadas_30km_russia_belarus`,
+    # buffer_nat_15km                                      = `buffer_nat_15km`,
+    # buffer_int_15km                                      = `buffer_int_15km`,
+    # occipied_before_2022                                 = `occipied_before_2022`,
     total_popultaion_2022                                = `total_popultaion_2022`,
     urban_popultaion_2022                                = `urban_popultaion_2022`,
     urban_pct                                            = `urban_pct`,
-    budget_code                                          = `budget_code`,
-    budget_name                                          = `budget_name`,
+    # budget_code                                          = `budget_code`,
+    # budget_name                                          = `budget_name`,
     oblast_name_en                                       = `oblast_name_en`,
     region_en                                            = `region_en`,
     region_code_en                                       = `region_code_en`,
     income_total_2021                                    = `income_total_2021`,
-    income_transfert_2021                                = `income_transfert_2021`,
-    income_military_2021                                 = `income_military_2021`,
-    income_pdfo_2021                                     = `income_pdfo_2021`,
-    income_unified_tax_2021                              = `income_unified_tax_2021`,
-    income_property_tax_2021                             = `income_property_tax_2021`,
-    income_excise_duty_2021                              = `income_excise_duty_2021`,
-    income_own_2021                                      = `income_own_2021`,
-    own_income_prop_2021                                 = `own_income_prop_2021`,
-    transfert_prop_2021                                  = `transfert_prop_2021`,
-    military_tax_prop_2021                               = `military_tax_prop_2021`,
-    pdfo_prop_2021                                       = `pdfo_prop_2021`,
-    unified_tax_prop_2021                                = `unified_tax_prop_2021`,
-    property_tax_prop_2021                               = `property_tax_prop_2021`,
-    excise_duty_prop_2021                                = `excise_duty_prop_2021`,
-    own_income_change                                    = `own_income_change`,
-    own_prop_change                                      = `own_prop_change`,
-    total_income_change                                  = `total_income_change`,
-    income_own_2022                                      = `income_own_2022`,
+    # income_transfert_2021                                = `income_transfert_2021`,
+    # income_military_2021                                 = `income_military_2021`,
+    # income_pdfo_2021                                     = `income_pdfo_2021`,
+    # income_unified_tax_2021                              = `income_unified_tax_2021`,
+    # income_property_tax_2021                             = `income_property_tax_2021`,
+    # income_excise_duty_2021                              = `income_excise_duty_2021`,
+    # income_own_2021                                      = `income_own_2021`,
+    # own_income_prop_2021                                 = `own_income_prop_2021`,
+    # transfert_prop_2021                                  = `transfert_prop_2021`,
+    # military_tax_prop_2021                               = `military_tax_prop_2021`,
+    # pdfo_prop_2021                                       = `pdfo_prop_2021`,
+    # unified_tax_prop_2021                                = `unified_tax_prop_2021`,
+    # property_tax_prop_2021                               = `property_tax_prop_2021`,
+    # excise_duty_prop_2021                                = `excise_duty_prop_2021`,
+    # own_income_change                                    = `own_income_change`,
+    # own_prop_change                                      = `own_prop_change`,
+    # total_income_change                                  = `total_income_change`,
+    # income_own_2022                                      = `income_own_2022`,
     income_total_2022                                    = `income_total_2022`,
-    income_transfert_2022                                = `income_transfert_2022`,
-    own_income_no_mil_change_yo_y_jan_feb                = `own_income_no_mil_change_yo_y_jan_feb`,
-    own_income_no_mil_change_yo_y_jun_aug                = `own_income_no_mil_change_yo_y_jun_aug`,
-    own_income_no_mil_change_yo_y_mar_may                = `own_income_no_mil_change_yo_y_mar_may`,
-    own_income_no_mil_change_yo_y_adapt                  = `own_income_no_mil_change_yo_y_adapt`,
-    dfrr_executed                                        = `dfrr_executed`,
+    # income_transfert_2022                                = `income_transfert_2022`,
+    # own_income_no_mil_change_yo_y_jan_feb                = `own_income_no_mil_change_yo_y_jan_feb`,
+    # own_income_no_mil_change_yo_y_jun_aug                = `own_income_no_mil_change_yo_y_jun_aug`,
+    # own_income_no_mil_change_yo_y_mar_may                = `own_income_no_mil_change_yo_y_mar_may`,
+    # own_income_no_mil_change_yo_y_adapt                  = `own_income_no_mil_change_yo_y_adapt`,
+    # dfrr_executed                                        = `dfrr_executed`,
     turnout_2020                                         = `turnout_2020`,
     sex_head                                             = `sex_head`,
     age_head                                             = `age_head`,
     education_head                                       = `education_head`,
     incumbent                                            = `incumbent`,
-    rda                                                  = `rda`,
-    not_from_here                                        = `not_from_here`,
-    party                                                = `party`,
-    enterpreuner                                         = `enterpreuner`,
-    unemployed                                           = `unemployed`,
-    priv_work                                            = `priv_work`,
-    polit_work                                           = `polit_work`,
-    communal_work                                        = `communal_work`,
-    ngo_work                                             = `ngo_work`,
-    party_national_winner                                = `party_national_winner`,
-    no_party                                             = `no_party`,
-    male                                                 = `male`,
-    high_educ                                            = `high_educ`,
+    # rda                                                  = `rda`,
+    # not_from_here                                        = `not_from_here`,
+    # party                                                = `party`,
+    # enterpreuner                                         = `enterpreuner`,
+    # unemployed                                           = `unemployed`,
+    # priv_work                                            = `priv_work`,
+    # polit_work                                           = `polit_work`,
+    # communal_work                                        = `communal_work`,
+    # ngo_work                                             = `ngo_work`,
+    # party_national_winner                                = `party_national_winner`,
+    # no_party                                             = `no_party`,
+    # male                                                 = `male`,
+    # high_educ                                            = `high_educ`,
     # sum_osbb_2020                                        = `sum_osbb_2020`,
     # edem_total                                           = `edem_total`,
     # edem_petitions                                       = `edem_petitions`,
     # edem_consultations                                   = `edem_consultations`,
     # edem_participatory_budget                            = `edem_participatory_budget`,
     # edem_open_hromada                                    = `edem_open_hromada`,
-    youth_councils                                       = `youth_councils`,
-    youth_centers                                        = `youth_centers`,
-    business_support_centers                             = `business_support_centers`,
-    creation_date                                        = `creation_date`,
-    creation_year                                        = `creation_year`,
-    time_before_24th                                     = `time_before_24th`,
-    voluntary                                            = `voluntary`,
-    war_zone_27_04_2022                                  = `war_zone_27_04_2022`,
-    war_zone_20_06_2022                                  = `war_zone_20_06_2022`,
-    war_zone_23_08_2022                                  = `war_zone_23_08_2022`,
-    war_zone_10_10_2022                                  = `war_zone_10_10_2022`,
+    # youth_councils                                       = `youth_councils`,
+    # youth_centers                                        = `youth_centers`,
+    # business_support_centers                             = `business_support_centers`,
+    # creation_date                                        = `creation_date`,
+    # creation_year                                        = `creation_year`,
+    # time_before_24th                                     = `time_before_24th`,
+    # voluntary                                            = `voluntary`,
+    # war_zone_27_04_2022                                  = `war_zone_27_04_2022`,
+    # war_zone_20_06_2022                                  = `war_zone_20_06_2022`,
+    # war_zone_23_08_2022                                  = `war_zone_23_08_2022`,
+    # war_zone_10_10_2022                                  = `war_zone_10_10_2022`,
     # passangers_2021                                      = `passangers_2021`,
     # total_declarations                                   = `total_declarations`,
     # female_declarations                                  = `female_declarations`,
@@ -288,6 +288,10 @@ ua_main_data_tweak1 <-
     # declarations_pct                                     = `declarations_pct`,
     # urban_declarations_pct                               = `urban_declarations_pct`,
     # train_station                                        = `train_station`,
+  ) %>% 
+  mutate(
+    population_density = ifelse(square_area > 0, total_popultaion_2022 / square_area, 0)
+    ,income_per_capita_2022 = ifelse(total_popultaion_2022 > 0, income_total_2022 / total_popultaion_2022, 0)
   )
 
 
@@ -331,7 +335,7 @@ ua_admin_hierarchy_tweak1 <-
 # Create oblast-level aggregated data for analysis
 cat("🗺️  Creating oblast-level aggregations...\n")
 
-ua_oblasts_aggregated <- ua_main_data_tweak1 %>%
+ua_oblasts_aggregated <- ua_hromadas_tweak1 %>%
   group_by(oblast_name_en, oblast_code, region_en) %>%
   summarise(
     # Administrative counts
@@ -341,13 +345,12 @@ ua_oblasts_aggregated <- ua_main_data_tweak1 %>%
     # Population indicators
     total_population = sum(total_popultaion_2022, na.rm = TRUE),
     urban_population = sum(urban_popultaion_2022, na.rm = TRUE),
-    avg_population_density = ifelse(sum(total_popultaion_2022, na.rm = TRUE) > 0,
-                                   weighted.mean(population_density, total_popultaion_2022, na.rm = TRUE),
-                                   0),
-    urbanization_pct = ifelse(total_population > 0, urban_population / total_population * 100, 0),
+    urbanization_pct = ifelse(sum(total_popultaion_2022, na.rm = TRUE) > 0, 
+                             sum(urban_popultaion_2022, na.rm = TRUE) / sum(total_popultaion_2022, na.rm = TRUE) * 100, 
+                             0),
     
     # Geographic indicators  
-    total_area = sum(square, na.rm = TRUE),
+    total_area = sum(square_area, na.rm = TRUE),
     avg_travel_time = ifelse(sum(total_popultaion_2022, na.rm = TRUE) > 0,
                             weighted.mean(travel_time, total_popultaion_2022, na.rm = TRUE),
                             NA_real_),
@@ -355,25 +358,24 @@ ua_oblasts_aggregated <- ua_main_data_tweak1 %>%
     # Economic indicators
     total_income_2021 = sum(income_total_2021, na.rm = TRUE),
     total_income_2022 = sum(income_total_2022, na.rm = TRUE),
-    # avg_income_per_capita_2021 = ifelse(sum(total_popultaion_2021, na.rm = TRUE) > 0,
-    #                                    weighted.mean(income_per_capita_2021, total_popultaion_2021, na.rm = TRUE),
-    #                                    0),
-    avg_income_per_capita_2022 = ifelse(sum(total_popultaion_2022, na.rm = TRUE) > 0,
-                                       weighted.mean(income_per_capita_2022, total_popultaion_2022, na.rm = TRUE),
-                                       0),
     
     .groups = "drop"
   ) %>%
   mutate(
-    # Calculated indicators
+    # AI COMPUTED: Calculate per-capita income from totals and population
+    avg_income_per_capita_2022 = ifelse(total_population > 0, 
+                                       total_income_2022 / total_population * 1000,  # Convert to per capita (in thousands)
+                                       0),
+    # AI COMPUTED: Calculate population density from population and area
     oblast_population_density = ifelse(total_area > 0, total_population / total_area, 0),
+    # AI COMPUTED: Calculate income growth from 2021 to 2022
     income_growth_pct = ifelse(total_income_2021 > 0, 
                               (total_income_2022 - total_income_2021) / total_income_2021 * 100, 0)
-
   ) %>%
-  arrange(desc(total_population))
+  filter(!is.na(oblast_name_en))
 
-ua_oblast_aggregated %>% glimpse()
+ua_oblasts_aggregated %>% glimpse()
+
 cat("   ✓ Created oblast aggregations:", nrow(ua_oblasts_aggregated), "oblasts\n")
 
 # Display aggregated data
@@ -400,23 +402,16 @@ ua_oblasts_aggregated %>% count(region_en)
 dim_regions <- ua_oblasts_aggregated %>%
   distinct(region_en, region_en) %>%
   mutate(
-    region_id = row_number(),
-    region_description = case_when(
-      region_en == "West" ~ "Western regions including Carpathian areas",
-      region_en == "Center" ~ "Central regions including capital area", 
-      region_en == "East" ~ "Eastern regions including industrial areas",
-      region_en == "South" ~ "Southern regions including coastal areas",
-      region_en == "North" ~ "Southern regions including Polissia"
-    )
+    region_id = row_number()
   ) %>%
   arrange(region_en)
 
 # Hromada fact table
-fact_hromadas <- ua_hromadas_clean %>%
+fact_hromadas <- ua_hromadas_tweak1 %>%
   select(
     hromada_code, hromada_name, oblast_code, oblast_name_en,
-    total_popultaion_2022, square, population_density, 
-    income_per_capita_2022, income_change_pct, travel_time
+    total_popultaion_2022, square_area, population_density, 
+    income_per_capita_2022
   ) %>%
   left_join(
     dim_oblasts %>% select(oblast_code, oblast_id), 

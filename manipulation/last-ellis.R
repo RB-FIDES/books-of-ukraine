@@ -202,9 +202,8 @@ if ("ua_oblasts_aggregated" %in% tables) {
 		select(
 			oblast_name_en, oblast_code, region_en,
 			total_population, n_hromadas, total_area,
-			avg_income_per_capita_2021, avg_income_per_capita_2022,
-			income_growth_pct, oblast_population_density,
-			urbanization_pct, avg_travel_time
+			avg_income_per_capita_2022, income_growth_pct, 
+			oblast_population_density, urbanization_pct, avg_travel_time
 		) %>%
 		mutate(
 			# Create analysis-friendly indicators
@@ -235,12 +234,12 @@ if ("ua_oblasts_aggregated" %in% tables) {
 		select(
 			oblast_name_en, oblast_code, region_en,
 			total_population, n_hromadas, total_area,
-			avg_income_per_capita_2021, avg_income_per_capita_2022,
-			income_growth_pct, oblast_population_density, urbanization_pct
+			avg_income_per_capita_2022, income_growth_pct, 
+			oblast_population_density, urbanization_pct
 		) %>%
 		tidyr::pivot_longer(
-			cols = c(total_population, n_hromadas, total_area, avg_income_per_capita_2021, 
-			        avg_income_per_capita_2022, income_growth_pct, oblast_population_density, urbanization_pct),
+			cols = c(total_population, n_hromadas, total_area, avg_income_per_capita_2022, 
+			        income_growth_pct, oblast_population_density, urbanization_pct),
 			names_to = "measure_type",
 			values_to = "value"
 		) %>%

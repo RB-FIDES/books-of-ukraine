@@ -212,7 +212,12 @@ process_categorical_time_series <- function(sheet_data, config, sheet_name, tabl
     mutate(
       year = as.integer(str_extract(year, "\\d{4}")),
       value = safe_numeric_convert(value),
-      category_type = table_key,
+      # Determine category_type based on data content - if it's bookstores data organized by oblasts, use "territory"
+      category_type = if (table_key == "bookstores" && category_col == "teritoria") {
+        "territory"
+      } else {
+        table_key
+      },
       measure_type = if ("pokaznik" %in% names(.)) {
         # Use vectorized approach for Ukrainian/English measure mapping
         sapply(pokaznik, standardize_measure_value, USE.NAMES = FALSE)
