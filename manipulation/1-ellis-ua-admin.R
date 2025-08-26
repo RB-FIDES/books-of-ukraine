@@ -22,6 +22,12 @@ library(janitor)   # tidy data
 library(DBI)       # database interface
 library(RSQLite)   # SQLite database
 library(sf)
+
+# Install and load tmap if needed
+if (!requireNamespace("tmap", quietly = TRUE)) {
+  cat("📦 Installing tmap package...\n")
+  install.packages("tmap", repos = "https://cran.rstudio.com", dependencies = TRUE)
+}
 library(tmap)
 cat("📦 Packages loaded successfully\n")
 

@@ -216,7 +216,7 @@ for (sheet_name in names(sheets_data)) {
         # Clean numeric values, handle missing/malformed data
         value = safe_numeric_convert(value),
         # MEASURE TYPE DETECTION: Identify what type of count this represents
-        measure_type = case_when(
+        measure = case_when(
           pokaznik == "Наіменувань" ~ "title_count",           # Number of unique titles
           str_detect(pokaznik, "Примірників") ~ "copy_count",  # Number of copies printed
           TRUE ~ "title_count"  # default fallback
@@ -225,7 +225,7 @@ for (sheet_name in names(sheets_data)) {
       # DATA QUALITY: Remove incomplete records
       filter(!is.na(year), !is.na(value)) %>%
       # FINAL STRUCTURE: Standardized columns for star schema
-      select(year, category_type, category_value, measure_type, value)
+      select(year, category_type, category_value, measure, value)
     
   } else {
     # STANDARD CASE: Categorical data (Language, Theme, Territory, Purpose)
@@ -271,7 +271,7 @@ for (sheet_name in names(sheets_data)) {
         # CATEGORY VALUE: Extract the actual category (e.g., "Українська", "Російська")
         category_value = .data[[category_col]],  # Use dynamic column reference
         # MEASURE TYPE: Same logic as year totals
-        measure_type = case_when(
+        measure = case_when(
           pokaznik == "Наіменувань" ~ "title_count",
           str_detect(pokaznik, "Примірників") ~ "copy_count", 
           TRUE ~ "title_count"  # default
@@ -280,7 +280,7 @@ for (sheet_name in names(sheets_data)) {
       # DATA QUALITY: Remove incomplete records (more stringent for categorical data)
       filter(!is.na(year), !is.na(value), !is.na(category_value)) %>%
       # FINAL STRUCTURE: Consistent schema across all tables
-      select(year, category_type, category_value, measure_type, value)
+      select(year, category_type, category_value, measure, value)
   }
   
   # PROGRESS TRACKING: Show how many records were created from this sheet
@@ -290,7 +290,7 @@ for (sheet_name in names(sheets_data)) {
 rm(sheet_data)
 # Combine all processed data into unified fact table
 fact_book_publications <- bind_rows(processed_tables) %>%
-  arrange(year, category_type, category_value, measure_type)
+  arrange(year, category_type, category_value, measure)
 
 # Create dimension tables for star schema
 dim_years <- fact_book_publications %>%
@@ -309,26 +309,26 @@ dim_years <- fact_book_publications %>%
 
 # Build dim_categories with new 'measure' column and grouped category_id
 dim_categories <- fact_book_publications %>%
-  distinct(category_type, category_value, measure_type) %>%
-  arrange(category_type, category_value, measure_type) %>%
+  distinct(category_type, category_value, measure) %>%
+  arrange(category_type, category_value, measure) %>%
   group_by(category_type) %>%
   mutate(category_id = row_number()) %>%
   ungroup() %>%
-  select(category_type, category_value, measure_type, category_id)
+  select(category_type, category_value, measure, category_id)
 
 # Reorder columns: category_type, category_value, measure, category_id
 colnames(dim_categories)[3] <- "measure"
 dim_categories <- dim_categories %>% select(category_type, category_value, measure, category_id)
 
 dim_measures <- fact_book_publications %>%
-  distinct(measure_type) %>%
-  arrange(measure_type) %>%
+  distinct(measure) %>%
+  arrange(measure) %>%
   mutate(
     measure_id = row_number(),
     measure_description = case_when(
-      measure_type == "title_count" ~ "Number of unique book titles published",
-      measure_type == "copy_count" ~ "Total number of book copies printed",
-      TRUE ~ measure_type
+      measure == "title_count" ~ "Number of unique book titles published",
+      measure == "copy_count" ~ "Total number of book copies printed",
+      TRUE ~ measure
     )
   )
 

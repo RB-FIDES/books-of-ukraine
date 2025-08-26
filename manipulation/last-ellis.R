@@ -56,14 +56,14 @@ cat("   Note: Comprehensive source data remains available in Stage 2 database\n\
 # ------------------------------------------------------------------ CREATE WIDE TABLES ------------------------------------------------------------------
 
 
-# Create ds_year_wide from fact_book_publications (year as rows, measure_type as columns, value as values)
+# Create ds_year_wide from fact_book_publications (year as rows, measure as columns, value as values)
 if ("fact_book_publications" %in% tables) {
 	fact_df <- dbReadTable(db, "fact_book_publications")
 	year_df <- fact_df %>%
 		filter(category_type == "total", category_value == "all_books") %>%
-		select(year, measure_type, value)
+		select(year, measure, value)
 	ds_year_wide <- tryCatch({
-		tidyr::pivot_wider(year_df, id_cols = year, names_from = measure_type, values_from = value)
+		tidyr::pivot_wider(year_df, id_cols = year, names_from = measure, values_from = value)
 	}, error = function(e) {
 		cat("Error in pivot_wider for ds_year_wide:", e$message, "\n")
 		NULL
@@ -86,9 +86,9 @@ if ("fact_book_publications" %in% tables) {
 	fact_df <- dbReadTable(db, "fact_book_publications")
 	lang_df <- fact_df %>%
 		filter(category_type == "language") %>%
-		select(year, measure_type, category_value, value)
+		select(year, measure, category_value, value)
 	ds_language_wide <- tryCatch({
-		tidyr::pivot_wider(lang_df, id_cols = c(category_value, measure_type), names_from = year, values_from = value)
+		tidyr::pivot_wider(lang_df, id_cols = c(category_value, measure), names_from = year, values_from = value)
 	}, error = function(e) {
 		cat("Error in pivot_wider for ds_language_wide:", e$message, "\n")
 		NULL
@@ -105,9 +105,9 @@ if ("fact_book_publications" %in% tables) {
 	fact_df <- dbReadTable(db, "fact_book_publications")
 	territory_df <- fact_df %>%
 		filter(category_type == "territory") %>%
-		select(year, measure_type, category_value, value)
+		select(year, measure, category_value, value)
 	ds_territory_wide <- tryCatch({
-		tidyr::pivot_wider(territory_df, id_cols = c(category_value, measure_type), names_from = year, values_from = value)
+		tidyr::pivot_wider(territory_df, id_cols = c(category_value, measure), names_from = year, values_from = value)
 	}, error = function(e) {
 		cat("Error in pivot_wider for ds_territory_wide:", e$message, "\n")
 		NULL
@@ -124,9 +124,9 @@ if ("fact_book_publications" %in% tables) {
 	fact_df <- dbReadTable(db, "fact_book_publications")
 	theme_df <- fact_df %>%
 		filter(category_type == "theme") %>%
-		select(year, measure_type, category_value, value)
+		select(year, measure, category_value, value)
 	ds_theme_wide <- tryCatch({
-		tidyr::pivot_wider(theme_df, id_cols = c(category_value, measure_type), names_from = year, values_from = value)
+		tidyr::pivot_wider(theme_df, id_cols = c(category_value, measure), names_from = year, values_from = value)
 	}, error = function(e) {
 		cat("Error in pivot_wider for ds_theme_wide:", e$message, "\n")
 		NULL
@@ -143,9 +143,9 @@ if ("fact_book_publications" %in% tables) {
 	fact_df <- dbReadTable(db, "fact_book_publications")
 	purpose_df <- fact_df %>%
 		filter(category_type == "purpose") %>%
-		select(year, measure_type, category_value, value)
+		select(year, measure, category_value, value)
 	ds_purpose_wide <- tryCatch({
-		tidyr::pivot_wider(purpose_df, id_cols = c(category_value, measure_type), names_from = year, values_from = value)
+		tidyr::pivot_wider(purpose_df, id_cols = c(category_value, measure), names_from = year, values_from = value)
 	}, error = function(e) {
 		cat("Error in pivot_wider for ds_purpose_wide:", e$message, "\n")
 		NULL
@@ -175,7 +175,7 @@ if ("bookstores_custom" %in% tables) {
 	# Fallback to original table structure for backward compatibility
 	bookstores_df <- dbReadTable(db, "ds_bookstores")
 	ds_bookstores_wide <- tryCatch({
-		tidyr::pivot_wider(bookstores_df, id_cols = c(category_value, measure_type), names_from = year, values_from = value)
+		tidyr::pivot_wider(bookstores_df, id_cols = c(category_value, measure), names_from = year, values_from = value)
 	}, error = function(e) {
 		cat("Error in pivot_wider for ds_bookstores_wide:", e$message, "\n")
 		NULL
@@ -229,7 +229,7 @@ if ("ua_oblasts_aggregated" %in% tables) {
 if ("ua_oblasts_aggregated" %in% tables) {
 	ua_oblasts_df <- dbReadTable(db, "ua_oblasts_aggregated")
 	
-	# Transform to long format: year, category_type, category_value, measure_type, value
+	# Transform to long format: year, category_type, category_value, measure, value
 	ds_oblast <- ua_oblasts_df %>%
 		select(
 			oblast_name_en, oblast_code, region_en,
@@ -240,22 +240,22 @@ if ("ua_oblasts_aggregated" %in% tables) {
 		tidyr::pivot_longer(
 			cols = c(total_population, n_hromadas, total_area, avg_income_per_capita_2022, 
 			        income_growth_pct, oblast_population_density, urbanization_pct),
-			names_to = "measure_type",
+			names_to = "measure",
 			values_to = "value"
 		) %>%
 		mutate(
 			year = case_when(
-				str_detect(measure_type, "2021") ~ 2021L,
-				str_detect(measure_type, "2022") ~ 2022L,
+				str_detect(measure, "2021") ~ 2021L,
+				str_detect(measure, "2022") ~ 2022L,
 				TRUE ~ 2022L  # Default to 2022 for non-year-specific measures
 			),
 			category_type = "oblast",
 			category_value = oblast_name_en,
 			# Clean measure names
-			measure_type = str_replace_all(measure_type, "_202[12]", ""),
-			measure_type = str_replace_all(measure_type, "avg_", "")
+			measure = str_replace_all(measure, "_202[12]", ""),
+			measure = str_replace_all(measure, "avg_", "")
 		) %>%
-		select(year, category_type, category_value, measure_type, value, oblast_code, region_en) %>%
+		select(year, category_type, category_value, measure, value, oblast_code, region_en) %>%
 		filter(!is.na(value))
 	
 	append_to_final_db(ds_oblast, "ds_oblast")
@@ -280,52 +280,52 @@ cat("   💡 Oblast data now available for territorial analysis and book publica
 
 # ------------------------------------------------------------------ CREATE LONG TABLES ------------------------------------------------------------------
 
-# Create ds_year from fact_book_publications (long format: year, category_type, category_value, measure_type, value)
+# Create ds_year from fact_book_publications (long format: year, category_type, category_value, measure, value)
 if ("fact_book_publications" %in% tables) {
 	fact_df <- dbReadTable(db, "fact_book_publications")
 	ds_year <- fact_df %>%
 		filter(category_type == "total", category_value == "all_books") %>%
-		select(year, category_type, category_value, measure_type, value)
+		select(year, category_type, category_value, measure, value)
 	append_to_final_db(ds_year, "ds_year")
 }
 
-# Create ds_language from fact_book_publications (long format: year, category_type, category_value, measure_type, value)
+# Create ds_language from fact_book_publications (long format: year, category_type, category_value, measure, value)
 if ("fact_book_publications" %in% tables) {
 	fact_df <- dbReadTable(db, "fact_book_publications")
 	ds_language <- fact_df %>%
 		filter(category_type == "language") %>%
-		select(year, category_type, category_value, measure_type, value)
+		select(year, category_type, category_value, measure , value)
 	append_to_final_db(ds_language, "ds_language")
 }
 
-# Create ds_territory from fact_book_publications (long format: year, category_type, category_value, measure_type, value)
+# Create ds_territory from fact_book_publications (long format: year, category_type, category_value, measure, value)
 if ("fact_book_publications" %in% tables) {
 	fact_df <- dbReadTable(db, "fact_book_publications")
 	ds_territory <- fact_df %>%
 		filter(category_type == "territory") %>%
-		select(year, category_type, category_value, measure_type, value)
+		select(year, category_type, category_value, measure , value)
 	append_to_final_db(ds_territory, "ds_territory")
 }
 
-# Create ds_theme from fact_book_publications (long format: year, category_type, category_value, measure_type, value)
+# Create ds_theme from fact_book_publications (long format: year, category_type, category_value, measure, value)
 if ("fact_book_publications" %in% tables) {
 	fact_df <- dbReadTable(db, "fact_book_publications")
 	ds_theme <- fact_df %>%
 		filter(category_type == "theme") %>%
-		select(year, category_type, category_value, measure_type, value)
+		select(year, category_type, category_value, measure , value)
 	append_to_final_db(ds_theme, "ds_theme")
 }
 
-# Create ds_purpose from fact_book_publications (long format: year, category_type, category_value, measure_type, value)
+# Create ds_purpose from fact_book_publications (long format: year, category_type, category_value, measure, value)
 if ("fact_book_publications" %in% tables) {
 	fact_df <- dbReadTable(db, "fact_book_publications")
 	ds_purpose <- fact_df %>%
 		filter(category_type == "purpose") %>%
-		select(year, category_type, category_value, measure_type, value)
+		select(year, category_type, category_value, measure , value)
 	append_to_final_db(ds_purpose, "ds_purpose")
 }
 
-# Create ds_bookstores from ds_bookstores table (long format: year, category_type, category_value, measure_type, value)
+# Create ds_bookstores from ds_bookstores table (long format: year, category_type, category_value, measure, value)
 if ("ds_bookstores" %in% tables) {
 	ds_bookstores <- dbReadTable(db, "ds_bookstores")
 	append_to_final_db(ds_bookstores, "ds_bookstores")
@@ -383,7 +383,7 @@ manifest_lines <- c(
   "",
   "**ADMINISTRATIVE DATA TABLES** (Ukrainian territorial analysis):",
   "- `ds_oblast_wide`: Oblast-level indicators in wide format (oblasts × indicators)",
-  "- `ds_oblast`: Oblast-level indicators in long format (year × measure_type × value)",
+  "- `ds_oblast`: Oblast-level indicators in long format (year × measure × value)",
   "- `dim_oblasts`: Oblast dimension with administrative hierarchy",
   "- `dim_regions`: Regional classification (West/East/Center/South)",
   "",
@@ -406,7 +406,7 @@ manifest_lines <- c(
   "| `year` | Integer | 2005-2023 | Publication year | Time series, trend analysis |",
   "| `category_type` | Character | language, theme, territory, purpose | Data domain/dimension | Faceting, grouping, filtering |",
   "| `category_value` | Character | Domain-specific values | Specific category (e.g., \"Українська\", \"Kyiv\") | Primary categorical analysis |",
-  "| `measure_type` | Character | title_count, copy_count, bookstore_count | Type of measurement | Metric selection, comparison |",
+  "| `measure` | Character | title_count, copy_count, bookstore_count | Type of measurement | Metric selection, comparison |",
   "| `value` | Numeric | 0 to domain maximum | Measured quantity | Quantitative analysis, modeling |",
   "",
   "#### **Geographic Integration Columns** (From Stage 1)",
@@ -454,21 +454,21 @@ for (db_path in sqlite_files) {
     desc <- "General purpose table."
     if (!is.null(df)) {
       cols <- colnames(df)
-      if (all(c("year", "measure_type", "value") %in% cols) && !any(grepl("category", cols))) {
+      if (all(c("year", "measure", "value") %in% cols) && !any(grepl("category", cols))) {
         desc <- "Yearly summary table: one row per year, columns for each measure type. Use for time series and trend analysis."
-      } else if (all(c("year", "measure_type", "category_value", "value") %in% cols) && grepl("language", tbl)) {
+      } else if (all(c("year", "measure", "category_value", "value") %in% cols) && grepl("language", tbl)) {
         desc <- "Language breakdown: rows for year, measure, and language; columns for each language. Use for language share and comparison."
-      } else if (all(c("year", "measure_type", "category_value", "value") %in% cols) && grepl("territory", tbl)) {
+      } else if (all(c("year", "measure", "category_value", "value") %in% cols) && grepl("territory", tbl)) {
         desc <- "Territory breakdown: rows for year, measure, and territory; columns for each territory. Use for regional analysis."
-      } else if (all(c("year", "measure_type", "category_value", "value") %in% cols) && grepl("theme", tbl)) {
+      } else if (all(c("year", "measure", "category_value", "value") %in% cols) && grepl("theme", tbl)) {
         desc <- "Theme breakdown: rows for year, measure, and theme; columns for each theme. Use for subject/theme analysis."
-      } else if (all(c("year", "measure_type", "category_value", "value") %in% cols) && grepl("purpose", tbl)) {
+      } else if (all(c("year", "measure", "category_value", "value") %in% cols) && grepl("purpose", tbl)) {
         desc <- "Purpose breakdown: rows for year, measure, and purpose; columns for each purpose. Use for purpose/category analysis."
-      } else if (all(c("year", "category_type", "category_value", "measure_type", "value") %in% cols)) {
+      } else if (all(c("year", "category_type", "category_value", "measure", "value") %in% cols)) {
         desc <- "Long format: each row is a year/category/measure/value. Use for flexible filtering and faceting."
       } else if (all(c("category_type", "category_value") %in% cols)) {
         desc <- "Category dimension table: defines categories and their types. Use for joins and lookups."
-      } else if (all(c("measure_type") %in% cols)) {
+      } else if (all(c("measure") %in% cols)) {
         desc <- "Measure dimension table: defines available measures. Use for joins and lookups."
       } else if (all(c("year") %in% cols) && length(cols) == 1) {
         desc <- "Year dimension table: defines available years. Use for joins and lookups."
