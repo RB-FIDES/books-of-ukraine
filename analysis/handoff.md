@@ -47,20 +47,24 @@ books_db <- connect_books_db("main")
 
 ### Overview
 
-**Books Chamber**
- - year
- - language
- - territory
- - theme 
- - purpose
+All core data follows a **consistent long format** optimized for analysis:
 
-**UA Admin**
-- ds_oblast
-- dim_oblasts
-- dim_regions
+**Books Chamber Data** (Publishing Statistics)
+- `ds_year` - Annual publication trends (titles & circulation)
+- `ds_language` - Language breakdown (Ukrainian, Russian, English, etc.)
+- `ds_territory` - Oblast/geographic distribution 
+- `ds_theme` - Genre/topic classification (publisher-defined)
+- `ds_purpose` - Genre/topic classification (government-defined)
+- `*_wide` versions - Correspond to initial input tables in `0-ellis.R`
 
-**Extra** 
-- ds_bookstores
+**Ukrainian Administrative Data** (Geographic Context)
+- `ds_oblast` - Oblast features (area, population, income) from [KSE-Loc-Data-Hub](https://github.com/kse-ua/KSE-Loc-Data-Hub)
+- `ds_oblast_wide` - Wide-format version of oblast data
+- `dim_oblasts` - Oblast hierarchy lookup (links via `oblast_name_en`)
+
+**User-Contributed Data** (Custom Additions)
+- `ds_bookstores` - Bookstore counts by oblast (2023) - *Example of user-contributed data*
+
 
 ### Primary Analysis Tables (Long Format)
 
@@ -168,11 +172,11 @@ fact_book <- read.csv("data-private/derived/manipulation/CSV/fact_book_publicati
 # Transform to analysis-friendly long format
 ds_year <- fact_book %>%
   filter(category_type == "total") %>%
-  select(year, measure = measure_type, value)
+  select(year, measure, value)
 
 ds_language <- fact_book %>%
   filter(category_type == "language") %>%
-  select(year, language = category_value, measure = measure_type, value)
+  select(year, language = category_value, measure , value)
 
 # ... (continue for ds_genre, ds_geography)
 ```
@@ -282,7 +286,7 @@ Your role as analyst is to **conduct meaning** across these modes, using the pre
 - **`year`**: Integer, 2005-2023 range
 - **`category_type`**: "language", "theme", "territory", "total", "purpose"  
 - **`category_value`**: Specific category (e.g., "Українська", "м. Київ")
-- **`measure_type`**: "title_count", "naklad", others
+- **`measure`**: "title_count", "naklad", others
 - **`value`**: Numeric value for the measure
 
 ### Administrative Enhancement (Stage 1+)
