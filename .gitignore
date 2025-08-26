@@ -166,3 +166,4 @@ data-public/metadata/CACHE-MANIFEST.md
 
 # Local VS Code workspace settings (contains user paths and tokens)
 .vscode/settings.json
+analysis/eda-3/eda-3.html.md
