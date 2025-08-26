@@ -1,7 +1,7 @@
 ---
 title: "Publishing Trends in Ukraine: Exploratory Data Analysis"
 subtitle: "EDA 3 - Books of Ukraine Dataset"
-author: "Research Team"
+author: "Research Group FIDES"
 format:
   html:
     page-layout: full
@@ -13,6 +13,7 @@ format:
     code-line-numbers: true
     self-contained: true
     embed-resources: true
+    keep-md: true
 editor: visual
 editor_options: 
   chunk_output_type: console
@@ -156,9 +157,9 @@ This report operates with the **Books of Ukraine analytical database** - the fin
 ### Overall Publication Patterns
 
 ```{r}
-#| label: g1a
+#| label: g1
 #| code-summary: Annual publication volume trends
-#| code-fold: false
+#| code-fold: true
 #| eval: true
 #| cache: true
 #| fig-cap: "Total number of unique books published in Ukraine by year (2005-2023)"
