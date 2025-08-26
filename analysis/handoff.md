@@ -45,6 +45,23 @@ books_db <- connect_books_db("main")
 
 ## 🗃️ Core Analytical Tables
 
+### Overview
+
+**Books Chamber**
+ - year
+ - language
+ - territory
+ - theme 
+ - purpose
+
+**UA Admin**
+- ds_oblast
+- dim_oblasts
+- dim_regions
+
+**Extra** 
+- ds_bookstores
+
 ### Primary Analysis Tables (Long Format)
 
 All core data is available in **long format** for flexible analysis:
