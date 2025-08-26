@@ -2,6 +2,25 @@
   "version": "2.0.0",
   "tasks": [
     {
+      "label": "Render EDA-3 Report (Quarto)",
+      "type": "shell",
+      "command": "quarto",
+      "args": ["render", "analysis/eda-3/eda-3.qmd", "--to", "html"],
+      "group": { "kind": "build", "isDefault": false },
+      "presentation": { "echo": true, "reveal": "always", "panel": "shared" },
+      "problemMatcher": [],
+      "options": { "cwd": "${workspaceFolder}" }
+    },
+    {
+      "label": "Check Quarto Availability",
+      "type": "shell",
+      "command": "quarto",
+      "args": ["--version"],
+      "presentation": { "echo": true, "reveal": "always", "panel": "shared" },
+      "problemMatcher": [],
+      "options": { "cwd": "${workspaceFolder}" }
+    },
+    {
       "label": "Memory System Status Check",
       "type": "shell",
       "command": "powershell",
@@ -10,31 +29,19 @@
         "Bypass",
         "-NoProfile",
         "-Command",
-        "Write-Host '🧠 Memory System Status:'; Get-ChildItem ai/*.md | ForEach-Object { Write-Host \"📄 $($_.Name): $(Get-Date $_.LastWriteTime -Format 'yyyy-MM-dd HH:mm')\" }"
+        "Write-Host 'Memory System Status:'; Get-ChildItem ai/*.md | ForEach-Object { Write-Host \"$($_.Name): $(Get-Date $_.LastWriteTime -Format 'yyyy-MM-dd HH:mm')\" }"
       ],
       "group": "build",
-      "presentation": {
-        "echo": true,
-        "reveal": "always",
-        "focus": false,
-        "panel": "shared"
-      },
+      "presentation": { "echo": true, "reveal": "always", "panel": "shared" },
       "problemMatcher": []
     },
     {
       "label": "Load Memory Functions (R)",
       "type": "process",
       "command": "Rscript",
-      "args": [
-        "scripts/wrappers/run-ai-memory-check.R"
-      ],
+      "args": ["scripts/wrappers/run-ai-memory-check.R"],
       "group": "build",
-      "presentation": {
-        "echo": true,
-        "reveal": "always",
-        "focus": false,
-        "panel": "shared"
-      },
+      "presentation": { "echo": true, "reveal": "always", "panel": "shared" },
       "problemMatcher": []
     },
     {
@@ -46,131 +53,69 @@
         "Bypass",
         "-NoProfile",
         "-Command",
-        "Write-Host '📁 Project Structure:'; tree /F /A | Out-String -Stream | Select-Object -First 30 | ForEach-Object { Write-Host $_ }"
+        "Write-Host 'Project Structure:'; tree /F /A | Out-String -Stream | Select-Object -First 30 | ForEach-Object { Write-Host $_ }"
       ],
       "group": "build",
-      "presentation": {
-        "echo": true,
-        "reveal": "always",
-        "focus": false,
-        "panel": "shared"
-      },
+      "presentation": { "echo": true, "reveal": "always", "panel": "shared" },
       "problemMatcher": []
     },
     {
       "label": "Ellis Pipeline Run",
       "type": "shell",
       "command": "powershell",
-      "args": [
-        "-ExecutionPolicy",
-        "Bypass",
-        "-NoProfile",
-        "-File",
-        "${workspaceFolder}/scripts/ps1/run-complete-ellis-pipeline.ps1"
-      ],
-      "group": {
-        "kind": "build",
-        "isDefault": true
-      },
-      "presentation": {
-        "echo": true,
-        "reveal": "always",
-        "focus": true,
-        "panel": "shared"
-      },
+      "args": ["-ExecutionPolicy", "Bypass", "-NoProfile", "-File", "${workspaceFolder}/scripts/ps1/run-complete-ellis-pipeline.ps1"],
+      "group": { "kind": "build", "isDefault": true },
+      "presentation": { "echo": true, "reveal": "always", "focus": true, "panel": "shared" },
       "problemMatcher": [],
-      "options": {
-        "cwd": "${workspaceFolder}"
-      },
-      "runOptions": {
-        "runOn": "default"
-      }
+      "options": { "cwd": "${workspaceFolder}" },
+      "runOptions": { "runOn": "default" }
     },
     {
       "label": "Project Status Check",
       "type": "shell",
       "command": "powershell",
-      "args": [
-        "-ExecutionPolicy",
-        "Bypass",
-        "-NoProfile",
-        "-File",
-        "${workspaceFolder}/project-status.ps1",
-        "-Detailed"
-      ],
+      "args": ["-ExecutionPolicy", "Bypass", "-NoProfile", "-File", "${workspaceFolder}/project-status.ps1", "-Detailed"],
       "group": "build",
-      "presentation": {
-        "echo": true,
-        "reveal": "always",
-        "focus": false,
-        "panel": "shared"
-      },
+      "presentation": { "echo": true, "reveal": "always", "panel": "shared" },
       "problemMatcher": [],
-      "options": {
-        "cwd": "${workspaceFolder}"
-      }
+      "options": { "cwd": "${workspaceFolder}" }
     },
     {
       "label": "Setup Node.js Environment",
       "type": "shell",
       "command": "powershell",
-      "args": [
-        "-ExecutionPolicy",
-        "Bypass",
-        "-NoProfile",
-        "-File",
-        "${workspaceFolder}/setup-nodejs.ps1"
-      ],
+      "args": ["-ExecutionPolicy", "Bypass", "-NoProfile", "-File", "${workspaceFolder}/setup-nodejs.ps1"],
       "group": "build",
-      "presentation": {
-        "echo": true,
-        "reveal": "always",
-        "focus": false,
-        "panel": "shared"
-      },
+      "presentation": { "echo": true, "reveal": "always", "panel": "shared" },
       "problemMatcher": [],
-      "options": {
-        "cwd": "${workspaceFolder}"
-      }
-    }
-    ,
+      "options": { "cwd": "${workspaceFolder}" }
+    },
     {
       "label": "Add Core Context (R)",
       "type": "process",
       "command": "Rscript",
-      "args": [
-        "scripts/wrappers/run-add-core-context.R"
-      ],
+      "args": ["scripts/wrappers/run-add-core-context.R"],
       "group": "build",
-      "presentation": {
-        "echo": true,
-        "reveal": "always",
-        "focus": false,
-        "panel": "shared"
-      },
+      "presentation": { "echo": true, "reveal": "always", "panel": "shared" },
       "problemMatcher": []
     },
     {
       "label": "Run 1-ellis-ua-admin.R",
       "type": "shell",
       "command": "Rscript",
-      "args": [
-        "${workspaceFolder}/manipulation/1-ellis-ua-admin.R"
-      ],
-      "group": {
-        "kind": "build",
-        "isDefault": false
-      },
-      "presentation": {
-        "echo": true,
-        "reveal": "always",
-        "focus": false,
-        "panel": "shared"
-      },
+      "args": ["${workspaceFolder}/manipulation/1-ellis-ua-admin.R"],
+      "group": { "kind": "build", "isDefault": false },
+      "presentation": { "echo": true, "reveal": "always", "panel": "shared" },
+      "problemMatcher": []
+    },
+    {
+      "label": "Run flow.R",
+      "type": "process",
+      "command": "Rscript",
+      "args": ["${workspaceFolder}/flow.R"],
+      "group": { "kind": "build", "isDefault": false },
+      "presentation": { "echo": true, "reveal": "always", "panel": "shared" },
       "problemMatcher": []
     }
   ]
 }
-
-
-
