@@ -140,10 +140,10 @@ ds_rail  <- tibble::tribble(
   # ===============================
   
   # Main ETL (Extract-Transform-Load) from Google Sheets to local formats
-  "run_r"     , "manipulation/0-ellis.R",              # Core data import and prep - creates long and wide format datasets
-  "run_r"     , "manipulation/1-ellis-ua-admin.R",              # Enhance geography data with bookstore infrastructure - creates enhanced datasets
-  "run_r"     , "manipulation/2-ellis-extra.R",              # Adding extra custom data in future developments
-  "run_r"     , "manipulation/last-ellis.R",              
+  # "run_r"     , "manipulation/0-ellis.R",              # Core data import and prep - creates long and wide format datasets
+  # "run_r"     , "manipulation/1-ellis-ua-admin.R",              # Enhance geography data with bookstore infrastructure - creates enhanced datasets
+  # "run_r"     , "manipulation/2-ellis-extra.R",              # Adding extra custom data in future developments
+  # "run_r"     , "manipulation/last-ellis.R",              
   
   # ===============================
   # PHASE 2: ANALYSIS SCRIPTS
@@ -160,6 +160,7 @@ ds_rail  <- tibble::tribble(
   
   # Primary analysis reports (Quarto format) - WITH IMPROVED ERROR HANDLING
   #"run_qmd"   , "analysis/eda-1/eda-1.qmd",            # Main exploratory data analysis report
+  "run_qmd"   , "analysis/eda-3/eda-3.qmd",            # Main exploratory data analysis report
   #"run_qmd"   , "analysis/Data-visualization/Data-visual.qmd", # Data visualization report
   # "run_qmd"   , "analysis/report-example-2/eda-1.qmd", # Analysis report example
   
