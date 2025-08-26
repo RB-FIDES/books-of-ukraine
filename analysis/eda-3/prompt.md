@@ -1,0 +1,3 @@
+## 1. Initial prompt
+
+Goal: establish a .R + .qmd workflow for exploratory data analysis (EDA) of a dataset using ./analysis/eda-3/eda-3.R as the starter for the analytical layer and ./scripts/templates/eda-1.qmd  as the starter for the reporting layer. We will be first developing an question/idea/graph/chunk in .R script first and when we like it, we will then create a chunk in .qmd to publish it. 

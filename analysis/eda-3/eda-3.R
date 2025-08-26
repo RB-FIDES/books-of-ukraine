@@ -53,7 +53,7 @@ base::source("./scripts/operational-functions.R") # project-level
 
 # ---- declare-globals ---------------------------------------------------------
 
-local_root <- "./analysis/eda-1/"
+local_root <- "./analysis/eda-3/"
 local_data <- paste0(local_root, "data-local/") # for local outputs
 
 if (!fs::dir_exists(local_data)) {fs::dir_create(local_data)}
@@ -68,7 +68,7 @@ if (!fs::dir_exists(prints_folder)) {fs::dir_create(prints_folder)}
 # ---- declare-functions -------------------------------------------------------
 # base::source(paste0(local_root,"local-functions.R")) # project-level
 
-# ---- load-data ---------------------------------------------------------------
+# ---- load-data --------------------------------------
 
 # Connect to the default Books of Ukraine database using custom functions
 # Note: Using 'main' database which contains analysis-ready tables created by Ellis pipeline
@@ -124,8 +124,53 @@ for (nm in db_tables) {
 
 # ---- analysis-below -------------------------------------
 
+# ----- g1a ---------------------------------------------
+ds_year %>% glimpse()
 # ----- g1 ---------------------------------------------
 # let's create a plot to show the volume of unique books published each year
+
+# First, let's explore what data we have for year-based analysis
+if (exists("ds_year")) {
+  cat("📈 ds_year table available with measures:", unique(ds_year$measure), "\n")
+  
+  # Create basic time series plot of total publications
+  g1 <- ds_year %>%
+    filter(measure == "title_count") %>%
+    ggplot(aes(x = year, y = value)) +
+    geom_line(size = 1.2, color = "#005BBB") +  # Ukrainian blue
+    geom_point(size = 2, color = "#005BBB") +
+    scale_x_continuous(breaks = seq(2005, 2023, 2)) +
+    scale_y_continuous(labels = scales::comma_format()) +
+    labs(
+      title = "Annual Book Publications in Ukraine",
+      subtitle = "Number of unique titles published per year (2005-2023)", 
+      x = "Year",
+      y = "Number of Published Titles",
+      caption = "Data: Books of Ukraine Database | Ellis Pipeline"
+    ) +
+    theme_minimal() +
+    theme(
+      plot.title = element_text(size = 14, face = "bold"),
+      plot.subtitle = element_text(size = 12, color = "gray60"),
+      axis.title = element_text(size = 11),
+      panel.grid.minor = element_blank()
+    )
+  
+  print(g1)
+  
+  # Save to prints folder
+  ggsave(
+    filename = file.path(prints_folder, "g1-annual-publications.png"),
+    plot = g1,
+    width = 10, height = 6, dpi = 300
+  )
+  
+} else {
+  cat("⚠️ ds_year table not found. Check data loading.\n")
+  # Let's see what tables we do have
+  cat("Available data objects:\n")
+  print(ls()[grepl("^(ds_|dim_|fact_)", ls())])
+}
 
 
 
