@@ -50,6 +50,68 @@ neat <- function(x, output_format = "html"){
   }
   return(x_t)
 }
+
+# ---- Silent Mini-EDA Integration ----
+# Load silent mini-EDA functions for behind-the-scenes data analysis
+source_silent_mini_eda <- function() {
+  silent_eda_path <- "./scripts/silent-mini-eda.R"
+  if (file.exists(silent_eda_path)) {
+    source(silent_eda_path, local = TRUE)
+    return(TRUE)
+  } else {
+    warning("Silent mini-EDA script not found at: ", silent_eda_path)
+    return(FALSE)
+  }
+}
+
+# Smart plotting assistant wrapper - loads silent mini-EDA if needed
+smart_plot <- function(dataset_name, plot_intent = "explore", verbose = FALSE) {
+  # Ensure silent mini-EDA functions are loaded
+  if (!exists("silent_mini_eda")) {
+    if (!source_silent_mini_eda()) {
+      stop("Cannot load silent mini-EDA functions")
+    }
+  }
+  
+  # Source the functions into current environment
+  source("./scripts/silent-mini-eda.R", local = FALSE)
+  
+  # Run the smart assistant
+  result <- smart_ggplot_assistant(dataset_name, plot_intent)
+  
+  if (verbose) {
+    cat("=== SMART PLOT ASSISTANT ===\n")
+    cat("Dataset:", dataset_name, "\n")
+    cat("Intent:", plot_intent, "\n\n")
+    
+    if (!is.null(result$plot_suggestions)) {
+      cat("SUGGESTED PLOTS:\n")
+      for (name in names(result$plot_suggestions)) {
+        cat("\n", toupper(name), ":\n")
+        cat(result$plot_suggestions[[name]], "\n")
+      }
+    }
+    
+    if (!is.null(result$recommended_aesthetics$color)) {
+      cat("\nCOLOR MAPPING RECOMMENDATION:\n")
+      if (!is.null(result$recommended_aesthetics$color$variable)) {
+        cat("Use", result$recommended_aesthetics$color$variable, "for color aesthetic\n")
+        cat("Reason:", result$recommended_aesthetics$color$rationale, "\n")
+      } else {
+        cat("Warning:", result$recommended_aesthetics$color$warning, "\n")
+      }
+    }
+    
+    if (length(result$data_preprocessing_needed) > 0) {
+      cat("\nDATA PREPROCESSING SUGGESTIONS:\n")
+      for (suggestion in result$data_preprocessing_needed) {
+        cat("- ", suggestion, "\n")
+      }
+    }
+  }
+  
+  return(result)
+}
 # ds %>% distinct(id) %>% count() %>% neat(10)
 
 # adds a formated datatable

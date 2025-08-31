@@ -116,6 +116,18 @@
       "group": { "kind": "build", "isDefault": false },
       "presentation": { "echo": true, "reveal": "always", "panel": "shared" },
       "problemMatcher": []
+    },
+    {
+      "label": "Test Silent Mini-EDA System",
+      "type": "process",
+      "command": "Rscript",
+      "args": [
+        "-e",
+        "source('./scripts/silent-mini-eda.R'); cat('Testing silent mini-EDA...\\n'); result <- silent_mini_eda('mtcars', verbose=TRUE); cat('✅ System operational\\n')"
+      ],
+      "group": "build",
+      "presentation": { "echo": true, "reveal": "always", "panel": "shared" },
+      "problemMatcher": []
     }
   ]
 }
