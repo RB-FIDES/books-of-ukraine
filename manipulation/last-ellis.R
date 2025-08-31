@@ -1,410 +1,510 @@
-# Ellis Script - Long and Wide Format Version
-# This script creates CACHE tables and to be described in CACHE-manifest-0.md
-# Format schema: year + measure + [category] + value
+# ----------------------------------------------------------------- IMPORT ------------------------------------------------------------------
+# last-ellis.R - Create focused analytical database for human analysts
+# 
+# PURPOSE: Extract and transform data from the comprehensive Stage 2 database 
+# into a streamlined, analysis-ready format optimized for human convenience.
+#
+# DESIGN PHILOSOPHY:
+# - Stage 2 (books-of-ukraine-2.sqlite): Comprehensive data storage with all source data + custom/extra data
+# - Final (books-of-ukraine.sqlite): Focused analytical convenience with clean, analysis-ready tables
+# - When analysts need source data, they can always reach back to Stage 2 database
 
-rm(list = ls(all.names = TRUE)) # Clear the memory of variables from previous run. This is not called by knitr, because it's above the first chunk.
-cat("\014") # Clear the console
-cat("   ✅ Saved to SQLite database\n")
-cat("   ✅ Saved to CSV files\n")
-# cat("   ✓ Saved to RDS files\n")  # REMOVED: .rds files no longer createderify root location
-cat("Working directory: ", getwd()) # Must be set to Project Directory
-# Project Directory should be the root by default unless overwritten
-
-# ---- load-packages -----------------------------------------------------------
-# Choose to be greedy: load only what's needed
-# Three ways, from least (1) to most(3) greedy:
-# -- 1.Attach these packages so their functions don't need to be qualified: 
-# http://r-pkgs.had.co.nz/namespace.html#search-path
-library(magrittr)
-library(ggplot2)   # graphs
-library(forcats)   # factors
-library(stringr)   # strings
-library(lubridate) # dates
-library(labelled)  # labels
-library(dplyr)     # data wrangling
-library(tidyr)     # data wrangling
-library(scales)    # format
-library(broom)     # for model
-library(emmeans)   # for interpreting model results
-library(ggalluvial)
-library(janitor)   # tidy data
-library(googlesheets4) # Google Sheets integration
-library(DBI)       # For database connection and operations
-library(RSQLite)   # SQLite database interface
-library(ggrepel)   # improved text positioning
-# -- 2.Import only certain functions of a package into the search path.
-# import::from("magrittr", "%>%")
-# -- 3. Verify these packages are available on the machine, but their functions need to be qualified
-requireNamespace("openxlsx"  )# Excel operations
-requireNamespace("fs"        )# file system operations
+library(DBI)
+library(RSQLite)
+library(dplyr)
+library(tidyr)     # for pivot_longer operations in oblast tables
+library(stringr)   # for str_detect operations
+library(fs)
 
 # ---- load-sources ------------------------------------------------------------
-base::source("./scripts/common-functions.R") # project-level
-base::source("./scripts/operational-functions.R") # project-level
-base::source("./scripts/service-account-auth.R") # Google Sheets authentication
+base::source("./scripts/common-functions.R") # Modern database connection functions
 
-# ---- declare-globals ---------------------------------------------------------
-local_root <- "./manipulation/"
-local_data <- paste0(local_root, "data-local/") # for local outputs
-
-if (!fs::dir_exists(local_data)) {fs::dir_create(local_data)}
-
-# ---- authenticate-google-sheets ----------------------------------------------
-# Automatic authentication using service account (preferred) or cached tokens (fallback)
-# This will:
-# 1. Try service account authentication (google-service-account.json) - NO BROWSER
-# 2. Fall back to cached token authentication if no service account
-# 3. Fall back to interactive authentication if neither available
-authenticate_google_sheets()
-
-# ---- declare-functions -------------------------------------------------------
-# Helper function for robust numeric conversion
-safe_numeric_convert <- function(x) {
-  # Handle various formats and clean the data
-  cleaned <- as.character(x)
-  # Remove all non-numeric characters except dots, minus signs, and spaces
-  cleaned <- gsub("[^0-9.\\s-]", "", cleaned)
-  # Remove extra spaces
-  cleaned <- gsub("\\s+", "", cleaned)
-  # Replace empty strings, lone dashes, and various null representations with zero
-  cleaned[cleaned == "" | cleaned == "-" | cleaned == "NULL" | 
-          cleaned == "NA" | cleaned == "n/a" | is.na(cleaned)] <- "0"
-  # Handle cases where we might have multiple dots
-  cleaned <- gsub("\\.{2,}", ".", cleaned)
-  # Convert to numeric
-  result <- suppressWarnings(as.numeric(cleaned))
-  # Replace any remaining NAs with 0
-  result[is.na(result)] <- 0
+# Helper function to append table to final database
+append_to_final_db <- function(table_data, table_name) {
+  final_db <- connect_books_db("main")
+  tryCatch({
+    dbWriteTable(final_db, table_name, table_data, overwrite = TRUE)
+    cat(paste0("✅ Added ", table_name, " to analytical database (", nrow(table_data), " rows, ", ncol(table_data), " columns)\n"))
+    result <- TRUE
+  }, error = function(e) {
+    cat("❌ Error writing", table_name, "to analytical database:", e$message, "\n")
+    result <- FALSE
+  })
+  dbDisconnect(final_db)
   return(result)
 }
 
-# ---- create-directories ------------------------------------------------------
-data_private_derived <- "data-private/derived/manipulation/"
-if (!fs::dir_exists(data_private_derived)) {fs::dir_create(data_private_derived)}
+# Import from comprehensive Stage 2 database (includes all core + custom data)
+enhanced_db_path <- get_db_path("stage_2")
+final_db_path <- get_db_path("main")
 
-data_private_derived_sqlite <- "data-private/derived/manipulation/SQLite/"
-if (!fs::dir_exists(data_private_derived_sqlite)) {fs::dir_create(data_private_derived_sqlite)}
+# Set up CSV export directory for analytical tables
+csv_path <- "data-private/derived/manipulation/CSV/"
+if (!fs::dir_exists(csv_path)) {fs::dir_create(csv_path)}
 
-data_private_derived_csv <- "data-private/derived/manipulation/CSV/"
-if (!fs::dir_exists(data_private_derived_csv)) {fs::dir_create(data_private_derived_csv)}
+cat("🔍 Importing from comprehensive Stage 2 database:", enhanced_db_path, "\n")
+db <- connect_books_db("stage_2")
 
-# ---- establish-database-connection -------------------------------------------
-db_books_of_ukraine <- dbConnect(RSQLite::SQLite(), "data-private/derived/manipulation/SQLite/books-of-ukraine-0.sqlite")
+tables <- dbListTables(db)
+cat("📊 Available source tables:\n")
+print(tables)
+
+cat("\n🎯 Creating focused analytical database at:", final_db_path, "\n")
+cat("   Purpose: Clean, analysis-ready tables optimized for human analysts\n")
+cat("   Note: Comprehensive source data remains available in Stage 2 database\n\n")
+
+# ------------------------------------------------------------------ CREATE WIDE TABLES ------------------------------------------------------------------
 
 
-
-# ------------------------------------------------------------------ DS_YEAR ----------------------------------------------------------------------------------------------------------------------------------------------
-
-# ---- load-data ---------------------------------------------------------------
-# STEP 1: Connect to Google Sheets data source
-# This is the master spreadsheet containing clean, structured Ukrainian book publication data
-# organized by different dimensions (year, language, theme, territory, purpose)
-sheet_url <- "https://docs.google.com/spreadsheets/d/1nxMTUD9gRhaE_VIT6WPR4V-_7BWNVwsJu__qjtCtSF0"
-
-# STEP 2: Discover all available data sheets in the workbook
-# Before importing, we scan the spreadsheet to see what sheets exist
-# This helps us understand the data structure and process each sheet appropriately
-sheet_info <- googlesheets4::gs4_get(sheet_url)  # Get metadata about the spreadsheet
-all_sheet_names <- sheet_info$sheets$name        # Extract just the sheet names
-
-# STEP 3: Display available sheets for transparency and debugging
-# This shows the user exactly what data sources are being processed
-cat("📊 Available sheets in clean data source:\n")
-for (i in seq_along(all_sheet_names)) {
-  cat(sprintf("  %d. %s\n", i, all_sheet_names[i]))
-}
-cat("\n")
-
-# STEP 4: Import all sheets into a structured list for processing
-# We create a named list where each element contains one sheet's data
-# This preserves the original sheet structure while allowing systematic processing
-sheets_data <- list()
-
-for (sheet_name in all_sheet_names) {
-  cat("📥 Loading sheet:", sheet_name, "\n")
-  
-  # Import individual sheet with minimal name repair to preserve original column names
-  # then apply consistent column name cleaning using janitor::clean_names()
-  sheet_data <- googlesheets4::read_sheet(
-    ss = sheet_url,              # The spreadsheet URL
-    sheet = sheet_name,          # Current sheet name
-    .name_repair = "minimal"     # Don't auto-fix names, we'll clean them manually
-  ) %>%
-    janitor::clean_names()       # Convert to snake_case, handle special characters
-
-  # Store in our master list using the original sheet name as the key
-  # This maintains the connection between data and its source
-  sheets_data[[sheet_name]] <- sheet_data
-  cat("   ✓ Size:", nrow(sheet_data), "rows ×", ncol(sheet_data), "columns\n")
+# Create ds_year_wide from fact_book_publications (year as rows, measure as columns, value as values)
+if ("fact_book_publications" %in% tables) {
+	fact_df <- dbReadTable(db, "fact_book_publications")
+	year_df <- fact_df %>%
+		filter(category_type == "total", category_value == "all_books") %>%
+		select(year, measure, value)
+	ds_year_wide <- tryCatch({
+		tidyr::pivot_wider(year_df, id_cols = year, names_from = measure, values_from = value)
+	}, error = function(e) {
+		cat("Error in pivot_wider for ds_year_wide:", e$message, "\n")
+		NULL
+	})
+	if (!is.null(ds_year_wide)) {
+		# Create new analytical database focused on analysis convenience
+		if (file.exists(final_db_path)) {
+			file.remove(final_db_path)
+		}
+		cat("📊 Creating focused analytical database\n")
+		append_to_final_db(ds_year_wide, "ds_year_wide")
+	} else {
+		cat("ds_year_wide was not created due to previous errors.\n")
+	}
 }
 
-cat("\n📋 All sheets loaded successfully!\n\n")
-# we can remove temporary files
-rm(sheet_info, sheet_data)
 
-# ---- inspect-data-0 ----------------------------------------------------------
-# Quick inspection of each sheet structure
-cat("🔍 SHEET STRUCTURE OVERVIEW:\n")
-cat(paste(rep("=", 50), collapse = ""), "\n")
-
-for (sheet_name in names(sheets_data)) {
-  cat("\n📄", sheet_name, ":\n")
-  cat("   Dimensions:", nrow(sheets_data[[sheet_name]]), "×", ncol(sheets_data[[sheet_name]]), "\n")
-  ncols_to_show <- min(5, ncol(sheets_data[[sheet_name]]))
-  if (ncols_to_show > 0) {
-    cat("   Columns:", paste(names(sheets_data[[sheet_name]])[seq_len(ncols_to_show)], collapse = ", "))
-    if (ncol(sheets_data[[sheet_name]]) > 5) cat("...")
-  }
-  cat("\n")
+# Create ds_language_wide from fact_book_publications
+if ("fact_book_publications" %in% tables) {
+	fact_df <- dbReadTable(db, "fact_book_publications")
+	lang_df <- fact_df %>%
+		filter(category_type == "language") %>%
+		select(year, measure, category_value, value)
+	ds_language_wide <- tryCatch({
+		tidyr::pivot_wider(lang_df, id_cols = c(category_value, measure), names_from = year, values_from = value)
+	}, error = function(e) {
+		cat("Error in pivot_wider for ds_language_wide:", e$message, "\n")
+		NULL
+	})
+	if (!is.null(ds_language_wide)) {
+		append_to_final_db(ds_language_wide, "ds_language_wide")
+	} else {
+		cat("ds_language_wide was not created due to previous errors.\n")
+	}
 }
 
-# ---- tweak-data-0 ------------------------------------------------------------
-# Process each sheet according to its structure and create star schema tables
-
-# =============================================================================
-# STAR SCHEMA DESIGN FOR BOOKS OF UKRAINE RESEARCH DATABASE
-# =============================================================================
-# FACT TABLE: book_publications (grain: year + category + measure)
-# DIMENSION TABLES: dim_years, dim_languages, dim_genres, dim_geographies, dim_pubtypes
-# 
-# This design optimizes for:
-# - Analytical queries across multiple dimensions
-# - Time series analysis (primary use case)
-# - Flexible aggregation and filtering
-# - Consistent long format for all measures
-# =============================================================================
-
-# =============================================================================
-# DATA TRANSFORMATION: Convert raw sheets to star schema format
-# =============================================================================
-# This section transforms each sheet from wide format (years as columns) to long format
-# (year-value pairs) while standardizing the structure for analytical queries
-processed_tables <- list()
-
-# MAIN PROCESSING LOOP: Handle each sheet according to its data type
-# Each sheet represents a different dimension of Ukrainian book publication data
-for (sheet_name in names(sheets_data)) {
-  cat("🔧 Processing sheet:", sheet_name, "\n")
-  
-  sheet_data <- sheets_data[[sheet_name]]
-  
-  # DATA STRUCTURE: All sheets follow pattern: pokaznik + category_column + year_columns
-  # Example: [pokaznik="Наіменувань", мова="Українська", x2005=150, x2006=200, ...]
-  
-  if (sheet_name == "Рік") {
-    # SPECIAL CASE: Year-level totals (no categorical breakdown)
-    # This sheet contains aggregate totals across all categories by year
-    # Structure: [pokaznik, year columns] - no category dimension
-    processed_tables[["year_totals"]] <- sheet_data %>%
-      # Add standardized category columns for consistency with other tables
-      mutate(
-        category_type = "total",        # Indicates this is aggregate data
-        category_value = "all_books"    # Single value representing all books
-      ) %>%
-      # PIVOT TRANSFORMATION: Convert year columns to year-value pairs
-      # This changes from: [pokaznik, x2005=150, x2006=200] 
-      # To: [pokaznik, year=2005, value=150], [pokaznik, year=2006, value=200]
-      pivot_longer(
-        cols = starts_with("x") | matches("\\d{4}"),  # Find year columns (x2005, 2006, etc.)
-        names_to = "year",                            # New column for year values
-        values_to = "value"                           # New column for publication counts
-      ) %>%
-      # DATA CLEANING AND STANDARDIZATION
-      mutate(
-        # Extract 4-digit year from column names (handles both "x2005" and "2005" formats)
-        year = as.integer(str_extract(year, "\\d{4}")),
-        # Clean numeric values, handle missing/malformed data
-        value = safe_numeric_convert(value),
-        # MEASURE TYPE DETECTION: Identify what type of count this represents
-        measure = case_when(
-          pokaznik == "Наіменувань" ~ "title_count",           # Number of unique titles
-          str_detect(pokaznik, "Примірників") ~ "copy_count",  # Number of copies printed
-          TRUE ~ "title_count"  # default fallback
-        )
-      ) %>%
-      # DATA QUALITY: Remove incomplete records
-      filter(!is.na(year), !is.na(value)) %>%
-      # FINAL STRUCTURE: Standardized columns for star schema
-      select(year, category_type, category_value, measure, value)
-    
-  } else {
-    # STANDARD CASE: Categorical data (Language, Theme, Territory, Purpose)
-    # These sheets break down publications by specific dimensions
-    # Structure: [pokaznik, category_column, year columns]
-    
-    # COLUMN IDENTIFICATION: Find the category column (always second column)
-    # Example: For "Мова" sheet, this would be the language column
-    category_col <- names(sheet_data)[2]
-    
-    # TRANSLATION MAPPING: Create English keys for database storage
-    # This ensures consistent, language-neutral table names
-    table_key <- case_when(
-      sheet_name == "Мова" ~ "language",        # Ukrainian language dimension
-      sheet_name == "Тема" ~ "theme",           # Book theme/subject dimension  
-      sheet_name == "Територія" ~ "territory",  # Geographic/regional dimension
-      sheet_name == "Призначення" ~ "purpose",  # Purpose/target audience dimension
-      TRUE ~ tolower(sheet_name)                # Fallback for unexpected sheets
-    )
-    
-    # PROCESS CATEGORICAL DATA: Same pivot logic as year totals but with categories
-    processed_tables[[table_key]] <- sheet_data %>%
-      # PIVOT TRANSFORMATION: Convert wide format to long format
-      pivot_longer(
-        cols = starts_with("x") | matches("\\d{4}"),  # Year columns to pivot
-        names_to = "year",                            # Extract years
-        values_to = "value"                           # Extract values
-      ) %>%
-      # DATA STANDARDIZATION AND ENRICHMENT
-      mutate(
-        # Clean and convert year values
-        year = as.integer(str_extract(year, "\\d{4}")),
-        # Clean numeric values with robust conversion
-        value = safe_numeric_convert(value),
-        # CATEGORY TYPE MAPPING: Standardize dimension names
-        category_type = case_when(
-          sheet_name == "Мова" ~ "language",
-          sheet_name == "Тема" ~ "theme", 
-          sheet_name == "Територія" ~ "territory",
-          sheet_name == "Призначення" ~ "purpose",
-          TRUE ~ tolower(sheet_name)
-        ),
-        # CATEGORY VALUE: Extract the actual category (e.g., "Українська", "Російська")
-        category_value = .data[[category_col]],  # Use dynamic column reference
-        # MEASURE TYPE: Same logic as year totals
-        measure = case_when(
-          pokaznik == "Наіменувань" ~ "title_count",
-          str_detect(pokaznik, "Примірників") ~ "copy_count", 
-          TRUE ~ "title_count"  # default
-        )
-      ) %>%
-      # DATA QUALITY: Remove incomplete records (more stringent for categorical data)
-      filter(!is.na(year), !is.na(value), !is.na(category_value)) %>%
-      # FINAL STRUCTURE: Consistent schema across all tables
-      select(year, category_type, category_value, measure, value)
-  }
-  
-  # PROGRESS TRACKING: Show how many records were created from this sheet
-  cat("   ✓ Processed:", nrow(processed_tables[[length(processed_tables)]]), "records\n")
+# Create ds_territory_wide from fact_book_publications
+if ("fact_book_publications" %in% tables) {
+	fact_df <- dbReadTable(db, "fact_book_publications")
+	territory_df <- fact_df %>%
+		filter(category_type == "territory") %>%
+		select(year, measure, category_value, value)
+	ds_territory_wide <- tryCatch({
+		tidyr::pivot_wider(territory_df, id_cols = c(category_value, measure), names_from = year, values_from = value)
+	}, error = function(e) {
+		cat("Error in pivot_wider for ds_territory_wide:", e$message, "\n")
+		NULL
+	})
+	if (!is.null(ds_territory_wide)) {
+		append_to_final_db(ds_territory_wide, "ds_territory_wide")
+	} else {
+		cat("ds_territory_wide was not created due to previous errors.\n")
+	}
 }
 
-rm(sheet_data)
-# Combine all processed data into unified fact table
-fact_book_publications <- bind_rows(processed_tables) %>%
-  arrange(year, category_type, category_value, measure)
+# Create ds_theme_wide from fact_book_publications
+if ("fact_book_publications" %in% tables) {
+	fact_df <- dbReadTable(db, "fact_book_publications")
+	theme_df <- fact_df %>%
+		filter(category_type == "theme") %>%
+		select(year, measure, category_value, value)
+	ds_theme_wide <- tryCatch({
+		tidyr::pivot_wider(theme_df, id_cols = c(category_value, measure), names_from = year, values_from = value)
+	}, error = function(e) {
+		cat("Error in pivot_wider for ds_theme_wide:", e$message, "\n")
+		NULL
+	})
+	if (!is.null(ds_theme_wide)) {
+		append_to_final_db(ds_theme_wide, "ds_theme_wide")
+	} else {
+		cat("ds_theme_wide was not created due to previous errors.\n")
+	}
+}
 
-# Create dimension tables for star schema
-dim_years <- fact_book_publications %>%
-  distinct(year) %>%
-  arrange(year) %>%
-  mutate(
-    year_id = row_number(),
-    decade = paste0(floor(year/10)*10, "s"),
-    period = case_when(
-      year <= 2010 ~ "early_2000s",
-      year <= 2015 ~ "early_2010s", 
-      year <= 2020 ~ "late_2010s",
-      TRUE ~ "2020s"
-    )
+# Create ds_purpose_wide from fact_book_publications
+if ("fact_book_publications" %in% tables) {
+	fact_df <- dbReadTable(db, "fact_book_publications")
+	purpose_df <- fact_df %>%
+		filter(category_type == "purpose") %>%
+		select(year, measure, category_value, value)
+	ds_purpose_wide <- tryCatch({
+		tidyr::pivot_wider(purpose_df, id_cols = c(category_value, measure), names_from = year, values_from = value)
+	}, error = function(e) {
+		cat("Error in pivot_wider for ds_purpose_wide:", e$message, "\n")
+		NULL
+	})
+	if (!is.null(ds_purpose_wide)) {
+		append_to_final_db(ds_purpose_wide, "ds_purpose_wide")
+	} else {
+		cat("ds_purpose_wide was not created due to previous errors.\n")
+	}
+}
+
+# Create ds_bookstores_wide - check both possible source tables for backward compatibility
+bookstore_wide_created <- FALSE
+if ("bookstores_custom" %in% tables) {
+	bookstores_df <- dbReadTable(db, "bookstores_custom")
+	ds_bookstores_wide <- tryCatch({
+		tidyr::pivot_wider(bookstores_df, id_cols = c(store_name, location), names_from = year, values_from = book_count)
+	}, error = function(e) {
+		cat("Error in pivot_wider for ds_bookstores_wide:", e$message, "\n")
+		NULL
+	})
+	if (!is.null(ds_bookstores_wide)) {
+		append_to_final_db(ds_bookstores_wide, "ds_bookstores_wide")
+		bookstore_wide_created <- TRUE
+	}
+} else if ("ds_bookstores" %in% tables) {
+	# Fallback to original table structure for backward compatibility
+	bookstores_df <- dbReadTable(db, "ds_bookstores")
+	ds_bookstores_wide <- tryCatch({
+		tidyr::pivot_wider(bookstores_df, id_cols = c(category_value, measure), names_from = year, values_from = value)
+	}, error = function(e) {
+		cat("Error in pivot_wider for ds_bookstores_wide:", e$message, "\n")
+		NULL
+	})
+	if (!is.null(ds_bookstores_wide)) {
+		append_to_final_db(ds_bookstores_wide, "ds_bookstores_wide")
+		bookstore_wide_created <- TRUE
+	}
+}
+if (!bookstore_wide_created) {
+	cat("ds_bookstores_wide was not created due to missing source tables or errors.\n")
+}
+
+# ------------------------------------------------------------------ CREATE OBLAST TABLES (ADMINISTRATIVE DATA) ------------------------------------------------------------------
+
+# Create ds_oblast_wide from ua_oblasts_aggregated (administrative indicators as columns)
+if ("ua_oblasts_aggregated" %in% tables) {
+	cat("🏛️  Creating oblast administrative tables...\n")
+	
+	ua_oblasts_df <- dbReadTable(db, "ua_oblasts_aggregated")
+	
+	# Create wide format: oblasts as rows, indicators as columns
+	ds_oblast_wide <- ua_oblasts_df %>%
+		select(
+			oblast_name_en, oblast_code, region_en,
+			total_population, n_hromadas, total_area,
+			avg_income_per_capita_2022, income_growth_pct, 
+			oblast_population_density, urbanization_pct, avg_travel_time
+		) %>%
+		mutate(
+			# Create analysis-friendly indicators
+			population_category = case_when(
+				total_population > 2000000 ~ "Large (>2M)",
+				total_population > 1000000 ~ "Medium (1-2M)",
+				total_population > 500000 ~ "Small (0.5-1M)",
+				TRUE ~ "Very Small (<0.5M)"
+			),
+			income_category = case_when(
+				avg_income_per_capita_2022 > 50000 ~ "High Income",
+				avg_income_per_capita_2022 > 35000 ~ "Medium Income", 
+				avg_income_per_capita_2022 > 25000 ~ "Low Income",
+				TRUE ~ "Very Low Income"
+			)
+		)
+	
+	append_to_final_db(ds_oblast_wide, "ds_oblast_wide")
+	cat("   ✓ Created ds_oblast_wide:", nrow(ds_oblast_wide), "oblasts\n")
+}
+
+# Create ds_oblast (long format) from ua_oblasts_aggregated for statistical analysis
+if ("ua_oblasts_aggregated" %in% tables) {
+	ua_oblasts_df <- dbReadTable(db, "ua_oblasts_aggregated")
+	
+	# Transform to long format: year, category_type, category_value, measure, value
+	ds_oblast <- ua_oblasts_df %>%
+		select(
+			oblast_name_en, oblast_code, region_en,
+			total_population, n_hromadas, total_area,
+			avg_income_per_capita_2022, income_growth_pct, 
+			oblast_population_density, urbanization_pct
+		) %>%
+		tidyr::pivot_longer(
+			cols = c(total_population, n_hromadas, total_area, avg_income_per_capita_2022, 
+			        income_growth_pct, oblast_population_density, urbanization_pct),
+			names_to = "measure",
+			values_to = "value"
+		) %>%
+		mutate(
+			year = case_when(
+				str_detect(measure, "2021") ~ 2021L,
+				str_detect(measure, "2022") ~ 2022L,
+				TRUE ~ 2022L  # Default to 2022 for non-year-specific measures
+			),
+			category_type = "oblast",
+			category_value = oblast_name_en,
+			# Clean measure names
+			measure = str_replace_all(measure, "_202[12]", ""),
+			measure = str_replace_all(measure, "avg_", "")
+		) %>%
+		select(year, category_type, category_value, measure, value, oblast_code, region_en) %>%
+		filter(!is.na(value))
+	
+	append_to_final_db(ds_oblast, "ds_oblast")
+	cat("   ✓ Created ds_oblast:", nrow(ds_oblast), "administrative indicators\n")
+}
+
+# Copy dimension tables for administrative hierarchy
+if ("dim_oblasts" %in% tables) {
+	dim_oblasts <- dbReadTable(db, "dim_oblasts")
+	append_to_final_db(dim_oblasts, "dim_oblasts")
+	cat("   ✓ Copied dim_oblasts:", nrow(dim_oblasts), "records\n")
+}
+
+if ("dim_regions" %in% tables) {
+	dim_regions <- dbReadTable(db, "dim_regions")
+	append_to_final_db(dim_regions, "dim_regions")
+	cat("   ✓ Copied dim_regions:", nrow(dim_regions), "records\n")
+}
+
+cat("✅ OBLAST ADMINISTRATIVE DATA INTEGRATION COMPLETE\n")
+cat("   💡 Oblast data now available for territorial analysis and book publication correlation\n\n")
+
+# ------------------------------------------------------------------ CREATE LONG TABLES ------------------------------------------------------------------
+
+# Create ds_year from fact_book_publications (long format: year, category_type, category_value, measure, value)
+if ("fact_book_publications" %in% tables) {
+	fact_df <- dbReadTable(db, "fact_book_publications")
+	ds_year <- fact_df %>%
+		filter(category_type == "total", category_value == "all_books") %>%
+		select(year, category_type, category_value, measure, value)
+	append_to_final_db(ds_year, "ds_year")
+}
+
+# Create ds_language from fact_book_publications (long format: year, category_type, category_value, measure, value)
+if ("fact_book_publications" %in% tables) {
+	fact_df <- dbReadTable(db, "fact_book_publications")
+	ds_language <- fact_df %>%
+		filter(category_type == "language") %>%
+		select(year, category_type, category_value, measure , value)
+	append_to_final_db(ds_language, "ds_language")
+}
+
+# Create ds_territory from fact_book_publications (long format: year, category_type, category_value, measure, value)
+if ("fact_book_publications" %in% tables) {
+	fact_df <- dbReadTable(db, "fact_book_publications")
+	ds_territory <- fact_df %>%
+		filter(category_type == "territory") %>%
+		select(year, category_type, category_value, measure , value)
+	append_to_final_db(ds_territory, "ds_territory")
+}
+
+# Create ds_theme from fact_book_publications (long format: year, category_type, category_value, measure, value)
+if ("fact_book_publications" %in% tables) {
+	fact_df <- dbReadTable(db, "fact_book_publications")
+	ds_theme <- fact_df %>%
+		filter(category_type == "theme") %>%
+		select(year, category_type, category_value, measure , value)
+	append_to_final_db(ds_theme, "ds_theme")
+}
+
+# Create ds_purpose from fact_book_publications (long format: year, category_type, category_value, measure, value)
+if ("fact_book_publications" %in% tables) {
+	fact_df <- dbReadTable(db, "fact_book_publications")
+	ds_purpose <- fact_df %>%
+		filter(category_type == "purpose") %>%
+		select(year, category_type, category_value, measure , value)
+	append_to_final_db(ds_purpose, "ds_purpose")
+}
+
+# Create ds_bookstores from ds_bookstores table (long format: year, category_type, category_value, measure, value)
+if ("ds_bookstores" %in% tables) {
+	ds_bookstores <- dbReadTable(db, "ds_bookstores")
+	append_to_final_db(ds_bookstores, "ds_bookstores")
+}
+
+# Only include ds_ tables (wide and long) in the final analytical database.
+# Intentionally do NOT copy fact_, dim_, admin_ua, or custom/extra tables from the
+# source Stage 2 database. This keeps the final `books-of-ukraine.sqlite` focused
+# on analysis-ready `ds_` tables only.
+
+
+
+# Close source database connection
+dbDisconnect(db)
+
+cat("\n🎉 ANALYTICAL DATABASE CREATION COMPLETE!\n")
+cat("📁 Final database location:", final_db_path, "\n")
+
+# Write a manifest that describes the actual data, using the example only for format inspiration
+output_path <- "data-public/metadata/CACHE-MANIFEST.md"
+sqlite_dir <- "data-private/derived/manipulation/SQLite"
+sqlite_files <- list.files(sqlite_dir, pattern = "^BOOKS-OF-.*\\.sqlite$", full.names = TRUE)
+manifest_lines <- c(
+  "# CACHE Manifest - Final Analytical Database (Default)",
+  "",
+  "**Generated by:** `manipulation/last-ellis.R`",
+  "**Database:** `books-of-ukraine.sqlite` (Default analytical database)",
+  "**Purpose:** Clean, analysis-ready tables optimized for human analysts",
+  "",
+  "This manifest describes the **final analytical database** - the default database that analysts should use for most research and reporting tasks.",
+  "",
+  "---",
+  "",
+  "## 🎯 **Default Database Architecture**",
+  "",
+  "The final analytical database contains **focused, analysis-ready tables** created from the comprehensive Stage 2 database:",
+  "",
+  "```",
+  "SOURCE: books-of-ukraine-2.sqlite (comprehensive)",
+  "   ↓ last-ellis.R processing",
+  "TARGET: books-of-ukraine.sqlite (analytical focus)",
+  "```",
+  "",
+  "### **📊 Table Categories**",
+  "",
+  "**WIDE FORMAT TABLES** (for pivot tables, dashboards):",
+  "- Ready for immediate use in Excel, Tableau, PowerBI",
+  "- Years as columns, categories as rows",
+  "- Includes: ds_year_wide, ds_language_wide, ds_territory_wide, ds_theme_wide, ds_purpose_wide",
+  "",
+  "**LONG FORMAT TABLES** (for statistical analysis, modeling):",
+  "- Tidy data format for R, Python analysis",
+  "- One observation per row",
+  "- Includes: ds_year, ds_language, ds_territory, ds_theme, ds_purpose",
+  "",
+  "**ADMINISTRATIVE DATA TABLES** (Ukrainian territorial analysis):",
+  "- `ds_oblast_wide`: Oblast-level indicators in wide format (oblasts × indicators)",
+  "- `ds_oblast`: Oblast-level indicators in long format (year × measure × value)",
+  "- `dim_oblasts`: Oblast dimension with administrative hierarchy",
+  "- `dim_regions`: Regional classification (West/East/Center/South)",
+  "",
+  "**CUSTOM DATA TABLES** (from Stage 2):",
+  "- User-contributed datasets (bookstores, surveys, etc.)",
+  "- Bilingual support (Ukrainian/English standardized to English)",
+  "",
+  "---",
+  "",
+  "## 📚 **Cross-Database Schema Reference**",
+  "",
+  "### Common Column Patterns Across All Ellis Databases",
+  "",
+  "The Ellis Pipeline maintains **consistent schema patterns** across all stages. Understanding these patterns helps analysts work with any stage database:",
+  "",
+  "#### **Core Analysis Columns** (Present in Most Analytical Tables)",
+  "",
+  "| **Column** | **Data Type** | **Range/Values** | **Description** | **Analysis Use** |",
+  "|------------|---------------|------------------|-----------------|------------------|",
+  "| `year` | Integer | 2005-2023 | Publication year | Time series, trend analysis |",
+  "| `category_type` | Character | language, theme, territory, purpose | Data domain/dimension | Faceting, grouping, filtering |",
+  "| `category_value` | Character | Domain-specific values | Specific category (e.g., \"Українська\", \"Kyiv\") | Primary categorical analysis |",
+  "| `measure` | Character | title_count, copy_count, bookstore_count | Type of measurement | Metric selection, comparison |",
+  "| `value` | Numeric | 0 to domain maximum | Measured quantity | Quantitative analysis, modeling |",
+  "",
+  "#### **Geographic Integration Columns** (From Stage 1)",
+  "",
+  "| **Column** | **Data Type** | **Description** | **Analysis Use** |",
+  "|------------|---------------|-----------------|------------------|",
+  "| `oblast_name_en` | Character | Oblast name in English | Mapping, regional analysis |",
+  "| `region_en` | Character | Central/Eastern/Western/Southern Ukraine | Regional aggregation |",
+  "| `total_population` | Numeric | Oblast population | Per-capita calculations |",
+  "| `avg_income_per_capita_2022` | Numeric | Economic indicator | Correlation analysis |",
+  "",
+  "#### **Custom Data Integration** (From Stage 2)",
+  "",
+  "| **Column** | **Data Type** | **Description** | **Analysis Use** |",
+  "|------------|---------------|-----------------|------------------|",
+  "| `ds_*` | Various | Custom dataset prefix | Identifies Stage 2 additions |",
+  "| Bilingual columns | Character | Ukrainian/English standardized to English | Cross-cultural analysis |",
+  "",
+  "| **Column** | **Data Type** | **Tables Present** | **Unique Values** | **Description** |",
+  "|------------|---------------|-------------------|-------------------|-----------------|",
+  "| `category_var` | Character | Classification tables | 10-50 categories | Primary categorical dimension |",
+  "| `subcategory_var` | Character | Hierarchical tables | 50-200 subcategories | Secondary classification level |",
+  "| `geographic_var` | Character | Spatial tables | Region-specific | Geographic/spatial dimension |",
+  "| `temporal_var` | Date/Integer | Time-series tables | Time-dependent | Temporal classification |",
+  "",
+  "---",
+  ""
+)
+for (db_path in sqlite_files) {
+  if (!file.exists(db_path)) next
+  suppressMessages(library(DBI))
+  suppressMessages(library(RSQLite))
+  con <- dbConnect(RSQLite::SQLite(), db_path)
+  tables <- dbListTables(con)
+  manifest_lines <- c(manifest_lines,
+    paste0("## Output Table Summary for `", db_path, "`"),
+    ""
   )
-
-# Build dim_categories with new 'measure' column and grouped category_id
-dim_categories <- fact_book_publications %>%
-  distinct(category_type, category_value, measure) %>%
-  arrange(category_type, category_value, measure) %>%
-  group_by(category_type) %>%
-  mutate(category_id = row_number()) %>%
-  ungroup() %>%
-  select(category_type, category_value, measure, category_id)
-
-# Reorder columns: category_type, category_value, measure, category_id
-colnames(dim_categories)[3] <- "measure"
-dim_categories <- dim_categories %>% select(category_type, category_value, measure, category_id)
-
-dim_measures <- fact_book_publications %>%
-  distinct(measure) %>%
-  arrange(measure) %>%
-  mutate(
-    measure_id = row_number(),
-    measure_description = case_when(
-      measure == "title_count" ~ "Number of unique book titles published",
-      measure == "copy_count" ~ "Total number of book copies printed",
-      TRUE ~ measure
+  for (tbl in tables) {
+    nrows <- tryCatch({ dbGetQuery(con, paste0("SELECT COUNT(*) as n FROM `", tbl, "`"))$n }, error=function(e) NA)
+    df <- tryCatch({ dbReadTable(con, tbl) }, error=function(e) NULL)
+    ncols <- if (!is.null(df)) ncol(df) else NA
+    colnames_str <- if (!is.null(df)) paste(head(colnames(df), 5), collapse=", ") else "-"
+    # Table description logic based on column schema reference
+    desc <- "General purpose table."
+    if (!is.null(df)) {
+      cols <- colnames(df)
+      if (all(c("year", "measure", "value") %in% cols) && !any(grepl("category", cols))) {
+        desc <- "Yearly summary table: one row per year, columns for each measure type. Use for time series and trend analysis."
+      } else if (all(c("year", "measure", "category_value", "value") %in% cols) && grepl("language", tbl)) {
+        desc <- "Language breakdown: rows for year, measure, and language; columns for each language. Use for language share and comparison."
+      } else if (all(c("year", "measure", "category_value", "value") %in% cols) && grepl("territory", tbl)) {
+        desc <- "Territory breakdown: rows for year, measure, and territory; columns for each territory. Use for regional analysis."
+      } else if (all(c("year", "measure", "category_value", "value") %in% cols) && grepl("theme", tbl)) {
+        desc <- "Theme breakdown: rows for year, measure, and theme; columns for each theme. Use for subject/theme analysis."
+      } else if (all(c("year", "measure", "category_value", "value") %in% cols) && grepl("purpose", tbl)) {
+        desc <- "Purpose breakdown: rows for year, measure, and purpose; columns for each purpose. Use for purpose/category analysis."
+      } else if (all(c("year", "category_type", "category_value", "measure", "value") %in% cols)) {
+        desc <- "Long format: each row is a year/category/measure/value. Use for flexible filtering and faceting."
+      } else if (all(c("category_type", "category_value") %in% cols)) {
+        desc <- "Category dimension table: defines categories and their types. Use for joins and lookups."
+      } else if (all(c("measure") %in% cols)) {
+        desc <- "Measure dimension table: defines available measures. Use for joins and lookups."
+      } else if (all(c("year") %in% cols) && length(cols) == 1) {
+        desc <- "Year dimension table: defines available years. Use for joins and lookups."
+      }
+    }
+    manifest_lines <- c(manifest_lines,
+      paste0("### Table: `", tbl, "`"),
+      "",
+      sprintf("- **Rows**: %s", nrows),
+      sprintf("- **Columns**: %s", ncols),
+      sprintf("- **Example Columns**: %s", colnames_str),
+      sprintf("- **Description**: %s", desc),
+      ""
     )
-  )
-
-cat("\n📊 STAR SCHEMA SUMMARY:\n")
-cat("   FACT TABLE: fact_book_publications (", nrow(fact_book_publications), " records)\n")
-cat("   DIM TABLES:\n")
-cat("     - dim_years (", nrow(dim_years), " years)\n")
-cat("     - dim_categories (", nrow(dim_categories), " categories)\n") 
-cat("     - dim_measures (", nrow(dim_measures), " measures)\n")
-
-rm(sheet_data, sheet_info)
-# ---- save-to-disk ------------------------------------------------------------
-cat("\n💾 SAVING TO DATABASE AND FILES:\n")
-
-# Save fact table and dimensions to SQLite
-dbWriteTable(db_books_of_ukraine, "fact_book_publications", fact_book_publications, overwrite = TRUE)
-dbWriteTable(db_books_of_ukraine, "dim_years", dim_years, overwrite = TRUE)
-dbWriteTable(db_books_of_ukraine, "dim_categories", dim_categories, overwrite = TRUE)
-dbWriteTable(db_books_of_ukraine, "dim_measures", dim_measures, overwrite = TRUE)
-
-# Save to CSV for external access
-write.csv(fact_book_publications, paste0(data_private_derived_csv, "fact_book_publications.csv"), row.names = FALSE)
-write.csv(dim_years, paste0(data_private_derived_csv, "dim_years.csv"), row.names = FALSE)
-write.csv(dim_categories, paste0(data_private_derived_csv, "dim_categories.csv"), row.names = FALSE)
-write.csv(dim_measures, paste0(data_private_derived_csv, "dim_measures.csv"), row.names = FALSE)
-
-# Save processed tables as RDS - REMOVED: Using SQLite as single source of truth
-# saveRDS(fact_book_publications, paste0(data_private_derived, "fact_book_publications.rds"))
-# saveRDS(dim_years, paste0(data_private_derived, "dim_years.rds"))
-# saveRDS(dim_categories, paste0(data_private_derived, "dim_categories.rds"))
-# saveRDS(dim_measures, paste0(data_private_derived, "dim_measures.rds"))
-
-cat("   ✓ Saved to SQLite database\n")
-cat("   ✓ Saved to CSV files\n")
-cat("   ✓ Saved to RDS files\n")
-
-
-# Close database connection
-dbDisconnect(db_books_of_ukraine)
-
-cat("\n🎉 PROCESSING COMPLETE!\n")
-cat("Core database (Stage 0) ready for analysis at:\n")
-cat("📁 ", "data-private/derived/manipulation/SQLite/books-of-ukraine-0.sqlite", "\n")
-
-# ---- analysis-below ----------------------------------------------------------
-# This section can be used for immediate analysis/validation of the processed data
-
-# Quick validation queries
-cat("\n📊 QUICK VALIDATION:\n")
-
-# Re-connect to check data
-db_books_of_ukraine <- dbConnect(RSQLite::SQLite(), "data-private/derived/manipulation/SQLite/books-of-ukraine-0.sqlite")
-
-# Count records by table
-tables <- c("fact_book_publications", "dim_years", "dim_categories", "dim_measures")
-for (table in tables) {
-  count <- dbGetQuery(db_books_of_ukraine, paste("SELECT COUNT(*) as count FROM", table))$count
-  cat("   ✓", table, ":", count, "records\n")
+  }
+  dbDisconnect(con)
 }
+writeLines(manifest_lines, output_path)
+message("Created ", output_path, " with actual data descriptions and column schema reference for all BOOKS-OF-*.sqlite files.")
 
-# Sample of fact table
-cat("\n📋 SAMPLE FROM FACT TABLE:\n")
-sample_data <- dbGetQuery(db_books_of_ukraine, 
-  "SELECT * FROM fact_book_publications LIMIT 10")
-print(sample_data)
+# ---- Export all analytical tables to CSV ----
+cat("\n💾 EXPORTING ANALYTICAL TABLES TO CSV:\n")
+db_final <- connect_books_db("main")
+all_tables <- dbListTables(db_final)
 
-dbDisconnect(db_books_of_ukraine)
+for (table_name in all_tables) {
+  table_data <- dbReadTable(db_final, table_name)
+  csv_file_path <- paste0(csv_path, table_name, ".csv")
+  write.csv(table_data, csv_file_path, row.names = FALSE)
+  cat(paste0("   ✅ Exported ", table_name, " (", nrow(table_data), " rows) to CSV\n"))
+}
+dbDisconnect(db_final)
+cat("📋 All analytical tables exported to:", csv_path, "\n")
+
+# ------------------------------------------------------------------ END OF SCRIPT ------------------------------------------------------------------
 
 cat("\n✅ Script completed successfully!\n")
 cat("💡 Next steps: Use analysis/eda-* scripts to explore the data\n")
-
-# ---- cleanup-environment -----------------------------------------------------
-# Remove temporary objects, keep only sheets_data for further analysis
-objects_to_keep <- c("sheets_data", "safe_numeric_convert")
-objects_to_remove <- setdiff(ls(), objects_to_keep)
-rm(list = objects_to_remove)
-
-cat("\n🧹 Environment cleaned - kept sheets_data and safe_numeric_convert\n")
-
+cat("📊 Database ready for analysis with both wide and long format tables\n")
