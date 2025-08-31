@@ -278,6 +278,125 @@ if ("dim_regions" %in% tables) {
 cat("✅ OBLAST ADMINISTRATIVE DATA INTEGRATION COMPLETE\n")
 cat("   💡 Oblast data now available for territorial analysis and book publication correlation\n\n")
 
+# ------------------------------------------------------------------ CREATE ANALYTICAL LONG TABLES ------------------------------------------------------------------
+
+# Create analytical long format tables (year + category + measures as columns)
+# These tables have the analytical format: year, renamed_category, measure1, measure2, etc.
+
+cat("📊 Creating analytical long format tables...\n")
+
+# Create ds_language_long (year, language, copy_count, title_count)
+if ("fact_book_publications" %in% tables) {
+	fact_df <- dbReadTable(db, "fact_book_publications")
+	ds_language_long <- fact_df %>%
+		filter(category_type == "language", measure %in% c("copy_count", "title_count")) %>%
+		select(year, category_value, measure, value) %>%
+		tidyr::pivot_wider(
+			names_from = measure,
+			values_from = value,
+			values_fill = 0
+		) %>%
+		rename(language = category_value) %>%
+		mutate(
+			copy_count = if_else(is.na(copy_count), 0L, as.integer(copy_count)),
+			title_count = if_else(is.na(title_count), 0L, as.integer(title_count))
+		) %>%
+		arrange(year, language)
+	
+	append_to_final_db(ds_language_long, "ds_language_long")
+	cat("   ✓ Created ds_language_long:", nrow(ds_language_long), "rows\n")
+}
+
+# Create ds_territory_long (year, territory, copy_count, title_count)
+if ("fact_book_publications" %in% tables) {
+	fact_df <- dbReadTable(db, "fact_book_publications")
+	ds_territory_long <- fact_df %>%
+		filter(category_type == "territory", measure %in% c("copy_count", "title_count")) %>%
+		select(year, category_value, measure, value) %>%
+		tidyr::pivot_wider(
+			names_from = measure,
+			values_from = value,
+			values_fill = 0
+		) %>%
+		rename(territory = category_value) %>%
+		mutate(
+			copy_count = if_else(is.na(copy_count), 0L, as.integer(copy_count)),
+			title_count = if_else(is.na(title_count), 0L, as.integer(title_count))
+		) %>%
+		arrange(year, territory)
+	
+	append_to_final_db(ds_territory_long, "ds_territory_long")
+	cat("   ✓ Created ds_territory_long:", nrow(ds_territory_long), "rows\n")
+}
+
+# Create ds_theme_long (year, theme, copy_count, title_count)
+if ("fact_book_publications" %in% tables) {
+	fact_df <- dbReadTable(db, "fact_book_publications")
+	ds_theme_long <- fact_df %>%
+		filter(category_type == "theme", measure %in% c("copy_count", "title_count")) %>%
+		select(year, category_value, measure, value) %>%
+		tidyr::pivot_wider(
+			names_from = measure,
+			values_from = value,
+			values_fill = 0
+		) %>%
+		rename(theme = category_value) %>%
+		mutate(
+			copy_count = if_else(is.na(copy_count), 0L, as.integer(copy_count)),
+			title_count = if_else(is.na(title_count), 0L, as.integer(title_count))
+		) %>%
+		arrange(year, theme)
+	
+	append_to_final_db(ds_theme_long, "ds_theme_long")
+	cat("   ✓ Created ds_theme_long:", nrow(ds_theme_long), "rows\n")
+}
+
+# Create ds_purpose_long (year, purpose, copy_count, title_count)
+if ("fact_book_publications" %in% tables) {
+	fact_df <- dbReadTable(db, "fact_book_publications")
+	ds_purpose_long <- fact_df %>%
+		filter(category_type == "purpose", measure %in% c("copy_count", "title_count")) %>%
+		select(year, category_value, measure, value) %>%
+		tidyr::pivot_wider(
+			names_from = measure,
+			values_from = value,
+			values_fill = 0
+		) %>%
+		rename(purpose = category_value) %>%
+		mutate(
+			copy_count = if_else(is.na(copy_count), 0L, as.integer(copy_count)),
+			title_count = if_else(is.na(title_count), 0L, as.integer(title_count))
+		) %>%
+		arrange(year, purpose)
+	
+	append_to_final_db(ds_purpose_long, "ds_purpose_long")
+	cat("   ✓ Created ds_purpose_long:", nrow(ds_purpose_long), "rows\n")
+}
+
+# Create ds_year_long (year, copy_count, title_count) - for consistency
+if ("fact_book_publications" %in% tables) {
+	fact_df <- dbReadTable(db, "fact_book_publications")
+	ds_year_long <- fact_df %>%
+		filter(category_type == "total", category_value == "all_books", measure %in% c("copy_count", "title_count")) %>%
+		select(year, measure, value) %>%
+		tidyr::pivot_wider(
+			names_from = measure,
+			values_from = value,
+			values_fill = 0
+		) %>%
+		mutate(
+			copy_count = if_else(is.na(copy_count), 0L, as.integer(copy_count)),
+			title_count = if_else(is.na(title_count), 0L, as.integer(title_count))
+		) %>%
+		arrange(year)
+	
+	append_to_final_db(ds_year_long, "ds_year_long")
+	cat("   ✓ Created ds_year_long:", nrow(ds_year_long), "rows\n")
+}
+
+cat("✅ ANALYTICAL LONG FORMAT TABLES COMPLETE\n")
+cat("   💡 Three formats now available: default (tidy), wide (pivot), and long (analytical)\n\n")
+
 # ------------------------------------------------------------------ CREATE LONG TABLES ------------------------------------------------------------------
 
 # Create ds_year from fact_book_publications (long format: year, category_type, category_value, measure, value)
