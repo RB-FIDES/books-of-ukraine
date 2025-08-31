@@ -17,17 +17,18 @@ When facing repetitive tasks (like multiple find-and-replace operations), pause 
 
 **CRITICAL RULE: NO UNICODE/EMOJI IN .ps1 FILES**
 
-When creating PowerShell scripts (.ps1 files), follow these strict encoding and character guidelines:
-
-### **Prohibited Characters**
+**Prohibited Characters**
 - ❌ **NO emojis**: `🚀`, `✅`, `❌`, `⚠️`, `📊`, `🔧`, etc.
 - ❌ **NO Unicode symbols**: `•`, `→`, `⟶`, special bullets, arrows
 - ❌ **NO combining characters**: Characters with diacritical marks that may not encode properly
 
-### **Required Standards**
+**Required Standards**
 - ✅ **ASCII-only content**: Use plain English text and standard punctuation
 - ✅ **UTF-8 encoding**: Ensure file is saved as UTF-8 without BOM
 - ✅ **Test before deployment**: Always test `.ps1` files with `powershell -File "script.ps1"` before adding to tasks
+
+# Repository-wide script standard
+- ✅ **ASCII-only for scripts**: This project prefers ASCII-only content for automation and reporting scripts. In addition to the strict `.ps1` rule above, maintainers should avoid emojis and special Unicode characters in `.R`, `.Rmd`, and `.qmd` files to prevent rendering and encoding issues during report generation and automated tasks.
 
 ### **Safe Alternatives**
 ```powershell
