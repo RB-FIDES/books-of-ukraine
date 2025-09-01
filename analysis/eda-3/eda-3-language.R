@@ -29,27 +29,28 @@ library(testit)   # For asserting conditions meet expected patterns.
 # can display interactive plots. This is optional and wrapped in tryCatch so
 # the script still runs when httpgd is absent or fails to start.
 if (requireNamespace("httpgd", quietly = TRUE)) {
-	tryCatch({
-		# Attempt to start httpgd server (API may vary by version); quiet on success
-		if (is.function(httpgd::hgd)) {
-			httpgd::hgd()
-		} else if (is.function(httpgd::httpgd)) {
-			httpgd::httpgd()
-		} else {
-			# Generic call attempt; will be caught if function not found
-			httpgd::hgd()
-		}
-		message("httpgd started (if available). Configure your VS Code R extension to use it for plots.")
-	}, error = function(e) {
-		message("httpgd detected but failed to start: ", conditionMessage(e))
-	})
+		tryCatch({
+				# Attempt to start httpgd server (API may vary by version); quiet on success
+				if (is.function(httpgd::hgd)) {
+						httpgd::hgd()
+				} else if (is.function(httpgd::httpgd)) {
+						httpgd::httpgd()
+				} else {
+						# Generic call attempt; will be caught if function not found
+						httpgd::hgd()
+				}
+				message("httpgd started (if available). Configure your VS Code R extension to use it for plots.")
+		}, error = function(e) {
+				message("httpgd detected but failed to start: ", conditionMessage(e))
+		})
 } else {
-	message("httpgd not installed. To enable interactive plotting in VS Code, install httpgd (binary recommended on Windows) or use other devices (svg/png).")
+		message("httpgd not installed. To enable interactive plotting in VS Code, install httpgd (binary recommended on Windows) or use other devices (svg/png).")
 }
 
 # ---- load-sources ------------------------------------------------------------
 base::source("./scripts/common-functions.R") # project-level
 base::source("./scripts/operational-functions.R") # project-level
+base::source("./scripts/silent-mini-eda.R") # project-level
 
 # ---- declare-globals ---------------------------------------------------------
 
@@ -80,29 +81,30 @@ db_tables_all <- DBI::dbListTables(db)
 
 # Keep only tables that do NOT end with the `_wide` suffix (we'll import these)
 # db_tables <- db_tables_all[!grepl("_long$", db_tables_all)]
-db_tables <- db_tables_all[grepl("_long$", db_tables_all)]
+# db_tables <- db_tables_all[grepl("_long$", db_tables_all)]
+db_tables <- db_tables_all
 
 # Read selected tables into a named list (tbls) and also assign sanitized names
 # into the global environment for convenience. This keeps the connection open
 # while we read data, then disconnects.
 message("Reading ", length(db_tables), " non-_wide tables from DB: ", paste(db_tables, collapse = ", "))
 tbls <- lapply(db_tables, function(t) {
-    message(" - ", t)
-    dplyr::as_tibble(DBI::dbReadTable(db, t))
+		message(" - ", t)
+		dplyr::as_tibble(DBI::dbReadTable(db, t))
 })
 names(tbls) <- db_tables
 
 # helper to convert table names into safe R object names
 sanitize_name <- function(x) {
-	nm <- gsub("[^A-Za-z0-9_]+", "_", x)
-	nm <- gsub("^([0-9])", "_\\1", nm)
-	nm
+		nm <- gsub("[^A-Za-z0-9_]+", "_", x)
+		nm <- gsub("^([0-9])", "_\\1", nm)
+		nm
 }
 
 # assign into global env using sanitized names
 for (nm in db_tables) {
-	obj_name <- sanitize_name(nm)
-	assign(obj_name, tbls[[nm]], envir = .GlobalEnv)
+		obj_name <- sanitize_name(nm)
+		assign(obj_name, tbls[[nm]], envir = .GlobalEnv)
 }
 # Close the database connection
 DBI::dbDisconnect(db)
@@ -110,12 +112,12 @@ DBI::dbDisconnect(db)
 # Print concise summary of loaded tables
 cat("📊 Loaded tables (name: rows):\n")
 for (nm in db_tables) {
-	df <- tbls[[nm]]
-	rows <- if (is.data.frame(df)) nrow(df) else NA
-	cat("   -", nm, ":", rows, "rows\n")
+		df <- tbls[[nm]]
+		rows <- if (is.data.frame(df)) nrow(df) else NA
+		cat("   -", nm, ":", rows, "rows\n")
 }
 # ---- inspect-data -------------------------------------
-ds_language_long
+ds_language
 
 # ---- tweak-data-0 -------------------------------------
 
@@ -125,12 +127,8 @@ ds_language_long
 
 # ---- inspect-data-2 -------------------------------------
 
+# ---- g1 -----------------------------------------------------
+# We would like to understand how  publishing books in ukraine very by language and time.  
+ds_language_prep <- silent_mini_eda("ds_language")
 
-
-
-
-
-
-
-
-
+# ds_language_plop_prep <- smart_plot("ds_language","dynamics of publishing by language and year") # this appears to be less useful at this moment. 
