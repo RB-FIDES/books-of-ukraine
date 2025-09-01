@@ -231,9 +231,34 @@ smart_ggplot_assistant <- function(dataset_name, plot_intent = "explore", .env =
   
   # Run silent mini-EDA
   eda <- silent_mini_eda(dataset_name, .env = .env, verbose = FALSE)
-  
-  if (!eda$exists || !eda$is_dataframe) {
-    return(paste("Cannot analyze dataset:", eda$error))
+  # Support two possible return shapes from silent_mini_eda():
+  # 1) error case returns top-level fields: list(dataset_name=..., exists=FALSE, error=...)
+  # 2) normal case returns nested structure: list(structure=list(exists=TRUE, is_dataframe=TRUE), ...)
+  exists_flag <- NULL
+  is_df_flag <- NULL
+  err_msg <- NULL
+
+  if (!is.null(eda$exists)) {
+    exists_flag <- eda$exists
+  } else if (!is.null(eda$structure) && !is.null(eda$structure$exists)) {
+    exists_flag <- eda$structure$exists
+  }
+
+  if (!is.null(eda$is_dataframe)) {
+    is_df_flag <- eda$is_dataframe
+  } else if (!is.null(eda$structure) && !is.null(eda$structure$is_dataframe)) {
+    is_df_flag <- eda$structure$is_dataframe
+  }
+
+  if (!is.null(eda$error)) err_msg <- eda$error
+  if (is.null(err_msg) && !is.null(eda$structure) && !is.null(eda$structure$error)) err_msg <- eda$structure$error
+
+  # Defensive defaults: assume dataset exists & is a dataframe unless explicitly false
+  if (is.null(exists_flag)) exists_flag <- TRUE
+  if (is.null(is_df_flag)) is_df_flag <- TRUE
+
+  if (!exists_flag || !is_df_flag) {
+    return(paste("Cannot analyze dataset:", if (!is.null(err_msg)) err_msg else dataset_name))
   }
   
   # Generate smart recommendations based on intent and data structure
@@ -253,21 +278,7 @@ smart_ggplot_assistant <- function(dataset_name, plot_intent = "explore", .env =
     )
   }
   
-  # Language-specific suggestions (for your use case)
-  if (grepl("language", dataset_name, ignore.case = TRUE) || 
-      any(grepl("language|lang", eda$structure$column_names, ignore.case = TRUE))) {
-    
-    suggestions$language_plot <- paste0(
-      "# Language dynamics plot:\n",
-      "ggplot(", dataset_name, " %>% filter(measure == 'title_count'), \n",
-      "       aes(x = year, y = value, color = category_value)) +\n",
-      "  geom_line(size = 1.2) +\n",
-      "  geom_point(size = 2) +\n",
-      "  labs(color = 'Language') +\n",
-      "  theme_minimal()"
-    )
-  }
-  
+ 
   return(list(
     dataset_analysis = eda,
     plot_suggestions = suggestions,

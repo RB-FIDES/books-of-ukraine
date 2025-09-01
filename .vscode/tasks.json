@@ -109,6 +109,15 @@
       "problemMatcher": []
     },
     {
+      "label": "Run last-ellis.R",
+      "type": "shell",
+      "command": "Rscript",
+      "args": ["${workspaceFolder}/manipulation/last-ellis.R"],
+      "group": { "kind": "build", "isDefault": false },
+      "presentation": { "echo": true, "reveal": "always", "panel": "shared" },
+      "problemMatcher": []
+    },
+    {
       "label": "Run flow.R",
       "type": "process",
       "command": "Rscript",
