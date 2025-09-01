@@ -25,10 +25,10 @@ library(dplyr)
 library(ggplot2)
 
 # Load project database if available
-if (file.exists("data-public/derived/books-of-ukraine.sqlite")) {
+if (file.exists("data-private/derived/manipulation/SQLite/books-of-ukraine.sqlite")) {
   library(DBI)
   library(RSQLite)
-  con <- dbConnect(SQLite(), "data-public/derived/books-of-ukraine.sqlite")
+  con <- dbConnect(SQLite(), "data-private/derived/manipulation/SQLite/books-of-ukraine.sqlite")
   cat("✅ Connected to books-of-ukraine database\n")
 } else {
   cat("ℹ️ Database not found, using built-in demo data\n")
@@ -40,17 +40,21 @@ cat("\n=== DEMO 1: Basic Usage with Built-in Data ===\n")
 
 # Demonstrate with mtcars dataset
 cat("Analyzing mtcars dataset:\n")
-result1 <- silent_mini_eda("mtcars", verbose = TRUE)
-cat("Result type:", class(result1), "\n")
+mtcars_minieda <- silent_mini_eda("mtcars", verbose = TRUE)
+cat("Result type:", class(mtcars_minieda), "\n")
 
 # Use smart_plot function for specific visualizations
 cat("\nCreating smart plot - scatter relationship:\n")
-plot1 <- smart_plot("mtcars", "relationship between mpg and wt")
-print(plot1)
+plot1_prep <- smart_plot("mtcars", "relationship between mpg and wt")
+# Inspect the recommendation object returned by smart_plot()
+print(names(plot1_prep))
+if (!is.null(plot1_prep$plot_suggestions)) print(plot1_prep$plot_suggestions)
+if (!is.null(plot1_prep$recommended_aesthetics)) print(plot1_prep$recommended_aesthetics)
 
 cat("\nCreating smart plot - distribution:\n")
-plot2 <- smart_plot("mtcars", "distribution of mpg")
-print(plot2)
+plot2_prep <- smart_plot("mtcars", "distribution of mpg")
+print(names(plot2_prep))
+if (!is.null(plot2_prep$plot_suggestions)) print(plot2_prep$plot_suggestions)
 
 # ---- demo-project-data ----
 if (!is.null(con)) {

@@ -4,6 +4,9 @@ print_all <- function(d){ print(d,n=nrow(d) )}
 
 `%not in%` <- Negate(`%in%`)
 
+# Null-coalesce helper
+`%||%` <- function(a, b) if (!is.null(a)) a else b
+
 library(ggplot2)
 ggplot2::theme_set(
   ggplot2::theme_bw(
@@ -51,106 +54,6 @@ neat <- function(x, output_format = "html"){
   return(x_t)
 }
 
-# ---- Silent Mini-EDA Integration ----
-# Load silent mini-EDA functions for behind-the-scenes data analysis
-source_silent_mini_eda <- function() {
-  silent_eda_path <- "./scripts/silent-mini-eda.R"
-  if (file.exists(silent_eda_path)) {
-    source(silent_eda_path, local = TRUE)
-    return(TRUE)
-  } else {
-    warning("Silent mini-EDA script not found at: ", silent_eda_path)
-    return(FALSE)
-  }
-}
-
-# Smart plotting assistant wrapper - loads silent mini-EDA if needed
-smart_plot <- function(dataset_name, plot_intent = "explore", verbose = FALSE) {
-  # Ensure silent mini-EDA functions are loaded
-  if (!exists("silent_mini_eda")) {
-    if (!source_silent_mini_eda()) {
-      stop("Cannot load silent mini-EDA functions")
-    }
-  }
-  
-  # Source the functions into current environment
-  source("./scripts/silent-mini-eda.R", local = FALSE)
-  
-  # Run the smart assistant
-  result <- smart_ggplot_assistant(dataset_name, plot_intent)
-  
-  if (verbose) {
-    cat("=== SMART PLOT ASSISTANT ===\n")
-    cat("Dataset:", dataset_name, "\n")
-    cat("Intent:", plot_intent, "\n\n")
-    
-    if (!is.null(result$plot_suggestions)) {
-      cat("SUGGESTED PLOTS:\n")
-      for (name in names(result$plot_suggestions)) {
-        cat("\n", toupper(name), ":\n")
-        cat(result$plot_suggestions[[name]], "\n")
-      }
-    }
-    
-    if (!is.null(result$recommended_aesthetics$color)) {
-      cat("\nCOLOR MAPPING RECOMMENDATION:\n")
-      if (!is.null(result$recommended_aesthetics$color$variable)) {
-        cat("Use", result$recommended_aesthetics$color$variable, "for color aesthetic\n")
-        cat("Reason:", result$recommended_aesthetics$color$rationale, "\n")
-      } else {
-        cat("Warning:", result$recommended_aesthetics$color$warning, "\n")
-      }
-    }
-    
-    if (length(result$data_preprocessing_needed) > 0) {
-      cat("\nDATA PREPROCESSING SUGGESTIONS:\n")
-      for (suggestion in result$data_preprocessing_needed) {
-        cat("- ", suggestion, "\n")
-      }
-    }
-  }
-  
-  return(result)
-}
-# ds %>% distinct(id) %>% count() %>% neat(10)
-
-# adds a formated datatable
-neat_DT <- function(x, filter_="top",nrows=20,...){
-  
-  xt <- x %>%
-    as.data.frame() %>%
-    DT::datatable(
-      class   = 'cell-border stripe'
-      ,filter  = filter_
-      ,options = list(
-        pageLength = nrows,
-        autoWidth  = FALSE
-        # autoWidth  = TRUE
-      )
-      , ...
-    )
-  return(xt)
-}
-
-dt <- neat_DT
-
-# print names and associated lables of variables (if attr(.,"label)) is present
-names_labels <- function(ds){
-  dd <- as.data.frame(ds)
-  
-  nl <- data.frame(matrix(NA, nrow=ncol(dd), ncol=2))
-  names(nl) <- c("name","label")
-  for (i in seq_along(names(dd))){
-    # i = 2
-    nl[i,"name"] <- attr(dd[i], "names")
-    if(is.null(attr(dd[[i]], "label")) ){
-      nl[i,"label"] <- NA}else{
-        nl[i,"label"] <- attr(dd[,i], "label")
-      }
-  }
-  return(nl)
-}
-# names_labels(ds=oneFile)
 
 # ----- database-connection-functions ----------------------------------------
 
@@ -267,6 +170,7 @@ get_db_path <- function(db_type = "main", config_path = "config.yml") {
 }
 
 
+
 # Function to safely convert numeric values 
 safe_numeric_convert <- function(x) {
   cleaned <- as.character(x)
@@ -279,3 +183,70 @@ safe_numeric_convert <- function(x) {
   result[is.na(result)] <- 0
   return(result)
 }
+
+
+
+# ---- Silent Mini-EDA Integration ----
+# Load silent mini-EDA functions for behind-the-scenes data analysis
+source_silent_mini_eda <- function() {
+  silent_eda_path <- "./scripts/silent-mini-eda.R"
+  if (file.exists(silent_eda_path)) {
+    source(silent_eda_path, local = TRUE)
+    return(TRUE)
+  } else {
+    warning("Silent mini-EDA script not found at: ", silent_eda_path)
+    return(FALSE)
+  }
+}
+
+# Smart plotting assistant wrapper - loads silent mini-EDA if needed
+smart_plot <- function(dataset_name, plot_intent = "explore", verbose = FALSE) {
+  # Ensure silent mini-EDA functions are loaded
+  if (!exists("silent_mini_eda")) {
+    if (!source_silent_mini_eda()) {
+      stop("Cannot load silent mini-EDA functions")
+    }
+  }
+  
+  # Source the functions into current environment
+  source("./scripts/silent-mini-eda.R", local = FALSE)
+  
+  # Run the smart assistant
+  result <- smart_ggplot_assistant(dataset_name, plot_intent)
+  
+  if (verbose) {
+    cat("=== SMART PLOT ASSISTANT ===\n")
+    cat("Dataset:", dataset_name, "\n")
+    cat("Intent:", plot_intent, "\n\n")
+    
+    if (!is.null(result$plot_suggestions)) {
+      cat("SUGGESTED PLOTS:\n")
+      for (name in names(result$plot_suggestions)) {
+        cat("\n", toupper(name), ":\n")
+        cat(result$plot_suggestions[[name]], "\n")
+      }
+    }
+    
+    if (!is.null(result$recommended_aesthetics$color)) {
+      cat("\nCOLOR MAPPING RECOMMENDATION:\n")
+      if (!is.null(result$recommended_aesthetics$color$variable)) {
+        cat("Use", result$recommended_aesthetics$color$variable, "for color aesthetic\n")
+        cat("Reason:", result$recommended_aesthetics$color$rationale, "\n")
+      } else {
+        cat("Warning:", result$recommended_aesthetics$color$warning, "\n")
+      }
+    }
+    
+    if (length(result$data_preprocessing_needed) > 0) {
+      cat("\nDATA PREPROCESSING SUGGESTIONS:\n")
+      for (suggestion in result$data_preprocessing_needed) {
+        cat("- ", suggestion, "\n")
+      }
+    }
+  }
+  
+  # Return the assistant's raw result (informational list). Do not attach ggplot objects.
+  return(result)
+}
+
+ 

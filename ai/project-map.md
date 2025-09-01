@@ -63,7 +63,7 @@ books-of-ukraine/  🏠 Project config & docs
 │   ├── project-map.md  📄 Docs
 │   ├── project-memory.md  🧠 Decisions log
 │   ├── README.md  📄 Project overview
-│   ├── semiology.md  🔤 Symbols guide
+│   ├── semiology.md  🔤 Symbols guide  (note: canonical file is `./philosophy/semiology.md`)
 │   └── vscode-tasks-reference.md  🔧 VS Code tasks
 ├── analysis/  📊 Reports & EDA
 │   ├── analysis-templatization/

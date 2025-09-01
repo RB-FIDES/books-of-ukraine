@@ -2,7 +2,8 @@
 
 ## Overview
 
-We've created a system that enables GitHub Copilot to run silent data analysis behind the scenes and use those insights to design better ggplot visualizations. This addresses your scenario where a user asks for a plot, and Copilot intelligently analyzes the data structure before creating the optimal visualization.
+We've created a small, two-layer system that separates pure dataset analysis from intent-driven plotting recommendations.
+This keeps responsibilities clear: one function inspects and describes the data; the other interprets a user's plotting intent and returns actionable recommendations. Plot creation stays explicit and manual so analysts keep full control.
 
 ## Components Created
 
@@ -29,16 +30,16 @@ result <- silent_mini_eda("ds_language")
 # result$samples                       # data previews
 ```
 
-### 2. Smart Plotting Assistant (`smart_ggplot_assistant()`)
+### 2. Smart Plotting Assistant (`smart_ggplot_assistant()` / `smart_plot()`)
 
-**Purpose**: Combines silent analysis with intelligent plot recommendations
+**Purpose**: Interpret a user's plotting intent in the context of the dataset and return recommendations (not a full ggplot object).
 
 **Key Capabilities**:
 - Detects time series potential (year/date columns + continuous variables)
 - Identifies optimal grouping variables for aesthetics
 - Recognizes long-format data (measure/value columns)
-- Suggests appropriate plot types based on data structure
-- Provides preprocessing recommendations
+- Suggests appropriate plot types and layers based on data structure
+- Provides preprocessing recommendations and aesthetic hints
 
 ### 3. Integration with Common Functions (`scripts/common-functions.R`)
 
@@ -76,19 +77,13 @@ result <- silent_mini_eda("ds_language")
 
 ### Example Smart Decisions Made
 
-```r
-# Instead of asking user "What measure do you want?"
-# Copilot detects available measures and chooses intelligently:
-filter(measure == "title_count")  # Based on analysis
+The assistant suggests choices (not code) such as which measure to use, grouping variables, and palette choices. Example decisions the assistant might return:
 
-# Instead of generic colors, chooses palette based on category count:
-scale_color_viridis_d(option = "plasma", end = 0.8)  # For ≤6 categories
-# vs
-scale_color_viridis_d(option = "turbo")  # For >6 categories
+- Prefer `measure == "title_count"` when both `title_count` and `copy_count` are present and title counts better reflect the user intent.
+- Recommend `viridis_d` palette with option `plasma` for ≤6 categories; a different palette for larger cardinalities.
+- Suggest `scale_y_continuous(labels = scales::comma_format())` when y-values are large.
 
-# Smart axis formatting based on data ranges:
-scale_y_continuous(labels = scales::comma_format())  # For large numbers
-```
+These are recommendations for the analyst to implement; the system does not auto-generate or evaluate ggplot code.
 
 ## Benefits
 
@@ -105,15 +100,19 @@ scale_y_continuous(labels = scales::comma_format())  # For large numbers
 ## Usage Examples
 
 ### Silent Analysis (No Console Output)
+Use `silent_mini_eda()` when you want a full, raw description of the dataset.
 ```r
-analysis <- smart_plot("ds_language", "time trends", verbose = FALSE)
-# Use analysis$plotting_recommendations to inform ggplot design
+eda <- silent_mini_eda("ds_language", verbose = FALSE)
+# Inspect eda$plotting_recommendations and eda$variable_types to design plots
 ```
 
-### Verbose Analysis (With Recommendations)
+### Intent-driven Recommendations
+Use `smart_plot()` when you want a concise, intent-specific set of recommendations derived from `silent_mini_eda()`.
 ```r
-analysis <- smart_plot("ds_language", "language dynamics", verbose = TRUE)
-# Prints detailed recommendations and smart choices
+result <- smart_plot("ds_language", "language dynamics", verbose = TRUE)
+# result$dataset_analysis  # raw EDA
+# result$plot_suggestions  # intent-aware suggestions (textual)
+# result$recommended_aesthetics  # which var to use for color, palette hints
 ```
 
 ### Direct Integration in Scripts
@@ -131,10 +130,9 @@ if (silent_mini_eda("my_dataset")$plotting_recommendations$time_series$suitable)
 
 ## Files Created/Modified
 
-1. **`scripts/silent-mini-eda.R`** - Core silent analysis engine
-2. **`scripts/common-functions.R`** - Added integration functions
-3. **`analysis/eda-3/eda-3.R`** - Practical demonstration
-4. **`analysis/eda-3/demonstration-smart-plotting.R`** - Full workflow demo
+1. **`scripts/silent-mini-eda.R`** - Core silent analysis engine (returns raw EDA)
+2. **`scripts/common-functions.R`** - Integration helpers (including `smart_plot()` wrapper)
+3. **`analysis/eda-3/demonstration-smart-plotting.R`** - Updated demonstration showing how to inspect results and manually build plots
 
 ## Future Enhancements
 
