@@ -280,55 +280,111 @@ cat("   💡 Oblast data now available for territorial analysis and book publica
 
 # ------------------------------------------------------------------ CREATE LONG TABLES ------------------------------------------------------------------
 
-# Create ds_year from fact_book_publications (long format: year, category_type, category_value, measure, value)
-if ("fact_book_publications" %in% tables) {
-	fact_df <- dbReadTable(db, "fact_book_publications")
-	ds_year <- fact_df %>%
-		filter(category_type == "total", category_value == "all_books") %>%
-		select(year, category_type, category_value, measure, value)
-	append_to_final_db(ds_year, "ds_year")
-}
-
-# Create ds_language from fact_book_publications (long format: year, category_type, category_value, measure, value)
-if ("fact_book_publications" %in% tables) {
-	fact_df <- dbReadTable(db, "fact_book_publications")
-	ds_language <- fact_df %>%
-		filter(category_type == "language") %>%
-		select(year, category_type, category_value, measure , value)
-	append_to_final_db(ds_language, "ds_language")
-}
-
-# Create ds_territory from fact_book_publications (long format: year, category_type, category_value, measure, value)
-if ("fact_book_publications" %in% tables) {
-	fact_df <- dbReadTable(db, "fact_book_publications")
-	ds_territory <- fact_df %>%
-		filter(category_type == "territory") %>%
-		select(year, category_type, category_value, measure , value)
-	append_to_final_db(ds_territory, "ds_territory")
-}
-
-# Create ds_theme from fact_book_publications (long format: year, category_type, category_value, measure, value)
-if ("fact_book_publications" %in% tables) {
-	fact_df <- dbReadTable(db, "fact_book_publications")
-	ds_theme <- fact_df %>%
-		filter(category_type == "theme") %>%
-		select(year, category_type, category_value, measure , value)
-	append_to_final_db(ds_theme, "ds_theme")
-}
-
-# Create ds_purpose from fact_book_publications (long format: year, category_type, category_value, measure, value)
-if ("fact_book_publications" %in% tables) {
-	fact_df <- dbReadTable(db, "fact_book_publications")
-	ds_purpose <- fact_df %>%
-		filter(category_type == "purpose") %>%
-		select(year, category_type, category_value, measure , value)
-	append_to_final_db(ds_purpose, "ds_purpose")
-}
-
 # Create ds_bookstores from ds_bookstores table (long format: year, category_type, category_value, measure, value)
 if ("ds_bookstores" %in% tables) {
 	ds_bookstores <- dbReadTable(db, "ds_bookstores")
 	append_to_final_db(ds_bookstores, "ds_bookstores")
+}
+
+# ------------------------------------------------------------------ CREATE *_LONG TABLES (MEASURES AS COLUMNS) ------------------------------------------------------------------
+
+# Create ds_year_long from fact_book_publications (year, title_count, copy_count)
+if ("fact_book_publications" %in% tables) {
+	fact_df <- dbReadTable(db, "fact_book_publications")
+	year_df <- fact_df %>%
+		filter(category_type == "total", category_value == "all_books") %>%
+		select(year, measure, value)
+	ds_year_long <- tryCatch({
+		tidyr::pivot_wider(year_df, id_cols = year, names_from = measure, values_from = value, values_fill = 0)
+	}, error = function(e) {
+		cat("Error in pivot_wider for ds_year_long:", e$message, "\n")
+		NULL
+	})
+	if (!is.null(ds_year_long)) {
+		append_to_final_db(ds_year_long, "ds_year_long")
+	} else {
+		cat("ds_year_long was not created due to previous errors.\n")
+	}
+}
+
+# Create ds_language_long from fact_book_publications (year, language, title_count, copy_count)
+if ("fact_book_publications" %in% tables) {
+	fact_df <- dbReadTable(db, "fact_book_publications")
+	lang_df <- fact_df %>%
+		filter(category_type == "language") %>%
+		rename(language = category_value) %>%
+		select(year, language, measure, value)
+	ds_language_long <- tryCatch({
+		tidyr::pivot_wider(lang_df, id_cols = c(year, language), names_from = measure, values_from = value, values_fill = 0)
+	}, error = function(e) {
+		cat("Error in pivot_wider for ds_language_long:", e$message, "\n")
+		NULL
+	})
+	if (!is.null(ds_language_long)) {
+		append_to_final_db(ds_language_long, "ds_language_long")
+	} else {
+		cat("ds_language_long was not created due to previous errors.\n")
+	}
+}
+
+# Create ds_territory_long from fact_book_publications (year, territory, title_count, copy_count)
+if ("fact_book_publications" %in% tables) {
+	fact_df <- dbReadTable(db, "fact_book_publications")
+	territory_df <- fact_df %>%
+		filter(category_type == "territory") %>%
+		rename(territory = category_value) %>%
+		select(year, territory, measure, value)
+	ds_territory_long <- tryCatch({
+		tidyr::pivot_wider(territory_df, id_cols = c(year, territory), names_from = measure, values_from = value, values_fill = 0)
+	}, error = function(e) {
+		cat("Error in pivot_wider for ds_territory_long:", e$message, "\n")
+		NULL
+	})
+	if (!is.null(ds_territory_long)) {
+		append_to_final_db(ds_territory_long, "ds_territory_long")
+	} else {
+		cat("ds_territory_long was not created due to previous errors.\n")
+	}
+}
+
+# Create ds_theme_long from fact_book_publications (year, theme, title_count, copy_count)
+if ("fact_book_publications" %in% tables) {
+	fact_df <- dbReadTable(db, "fact_book_publications")
+	theme_df <- fact_df %>%
+		filter(category_type == "theme") %>%
+		rename(theme = category_value) %>%
+		select(year, theme, measure, value)
+	ds_theme_long <- tryCatch({
+		tidyr::pivot_wider(theme_df, id_cols = c(year, theme), names_from = measure, values_from = value, values_fill = 0)
+	}, error = function(e) {
+		cat("Error in pivot_wider for ds_theme_long:", e$message, "\n")
+		NULL
+	})
+	if (!is.null(ds_theme_long)) {
+		append_to_final_db(ds_theme_long, "ds_theme_long")
+	} else {
+		cat("ds_theme_long was not created due to previous errors.\n")
+	}
+}
+
+# Create ds_purpose_long from fact_book_publications (year, purpose, title_count, copy_count)
+if ("fact_book_publications" %in% tables) {
+	fact_df <- dbReadTable(db, "fact_book_publications")
+	purpose_df <- fact_df %>%
+		filter(category_type == "purpose") %>%
+		rename(purpose = category_value) %>%
+		select(year, purpose, measure, value)
+	ds_purpose_long <- tryCatch({
+		tidyr::pivot_wider(purpose_df, id_cols = c(year, purpose), names_from = measure, values_from = value, values_fill = 0)
+	}, error = function(e) {
+		cat("Error in pivot_wider for ds_purpose_long:", e$message, "\n")
+		NULL
+	})
+	if (!is.null(ds_purpose_long)) {
+		append_to_final_db(ds_purpose_long, "ds_purpose_long")
+	} else {
+		cat("ds_purpose_long was not created due to previous errors.\n")
+	}
 }
 
 # Only include ds_ tables (wide and long) in the final analytical database.
