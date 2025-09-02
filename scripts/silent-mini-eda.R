@@ -329,3 +329,114 @@ get_preprocessing_suggestions <- function(eda) {
   
   return(suggestions)
 }
+
+#' Write mini-EDA object as JSON into a local-ai-context subfolder
+#'
+#' Saves the list produced by `silent_mini_eda()` into JSON under
+#' `file.path(script_dir, local_folder, <dataset_name>)` so analytic
+#' scripts can persist context for AI helpers.
+#'
+#' @param eda_obj The list produced by `silent_mini_eda()`.
+#' @param script_dir Directory of the analytic script (default: current working directory)
+#' @param local_folder Name of the top-level folder to store AI context (default: "local-ai-context")
+#' @param subfolder Optional subfolder name (defaults to dataset name from `eda_obj`)
+#' @param filename Optional filename (defaults to "<dataset>_mini_eda.json")
+#' @param pretty Logical passed to json writing for readability (default: TRUE)
+#' @param overwrite Logical whether to overwrite an existing file (default: TRUE)
+#' @return Invisibly returns the full path to the written JSON file.
+write_mini_eda_json <- function(eda_obj, script_dir = ".", local_folder = "local-ai-context",
+                                subfolder = NULL, filename = NULL, pretty = TRUE, overwrite = TRUE) {
+  # Basic validation
+  if (is.null(eda_obj) || !is.list(eda_obj)) {
+    stop("eda_obj must be a list as returned by silent_mini_eda()")
+  }
+
+  # Determine subfolder (dataset name preferred)
+  if (is.null(subfolder)) {
+    subfolder <- NULL
+    if (!is.null(eda_obj$structure) && !is.null(eda_obj$structure$dataset_name)) {
+      subfolder <- as.character(eda_obj$structure$dataset_name)
+    }
+    if (is.null(subfolder) || nchar(subfolder) == 0) subfolder <- "unknown_dataset"
+  }
+
+  # Ensure safe names (no path separators)
+  subfolder <- gsub("[\\/:*?\"<>|]+", "_", subfolder)
+
+  # Build directories
+  target_dir <- file.path(script_dir, local_folder, subfolder)
+  if (!fs::dir_exists(target_dir)) {
+    fs::dir_create(target_dir, recurse = TRUE)
+  }
+
+  # Default filename
+  if (is.null(filename)) {
+    filename <- paste0(subfolder, "_mini_eda.json")
+  }
+  filename <- gsub("[\\/:*?\"<>|]+", "_", filename)
+
+  file_path <- file.path(target_dir, filename)
+
+  if (fs::file_exists(file_path) && !overwrite) {
+    stop("File already exists and overwrite = FALSE: ", file_path)
+  }
+
+  if (!requireNamespace("jsonlite", quietly = TRUE)) {
+    stop("Package 'jsonlite' is required to write JSON. Please install it with install.packages('jsonlite').")
+  }
+
+  # Sanitize the object for JSON: convert tables, factors, and POSIXt to plain types
+  sanitize_for_json <- function(x) {
+    # Handle NULL
+    if (is.null(x)) return(NULL)
+
+    # Tables -> named lists of counts
+    if (inherits(x, "table")) {
+      vals <- as.integer(x)
+      nms <- names(x)
+      if (is.null(nms)) return(as.list(vals))
+      out <- as.list(vals)
+      names(out) <- nms
+      return(out)
+    }
+
+    # Factors -> character vector
+    if (is.factor(x)) return(as.character(x))
+
+    # POSIXt/Date -> ISO8601 strings
+    if (inherits(x, "POSIXt")) return(format(x, "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"))
+    if (inherits(x, "Date")) return(format(x, "%Y-%m-%d"))
+
+    # Data frames -> convert each column
+    if (is.data.frame(x)) {
+      return(lapply(x, sanitize_for_json))
+    }
+
+    # Lists -> recurse
+    if (is.list(x)) {
+      return(lapply(x, sanitize_for_json))
+    }
+
+    # Matrices/arrays -> convert to list of rows
+    if (is.matrix(x) || is.array(x)) {
+      # convert to list of row-lists for simplicity
+      return(apply(x, 1, function(r) as.list(r)))
+    }
+
+    # Default: return atomic vectors as-is
+    return(x)
+  }
+
+  eda_clean <- sanitize_for_json(eda_obj)
+
+  # Write JSON with sensible defaults: auto_unbox, ISO8601 for POSIXt
+  jsonlite::write_json(eda_clean, file_path, pretty = pretty, auto_unbox = TRUE, POSIXt = "ISO8601")
+
+  message("Wrote mini-EDA JSON to: ", file_path)
+  invisible(file_path)
+}
+
+# Compatibility wrapper: older scripts may call save_mini_eda_as_json
+save_mini_eda_as_json <- function(...) {
+  write_mini_eda_json(...)
+}
