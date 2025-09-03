@@ -1,5 +1,5 @@
 # Books of Ukraine - Data Pipeline
-
+Це гілка Галини
 This project analyzes Ukrainian book publication data from the [Ukrainian Book Chamber](http://www.ukrbook.net/), providing insights into publishing trends, language use, genre prevalence, and regional distributions since 2005.
 
 ## 🚀 **Ellis Pipeline**: 4-Stage Data Processing System
