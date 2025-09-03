@@ -23,7 +23,7 @@
     {
       "label": "Memory System Status Check",
       "type": "shell",
-      "command": "powershell",
+  "command": "pwsh",
       "args": [
         "-ExecutionPolicy",
         "Bypass",
@@ -47,7 +47,7 @@
     {
       "label": "Project Files Overview",
       "type": "shell",
-      "command": "powershell",
+  "command": "pwsh",
       "args": [
         "-ExecutionPolicy",
         "Bypass",
@@ -62,7 +62,7 @@
     {
       "label": "Ellis Pipeline Run",
       "type": "shell",
-      "command": "powershell",
+  "command": "pwsh",
       "args": ["-ExecutionPolicy", "Bypass", "-NoProfile", "-File", "${workspaceFolder}/scripts/ps1/run-complete-ellis-pipeline.ps1"],
       "group": { "kind": "build", "isDefault": true },
       "presentation": { "echo": true, "reveal": "always", "focus": true, "panel": "shared" },
@@ -73,7 +73,7 @@
     {
       "label": "Project Status Check",
       "type": "shell",
-      "command": "powershell",
+  "command": "pwsh",
       "args": ["-ExecutionPolicy", "Bypass", "-NoProfile", "-File", "${workspaceFolder}/project-status.ps1", "-Detailed"],
       "group": "build",
       "presentation": { "echo": true, "reveal": "always", "panel": "shared" },
@@ -83,7 +83,7 @@
     {
       "label": "Setup Node.js Environment",
       "type": "shell",
-      "command": "powershell",
+  "command": "pwsh",
       "args": ["-ExecutionPolicy", "Bypass", "-NoProfile", "-File", "${workspaceFolder}/setup-nodejs.ps1"],
       "group": "build",
       "presentation": { "echo": true, "reveal": "always", "panel": "shared" },
