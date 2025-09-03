@@ -26,6 +26,7 @@ library(emmeans) # for interpreting model results для інтерпретац�
 library(ggalluvial)
 library(janitor) # tidy data охайні дані
 library(testit) # For asserting conditions meet expected patterns.
+library(httpgd)
 # Для перевірки відповідності умов очікуваним шаблонам.
 
 
@@ -523,6 +524,24 @@ ggplot(lang_year_g2_top5, aes(x = factor(year), y = fct_reorder(category_value, 
     theme(axis.text.x = element_text(angle = 0, hjust = 0.5))
 ### Зроби кольори більш контрастними
 # Побудова графіка для топ-5 мов з більш контрастними кольорами
+print(
+    ggplot(lang_year_g2_top5, aes(x = factor(year), y = fct_reorder(category_value, value), fill = group)) +
+        geom_tile(aes(alpha = value > 0)) +
+        scale_fill_manual(values = c(
+            "Gr0" = "white",
+            "Gr1" = "orange",
+            "Gr2" = "red",
+            "Gr3" = "black"
+        )) +
+        labs(
+            title = "Кількість примірників за топ-5 мовами та роками (2018-2024)",
+            x = "Рік",
+            y = "Мова",
+            fill = "Група примірників"
+        ) +
+        theme_minimal() +
+        theme(axis.text.x = element_text(angle = 0, hjust = 0.5))
+)
 ggplot(lang_year_g2_top5, aes(x = factor(year), y = fct_reorder(category_value, value), fill = group)) +
     geom_tile(aes(alpha = value > 0)) +
     scale_fill_manual(values = c(
