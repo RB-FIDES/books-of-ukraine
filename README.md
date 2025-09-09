@@ -13,6 +13,9 @@ Our **modular Ellis Pipeline** transforms raw data into analysis-ready formats:
 
 Note: We preserve Stages 0 and 1 for the guide the understanding of the respective ETL scripts (e.g. `0-ellis.R`, `1-ellis-ua-admin.R`) and their outputs. Only Stage 2 and Main should be used during active analytic phase. 
 
+See `./pipeline.md` for full architecture details.
+
+
 ## 📚 **Getting Started**
 
 1. **Setup**: Follow `guides/setup-google-access.md` for authentication

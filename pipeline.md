@@ -66,8 +66,8 @@ The Ellis pipeline processes Ukrainian book publishing data through four progres
 - Validates and documents all custom data additions
 
 **Supporting Files**:
-- `extra-data-config.R`: User-editable configuration for new data sources
-- `extra-data-functions.R`: Modular processing functions for different data types
+- `manipulation/support/extra-data-config.R`: User-editable configuration for new data sources
+- `manipulation/support/extra-data-functions.R`: Modular processing functions for different data types
 - `guides/custom-data-guide.md`: Complete user guide for adding custom data
 
 **Outputs**: 
@@ -99,16 +99,16 @@ Stage 0: Core Foundation
 │   └── Core books publication data with star schema
 │
 Stage 1: Administrative Integration  
-├── 1-ellis-ua-admin.R → books-of-ukraine-1.sqlite (1.96 MB)
+├── 1-ellis-ua-admin.R → books-of-ukraine-1.sqlite (24.09 MB)
 │   └── Core + Ukrainian territorial & demographic data
 │
 Stage 2: Custom Data Integration
-├── 2-ellis-extra.R → books-of-ukraine-2.sqlite (~2+ MB)
+├── 2-ellis-extra.R → books-of-ukraine-2.sqlite (24.09 MB)
 │   └── Complete + user-contributed custom data sources
 │   └── Bilingual support (Ukrainian/English input)
 │
 Final: Analytical Optimization
-└── last-ellis.R → books-of-ukraine.sqlite (0.29 MB)
+└── last-ellis.R → books-of-ukraine.sqlite (0.17 MB)
     └── Analysis-ready wide/long format tables
 ```
 
@@ -202,7 +202,7 @@ The Ellis Pipeline includes a sophisticated system for integrating user-contribu
 - No manual translation required from data contributors
 
 **⚙️ Configuration-Driven Processing**:
-- Add new data sources via `manipulation/extra-data-config.R`
+- Add new data sources via `manipulation/support/extra-data-config.R`
 - No modifications to core processing scripts required
 - Supports multiple data types with automatic format detection
 - Clear examples and templates for each data type
@@ -217,7 +217,7 @@ The Ellis Pipeline includes a sophisticated system for integrating user-contribu
 **For Data Contributors**:
 1. Create Google Sheet with data (Ukrainian or English column names)
 2. Share sheet with read access
-3. Edit `manipulation/extra-data-config.R` to add data source configuration
+3. Edit `manipulation/support/extra-data-config.R` to add data source configuration
 4. Set `active = TRUE` for the new data source
 5. Run `Rscript manipulation/2-ellis-extra.R`
 
@@ -229,7 +229,7 @@ The Ellis Pipeline includes a sophisticated system for integrating user-contribu
 ### **Example Data Source Configuration**
 
 ```r
-# In manipulation/extra-data-config.R
+# In manipulation/support/extra-data-config.R
 bookstores = list(
   name = "Ukrainian Bookstores by Region",
   description = "Number of bookstores per region for 2023",
@@ -247,68 +247,12 @@ bookstores = list(
 ### **Documentation & Support**
 
 - **Complete Guide**: `guides/custom-data-guide.md` - Step-by-step instructions
-- **Configuration**: `manipulation/extra-data-config.R` - Add new data sources
-- **Functions**: `manipulation/extra-data-functions.R` - Processing logic
+- **Configuration**: `manipulation/support/extra-data-config.R` - Add new data sources
+- **Functions**: `manipulation/support/extra-data-functions.R` - Processing logic
 - **Examples**: Templates for each data type with real examples
 
 **Pipeline Integration**: Custom data flows seamlessly through the pipeline:
 ```
 Custom Data → Stage 2 → Final Database → Analysis Scripts
 ```
-
-# Workflow Management
-
-## `flow.R` - Master Workflow Orchestration
-
-**Purpose**: Orchestrate the execution of all data processing, analysis, and reporting tasks in the correct sequence.
-
-**🆕 Enhanced Flow Management**:
-- **Currency checking**: `check_flow_currency()` - Detects when flow.R is outdated relative to project scripts
-- **Intelligent updates**: `analyze_and_update_flow()` - Automatically reconstructs flow.R based on current project structure
-- **Script discovery**: Automatically finds and categorizes .R, .qmd, and .sql files across the project
-- **Phased organization**: Intelligently organizes scripts into phases (data prep, analysis, reports)
-- **Description extraction**: Reads script comments to generate meaningful workflow descriptions
-
-**Key Features**:
-- **Automated script organization**: Discovers scripts in manipulation/, analysis/, and scripts/ directories
-- **Multi-format support**: Handles R scripts (.R), Quarto documents (.qmd), and SQL files (.sql)
-- **Backup safety**: Creates timestamped backups before making changes
-- **Syntax validation**: Ensures updated flow.R is syntactically correct
-- **Change detection**: Identifies new, modified, or missing scripts
-
-**Integration with CACHE System**:
-- Automatically updates data documentation via `check_cache_manifest()`
-- Synchronizes workflow structure with actual project state
-- Provides comprehensive project status through `analyze_project_status()`
-
-**Usage**:
-```r
-# Check if flow needs updates
-check_flow_currency()
-
-# Update flow automatically
-analyze_and_update_flow()
-
-# Run complete workflow
-source("flow.R")
-```
-
-# Documentation Automation
-
-## CACHE Manifest System
-
-**Purpose**: Automatically maintain comprehensive documentation of all datasets created by the data processing pipeline.
-
-**Features**:
-- **Automatic detection**: Scans for all `ds_*.rds` files created by 0-ellis script
-- **Timestamp tracking**: Compares file modification times with manifest updates
-- **New dataset highlighting**: Marks recently created/updated datasets with 🆕 indicators
-- **Comprehensive documentation**: Includes file sizes, primary keys, source sheets, and purposes
-- **Logbook integration**: Updates project logbook with change summaries
-
-**Commands**:
-- `check_cache_manifest()` - Check status and update if needed
-- `update_cache_manifest()` - Force update manifest regardless of status
-
-This enhanced pipeline management system ensures that workflow structure stays synchronized with actual project development, while automatically maintaining comprehensive documentation of all data assets.
 

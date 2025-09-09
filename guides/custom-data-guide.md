@@ -4,7 +4,7 @@ This guide explains how to add your own custom data sources to the Ellis Pipelin
 
 ## 🎯 Quick Start
 
-1. **Edit Configuration**: Open `manipulation/extra-data-config.R`
+1. **Edit Configuration**: Open `manipulation/support/extra-data-config.R`
 2. **Add Your Data Source**: Copy a template and modify it
 3. **Set Active**: Change `active = FALSE` to `active = TRUE`
 4. **Run Pipeline**: Execute `Rscript manipulation/2-ellis-extra.R`
@@ -169,7 +169,7 @@ From a URL like:
 The Sheet ID is: `1ovYOr_jmdDprYjcGMWAa-w9D1-h7kwwjbRgUgVtlUa0`
 
 ### Step 3: Configure Your Data Source  
-1. **Open** `manipulation/extra-data-config.R`
+1. **Open** `manipulation/support/extra-data-config.R`
 2. **Find** the appropriate template for your data type
 3. **Uncomment** the template code
 4. **Modify** the configuration:
