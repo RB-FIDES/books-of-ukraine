@@ -29,8 +29,8 @@ base::source("./scripts/common-functions.R") # project-level
 base::source("./scripts/operational-functions.R") # project-level
 
 # Load modular extra data processing system
-source("./manipulation/extra-data-config.R")      # Configuration for custom data sources  
-source("./manipulation/extra-data-functions.R")   # Processing functions for different data types
+source("./manipulation/support/extra-data-config.R")      # Configuration for custom data sources  
+source("./manipulation/support/extra-data-functions.R")   # Processing functions for different data types
 
 # ---- declare-globals ---------------------------------------------------------
 local_root <- "./manipulation/"
@@ -234,7 +234,7 @@ cat("================\n")
 
 if (length(active_sources) == 0) {
   cat("💡 TO ADD CUSTOM DATA:\n")
-  cat("   1. Edit 'manipulation/extra-data-config.R'\n")
+  cat("   1. Edit 'manipulation/support/extra-data-config.R'\n")
   cat("   2. Add your data source configuration\n") 
   cat("   3. Set active = TRUE for your data source\n")
   cat("   4. Re-run this script (2-ellis-extra.R)\n")
@@ -252,8 +252,8 @@ if (length(active_sources) == 0) {
 }
 
 cat("\n📚 DOCUMENTATION:\n")
-cat("   • Configuration: manipulation/extra-data-config.R\n")
-cat("   • Functions: manipulation/extra-data-functions.R\n")
+cat("   • Configuration: manipulation/support/extra-data-config.R\n")
+cat("   • Functions: manipulation/support/extra-data-functions.R\n")
 cat("   • Complete guide: guides/custom-data-guide.md\n")
 cat("   • Pipeline guide: manipulation/README.md\n")
 
