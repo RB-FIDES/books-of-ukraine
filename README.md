@@ -1,6 +1,6 @@
-# Books of Ukraine - Data Pipeline
+# Books of Ukraine 
 
-This project analyzes Ukrainian book publication data from the [Ukrainian Book Chamber](http://www.ukrbook.net/), providing insights into publishing trends, language use, genre prevalence, and regional distributions since 2005.
+This project explores Ukrainian book publication data from the [Ukrainian Book Chamber](http://www.ukrbook.net/), providing insights into publishing trends, language use, genre prevalence, and regional distributions since 2005.
 
 ## 🚀 **Ellis Pipeline**: 4-Stage Data Processing System
 
@@ -9,13 +9,9 @@ Our **modular Ellis Pipeline** transforms raw data into analysis-ready formats:
 - **Stage 0**: Core book publication data (5 main categories)
 - **Stage 1**: Ukrainian administrative data integration (hromadas, oblasts)  
 - **Stage 2**: Modular custom data with **bilingual Ukrainian/English support**
-- **Final**: Analysis-ready tables + CSV exports, aka default database
+- **Main**: Analysis-ready tables + CSV exports, aka default database
 
-### 🌟 **Key Features**:
-- **Bilingual Support**: Input Ukrainian or English data, get standardized English output
-- **Configuration-Driven**: Add custom data without R coding  
-- **Reproducible**: Complete pipeline reproduction from scratch
-- **Multi-Format Output**: SQLite databases + CSV files for external tools
+Note: We preserve Stages 0 and 1 for the guide the understanding of the respective ETL scripts (e.g. `0-ellis.R`, `1-ellis-ua-admin.R`) and their outputs. Only Stage 2 and Main should be used during active analytic phase. 
 
 ## 📚 **Getting Started**
 
