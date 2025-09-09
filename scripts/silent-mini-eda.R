@@ -1,6 +1,52 @@
 # silent-mini-eda.R
 # Silent mini-EDA function for behind-the-scenes data structure analysis
 # Returns structured information to inform intelligent ggplot design decisions
+#
+# ENHANCED ERROR HANDLING: This version includes comprehensive error recovery
+# to prevent the analysis pipeline from failing due to data type issues,
+# R's finicky summary functions, or environment access problems.
+
+#' Safe wrapper for potentially problematic R operations
+safe_operation <- function(expr, default_value = NA, error_prefix = "Operation failed") {
+  tryCatch({
+    eval(expr)
+  }, error = function(e) {
+    attr(default_value, "error") <- paste(error_prefix, ":", e$message)
+    return(default_value)
+  })
+}
+
+# Database Configuration Validator
+validate_db_config <- function(verbose = FALSE) {
+  if (!file.exists("./scripts/common-functions.R")) {
+    stop("ERROR: common-functions.R not found. Cannot validate database configuration.")
+  }
+  
+  source("./scripts/common-functions.R", local = TRUE)
+  
+  tryCatch({
+    main_path <- get_db_path("main")
+    stage_1_path <- get_db_path("stage_1") 
+    stage_2_path <- get_db_path("stage_2")
+    
+    if (verbose) {
+      cat("Database configuration validated:\n")
+      cat("   Main:", main_path, if(file.exists(main_path)) "[EXISTS]" else "[MISSING]", "\n")
+      cat("   Stage 1:", stage_1_path, if(file.exists(stage_1_path)) "[EXISTS]" else "[MISSING]", "\n") 
+      cat("   Stage 2:", stage_2_path, if(file.exists(stage_2_path)) "[EXISTS]" else "[MISSING]", "\n")
+    }
+    
+    return(list(
+      main = main_path,
+      stage_1 = stage_1_path,
+      stage_2 = stage_2_path,
+      config_valid = TRUE
+    ))
+  }, error = function(e) {
+    stop("ERROR: Database configuration error: ", e$message, 
+         "\nREMINDER: Always use get_db_path() or connect_books_db() functions")
+  })
+}
 
 #' Silent Mini-EDA for Dataset Structure Analysis
 #' 
@@ -16,18 +62,28 @@
 #' @return List with structured information about the dataset
 silent_mini_eda <- function(dataset_name, .env = .GlobalEnv, include_samples = TRUE, verbose = FALSE) {
   
-  # Check if dataset exists
-  if (!exists(dataset_name, envir = .env)) {
-    warning(paste("Dataset", dataset_name, "not found in specified environment"))
+  # Enhanced dataset existence and access checking
+  tryCatch({
+    # Check if dataset exists
+    if (!exists(dataset_name, envir = .env)) {
+      warning(paste("Dataset", dataset_name, "not found in specified environment"))
+      return(list(
+        dataset_name = dataset_name,
+        exists = FALSE,
+        error = paste("Dataset", dataset_name, "not found")
+      ))
+    }
+    
+    # Safely get the dataset
+    df <- get(dataset_name, envir = .env)
+    
+  }, error = function(e) {
     return(list(
       dataset_name = dataset_name,
       exists = FALSE,
-      error = paste("Dataset", dataset_name, "not found")
+      error = paste("Failed to access dataset:", e$message)
     ))
-  }
-  
-  # Get the dataset
-  df <- get(dataset_name, envir = .env)
+  })
   
   if (!is.data.frame(df)) {
     warning(paste("Object", dataset_name, "is not a data frame"))
@@ -58,14 +114,27 @@ silent_mini_eda <- function(dataset_name, .env = .GlobalEnv, include_samples = T
   date_vars <- character(0)
   
   for (col in names(df)) {
-    col_data <- df[[col]]
-    col_info <- list(
-      name = col,
-      class = class(col_data)[1],
-      n_unique = length(unique(col_data)),
-      n_missing = sum(is.na(col_data)),
-      pct_missing = round(sum(is.na(col_data)) / nrow(df) * 100, 2)
-    )
+    # Defensive column analysis with error handling
+    tryCatch({
+      col_data <- df[[col]]
+      col_info <- list(
+        name = col,
+        class = paste(class(col_data), collapse = ", "),  # Handle multiple classes
+        n_unique = length(unique(col_data)),
+        n_missing = sum(is.na(col_data)),
+        pct_missing = round(sum(is.na(col_data)) / nrow(df) * 100, 2)
+      )
+    }, error = function(e) {
+      col_info <- list(
+        name = col,
+        class = "unknown",
+        n_unique = NA,
+        n_missing = NA,
+        pct_missing = NA,
+        error = paste("Column analysis failed:", e$message)
+      )
+      return(col_info)
+    })
     
     # Determine variable type for plotting
     if (is.numeric(col_data) || is.integer(col_data)) {
@@ -75,8 +144,14 @@ silent_mini_eda <- function(dataset_name, .env = .GlobalEnv, include_samples = T
       } else {
         col_info$plot_type <- "continuous"
         continuous_vars <- c(continuous_vars, col)
-        col_info$range <- range(col_data, na.rm = TRUE)
-        col_info$summary <- summary(col_data)
+        # Safe range calculation with error handling
+        tryCatch({
+          col_info$range <- range(col_data, na.rm = TRUE)
+          col_info$summary <- summary(col_data)
+        }, error = function(e) {
+          col_info$range <- c(NA, NA)
+          col_info$summary <- list(error = paste("Summary failed:", e$message))
+        })
       }
     } else if (is.character(col_data) || is.factor(col_data)) {
       col_info$plot_type <- "categorical"
@@ -87,7 +162,13 @@ silent_mini_eda <- function(dataset_name, .env = .GlobalEnv, include_samples = T
     } else if (inherits(col_data, c("Date", "POSIXct", "POSIXt"))) {
       col_info$plot_type <- "date"
       date_vars <- c(date_vars, col)
-      col_info$date_range <- range(col_data, na.rm = TRUE)
+      # Safe date range calculation
+      tryCatch({
+        col_info$date_range <- range(col_data, na.rm = TRUE)
+      }, error = function(e) {
+        col_info$date_range <- c(NA, NA)
+        col_info$date_range_error <- e$message
+      })
     } else {
       col_info$plot_type <- "other"
     }
@@ -105,16 +186,20 @@ silent_mini_eda <- function(dataset_name, .env = .GlobalEnv, include_samples = T
     n_date = length(date_vars)
   )
   
-  # Data samples
+  # Data samples with safe handling
   samples <- NULL
   if (include_samples) {
-    samples <- list(
-      head = head(df, 6),
-      tail = tail(df, 3)
-    )
-    if (nrow(df) > 20) {
-      samples$random_sample <- df[sample(nrow(df), min(5, nrow(df))), ]
-    }
+    samples <- list()
+    tryCatch({
+      samples$head <- head(df, min(6, nrow(df)))
+      samples$tail <- tail(df, min(3, nrow(df)))
+      if (nrow(df) > 20) {
+        set.seed(42)  # Reproducible sampling
+        samples$random_sample <- df[sample(nrow(df), min(5, nrow(df))), ]
+      }
+    }, error = function(e) {
+      samples$error <- paste("Sample extraction failed:", e$message)
+    })
   }
   
   # Plotting recommendations
@@ -328,4 +413,61 @@ get_preprocessing_suggestions <- function(eda) {
   }
   
   return(suggestions)
+}
+
+#' Diagnostic function to troubleshoot silent_mini_eda issues
+#' 
+#' @param dataset_name Name of dataset to diagnose
+#' @param .env Environment to check
+diagnose_mini_eda_issues <- function(dataset_name, .env = .GlobalEnv) {
+  cat("=== SILENT MINI-EDA DIAGNOSTIC ===\n")
+  
+  # Environment check
+  cat("Environment check:\n")
+  cat("  - Target environment:", deparse(substitute(.env)), "\n")
+  cat("  - Objects in environment:", length(ls(envir = .env)), "\n")
+  
+  # Dataset existence
+  cat("Dataset existence:\n")
+  cat("  - Dataset name:", dataset_name, "\n")
+  cat("  - Exists in environment:", exists(dataset_name, envir = .env), "\n")
+  
+  if (exists(dataset_name, envir = .env)) {
+    obj <- get(dataset_name, envir = .env)
+    cat("  - Object class:", paste(class(obj), collapse = ", "), "\n")
+    cat("  - Is data.frame:", is.data.frame(obj), "\n")
+    
+    if (is.data.frame(obj)) {
+      cat("  - Dimensions:", paste(dim(obj), collapse = " x "), "\n")
+      n_cols_show <- min(5, ncol(obj))
+      if (n_cols_show > 0) {
+        cat("  - Column names:", paste(names(obj)[seq_len(n_cols_show)], collapse = ", "), 
+            if(ncol(obj) > 5) "..." else "", "\n")
+      }
+      
+      # Test problematic operations
+      cat("Problematic operations test:\n")
+      n_cols_test <- min(3, ncol(obj))
+      if (n_cols_test > 0) {
+        for (col in names(obj)[seq_len(n_cols_test)]) {
+          cat("  - Column", col, ":\n")
+          col_data <- obj[[col]]
+          cat("    - Class:", paste(class(col_data), collapse = ", "), "\n")
+          cat("    - Length:", length(col_data), "\n")
+          
+          # Test range operation
+          if (is.numeric(col_data)) {
+            tryCatch({
+              r <- range(col_data, na.rm = TRUE)
+              cat("    - Range: OK (", paste(r, collapse = " to "), ")\n")
+            }, error = function(e) {
+              cat("    - Range: FAILED -", e$message, "\n")
+            })
+          }
+        }
+      }
+    }
+  }
+  
+  cat("=== END DIAGNOSTIC ===\n")
 }
