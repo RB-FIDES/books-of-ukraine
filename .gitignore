@@ -46,8 +46,19 @@ rsconnect/
 # ---- Caches -----------------------------------------------
 # Exclude caches in case they contain PHI
 cache/
-# knitr and RMarkdown default cache directories
+.cache/
+__pycache__/
 *_cache/
+quarto-cache/
+analysis/*/cache/
+data-private/cache/
+data-public/cache/
+data-private/derived/cache/
+data-public/derived/cache/
+analysis/*/*_cache/
+analysis/*/*/cache/
+analysis/*/*/*_cache/
+analysis/*/*/*/cache/
 # ---- Windows OS --------------------------------------------
 # Cached small image files
 Thumbs.db
@@ -57,6 +68,11 @@ Desktop.ini
 .DS_Store
 # ---- Visual Studio Code (text editor) ----------------------
 .vscode/keybindings.json
+.vscode-server/
+.vscode-R/
+.local/
+.vscode-server/
+.dotnet/
 # ---- Locks ----------------------
 # Do not commit lock files.
 #   Programs like Microsoft Word create temporary files that don't contain info useful to the repo.
@@ -169,3 +185,19 @@ data-public/metadata/CACHE-MANIFEST.md
 analysis/eda-3/eda-3.html.md
 *.code-workspace
 books-of-ukraine.code-workspace
+
+
+# Container files
+
+*.gz
+*.tar
+*.zip
+*.7z
+*.xz
+*.bz2
+*.Z
+*.rar
+*.tgz
+*.war
+*.ear
+*.jar

@@ -2,19 +2,29 @@
 // For config options, see the README at:
 // https://github.com/rocker-org/devcontainer-templates/tree/main/src/r-ver
 {
-  "name": "books-of-ukraine v2",
-  "image": "books-of-ukraine.v2",
-  "forwardPorts": [8880],
-  "remoteUser": "rstudio",
-  "postStartCommand": "echo 'Devcontainer started from pre-built image';",
+  "name": "books-of-ukraine",
+  // Use Dockerfile build (root-level dockerFile property expected by some schemas),
+  "image": "books-of-ukraine:v8",
+  "forwardPorts": [8787],
+  "remoteUser": "admin",
+  "postStartCommand": "bash .devcontainer/post-start.sh",
   "portsAttributes": {
-    "8880": {
-      "label": "RStudio",
+    "8787": {
+      "label": "RStudio Server",
       "onAutoForward": "openBrowser"
     }
+  },
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "terminal.integrated.profiles.linux": {
+          "bash": { "path": "/bin/bash" },
+          "R": { "path": "/usr/local/bin/R", "args": ["--no-save", "--quiet"], "icon": "symbol-method" },
+          "PowerShell": { "path": "pwsh", "icon": "terminal-powershell" }
+        },
+        "terminal.integrated.defaultProfile.linux": "bash"
+      }
+    }
   }
-  // Optionally, add mounts, environment variables, or features here
-  // "mounts": ["source=${localWorkspaceFolder}/data,target=/workspace/data,type=bind"],
-  // "features": {},
-  // "env": {"EXAMPLE_VAR": "value"}
+  // Optional: add mounts, env vars, features below
 }
