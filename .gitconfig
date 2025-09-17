@@ -1,0 +1,12 @@
+[filter "lfs"]
+	process = git-lfs filter-process
+	required = true
+	clean = git-lfs clean -- %f
+	smudge = git-lfs smudge -- %f
+[user]
+	name = Oleksandr Koval
+	email = oleksandr.kov.dm@gmail.com
+[credential]
+	helper = "!f() { /workspaces/books-of-ukraine/.vscode-server/bin/f220831ea2d946c0dcb0f3eaa480eb435a2c1260/node /tmp/vscode-remote-containers-28eae425-031f-4661-8d6c-857806edb289.js git-credential-helper $*; }; f"
+[safe]
+	directory = /workspaces/books-of-ukraine

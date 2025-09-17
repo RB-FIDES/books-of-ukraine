@@ -1,0 +1,35 @@
+# Ignore VCS and R build artifacts
+.git
+.gitignore
+.Rhistory
+.Rproj.user
+.RData
+
+# R package libs (bind mount host library if needed)
+renv/library/
+renv/staging/
+
+# Cache and temporary
+.packrat/
+__pycache__/
+.Rcheck/
+.Rproj.user/
+
+# Data that should not bloat image (mount at runtime)
+data-private/
+# Large derived public data can be mounted instead of baked
+data-public/derived/
+
+# Quarto output / reports
+**/_site/
+**/docs/
+**/*.html
+**/*.pdf
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+
+# Node modules if any appear
+node_modules/
