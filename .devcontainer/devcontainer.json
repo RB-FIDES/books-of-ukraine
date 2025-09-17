@@ -1,0 +1,16 @@
+// For format details, see https://aka.ms/devcontainer.json. For config options, see the
+// README at: https://github.com/rocker-org/devcontainer-templates/tree/main/src/r-ver
+{
+  "name": "books-of-ukraine v2",
+  "image": "books-of-ukraine.v2",
+  "forwardPorts": [8880],
+  "remoteUser": "rstudio",
+  "postStartCommand": "echo 'Devcontainer started from pre-built image';",
+  "forwardPorts": [8880],
+  "portsAttributes": {
+   "8880": {
+    "label": "RStudio",
+    "onAutoForward": "openBrowser"
+  }
+}
+}
