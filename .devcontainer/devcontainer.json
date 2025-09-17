@@ -1,16 +1,20 @@
-// For format details, see https://aka.ms/devcontainer.json. For config options, see the
-// README at: https://github.com/rocker-org/devcontainer-templates/tree/main/src/r-ver
+// For format details, see https://aka.ms/devcontainer.json
+// For config options, see the README at:
+// https://github.com/rocker-org/devcontainer-templates/tree/main/src/r-ver
 {
   "name": "books-of-ukraine v2",
   "image": "books-of-ukraine.v2",
   "forwardPorts": [8880],
   "remoteUser": "rstudio",
   "postStartCommand": "echo 'Devcontainer started from pre-built image';",
-  "forwardPorts": [8880],
   "portsAttributes": {
-   "8880": {
-    "label": "RStudio",
-    "onAutoForward": "openBrowser"
+    "8880": {
+      "label": "RStudio",
+      "onAutoForward": "openBrowser"
+    }
   }
-}
+  // Optionally, add mounts, environment variables, or features here
+  // "mounts": ["source=${localWorkspaceFolder}/data,target=/workspace/data,type=bind"],
+  // "features": {},
+  // "env": {"EXAMPLE_VAR": "value"}
 }
